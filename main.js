@@ -1,4 +1,4 @@
-import { EGGS, PETS, REBIRTHS, RARITY_INDEX, MUTATIONS, getRarity, formatNumber, formatDuration } from "./data.js";
+import { EGGS, PETS, REBIRTHS, RARITY_INDEX, MUTATIONS, MUTATION_BY_ID, getRarity, formatNumber, formatDuration } from "./data.js";
 import { getOrRotateShop, buyEgg, msUntilNextRotation, currentRotationIndex, ROTATION_MS } from "./shop.js";
 import {
   EGG_BY_ID, PET_BY_ID, loadPlayer, savePlayer, resetPlayer, startHatching,
@@ -107,11 +107,20 @@ function assetSrc(kind, id) {
   return `assets/${kind}/${id}.png`;
 }
 
-function renderPlaceholderIcon(container, label, rarityColor, locked = false, gold = false) {
+// Zusatz-Optik je Mutation (Badge-Farbe, Emoji-Präfix, Fallback-Verlauf,
+// Glow-Farbe im Ei-Öffnen-Effekt) - an einer Stelle gesammelt, damit eine
+// neue Mutation nur hier + in data.js (MUTATIONS) ergänzt werden muss.
+const MUTATION_VISUALS = {
+  gold: { emoji: "✨", badgeClass: "gold-badge", glowColor: "#ffd54f", placeholderGradient: "linear-gradient(135deg, #ffd54f, #ffb703)" },
+  diamond: { emoji: "💎", badgeClass: "diamond-badge", glowColor: "#8fe3ff", placeholderGradient: "linear-gradient(135deg, #e8fbff, #4fc3f7)" },
+};
+
+function renderPlaceholderIcon(container, label, rarityColor, locked = false, mutation = null) {
   container.innerHTML = "";
   const el = document.createElement("div");
   el.className = "placeholder-icon" + (locked ? " locked" : "");
-  el.style.background = locked ? "#000" : gold ? "linear-gradient(135deg, #ffd54f, #ffb703)" : rarityColor;
+  const visuals = mutation && MUTATION_VISUALS[mutation];
+  el.style.background = locked ? "#000" : visuals ? visuals.placeholderGradient : rarityColor;
   el.textContent = locked ? "" : label.slice(0, 2).toUpperCase();
   container.appendChild(el);
 }
@@ -125,7 +134,7 @@ function swayDelayFor(id) {
   return `-${((hash % 320) / 100).toFixed(2)}s`;
 }
 
-function createArtEl(kind, id, label, rarityColor, locked = false, dimmed = false, gold = false) {
+function createArtEl(kind, id, label, rarityColor, locked = false, dimmed = false, mutation = null) {
   const wrap = document.createElement("div");
   wrap.className = "art" + (locked ? " locked" : "") + (dimmed ? " dimmed" : "");
   wrap.style.setProperty("--sway-delay", swayDelayFor(id));
@@ -133,12 +142,12 @@ function createArtEl(kind, id, label, rarityColor, locked = false, dimmed = fals
   const img = document.createElement("img");
   img.alt = locked ? "???" : label;
   img.src = src;
-  img.onerror = () => renderPlaceholderIcon(wrap, label, rarityColor, locked, gold);
-  if (gold && !locked) img.classList.add("pet-gold-img");
+  img.onerror = () => renderPlaceholderIcon(wrap, label, rarityColor, locked, mutation);
+  if (mutation && !locked) img.classList.add(`pet-${mutation}-img`);
   wrap.appendChild(img);
-  if (gold && !locked) {
+  if (mutation && !locked) {
     const shine = document.createElement("div");
-    shine.className = "pet-gold-shine";
+    shine.className = "pet-mutation-shine";
     shine.style.setProperty("mask-image", `url('${src}')`);
     shine.style.setProperty("-webkit-mask-image", `url('${src}')`);
     wrap.appendChild(shine);
@@ -263,8 +272,9 @@ function playHatchRevealBatch(results) {
   const slots = results.map((result) => {
     const { pet, egg, instance } = result;
     const rarity = getRarity(pet.rarity);
-    const isGold = instance.mutation === "gold";
-    const glowColor = isGold ? "#ffd54f" : rarity.color.startsWith("linear") ? "#ffffff" : rarity.color;
+    const mutationVisuals = instance.mutation && MUTATION_VISUALS[instance.mutation];
+    const glowColor = mutationVisuals ? mutationVisuals.glowColor
+      : rarity.color.startsWith("linear") ? "#ffffff" : rarity.color;
 
     const slot = document.createElement("div");
     slot.className = "reveal-slot";
@@ -278,13 +288,13 @@ function playHatchRevealBatch(results) {
     eggArt.classList.add("slot-egg-art");
     slot.appendChild(eggArt);
 
-    const petArt = createArtEl("pets", pet.id, pet.name, rarity.color, false, false, isGold);
+    const petArt = createArtEl("pets", pet.id, pet.name, rarity.color, false, false, instance.mutation);
     petArt.classList.add("slot-pet-art");
     slot.appendChild(petArt);
 
     const label = document.createElement("div");
     label.className = "slot-label";
-    label.textContent = (isGold ? "✨ " : "") + pet.name;
+    label.textContent = (mutationVisuals ? mutationVisuals.emoji + " " : "") + pet.name;
     slot.appendChild(label);
 
     grid.appendChild(slot);
@@ -583,19 +593,20 @@ function renderInventory() {
   for (const inst of sorted) {
     const pet = PET_BY_ID[inst.petId];
     const rarity = getRarity(pet.rarity);
-    const isGold = inst.mutation === "gold";
+    const mutation = inst.mutation ? MUTATION_BY_ID[inst.mutation] : null;
+    const mutationVisuals = inst.mutation ? MUTATION_VISUALS[inst.mutation] : null;
     const equipped = state.equipped.includes(inst.instanceId);
     const card = document.createElement("div");
     card.className = "card pet-card" + (equipped ? " equipped" : "");
-    const art = createArtEl("pets", pet.id, pet.name, rarity.color, false, false, isGold);
+    const art = createArtEl("pets", pet.id, pet.name, rarity.color, false, false, inst.mutation);
     art.style.setProperty("--sway-delay", swayDelayFor(inst.instanceId));
     card.appendChild(art);
     const info = document.createElement("div");
     info.className = "card-info";
     info.innerHTML = `
-      <div class="card-name">${isGold ? "✨ " : ""}${pet.name}</div>
+      <div class="card-name">${mutationVisuals ? mutationVisuals.emoji + " " : ""}${pet.name}</div>
       <div class="card-rarity" style="background:${rarity.color}">${rarity.name}</div>
-      ${isGold ? `<div class="gold-badge">Gold ×3</div>` : ""}
+      ${mutation ? `<div class="${mutationVisuals.badgeClass}">${mutation.name} ×${mutation.moneyMultiplier}</div>` : ""}
       <div class="card-stat">⚖️ ${inst.weightKg < 1 ? (inst.weightKg * 1000).toFixed(1) + "g" : formatNumber(inst.weightKg) + "kg"} (${inst.ratio.toFixed(2)}x)</div>
       <div class="card-stat">${coinIcon()} ${formatNumber(inst.moneyPerSec)}/s</div>
     `;
@@ -722,13 +733,13 @@ function renderMutationsIndex() {
       const img = document.createElement("img");
       img.src = src;
       img.alt = pet.name;
-      img.className = "mutation-cycle-img pet-gold-img";
+      img.className = `mutation-cycle-img pet-${mutation.id}-img`;
       img.style.animationDelay = delay;
       img.onerror = () => { img.style.visibility = "hidden"; };
       artWrap.appendChild(img);
 
       const shine = document.createElement("div");
-      shine.className = "mutation-cycle-img pet-gold-shine";
+      shine.className = "mutation-cycle-img pet-mutation-shine";
       shine.style.animationDelay = delay;
       shine.style.setProperty("mask-image", `url('${src}')`);
       shine.style.setProperty("-webkit-mask-image", `url('${src}')`);
@@ -736,11 +747,12 @@ function renderMutationsIndex() {
     });
     card.appendChild(artWrap);
 
+    const visuals = MUTATION_VISUALS[mutation.id];
     const info = document.createElement("div");
     info.className = "card-info";
     info.innerHTML = `
-      <div class="card-name">✨ ${mutation.name}</div>
-      <div class="gold-badge">×${mutation.moneyMultiplier} Geld/Sekunde</div>
+      <div class="card-name">${visuals.emoji} ${mutation.name}</div>
+      <div class="${visuals.badgeClass}">×${mutation.moneyMultiplier} Geld/Sekunde</div>
       <div class="card-stat">🍀 ${formatNumber(mutation.chance * 100)}% Chance bei jedem Ausbrüten</div>
     `;
     card.appendChild(info);
@@ -772,9 +784,15 @@ function renderRebirth() {
   const pet = PET_BY_ID[next.petId];
   const rarity = getRarity(pet.rarity);
   const ownsPet = state.pets.some((p) => p.petId === next.petId);
-  // Rein kosmetisch: falls eine der besessenen Instanzen golden ist, zeigen
-  // wir sie hier auch golden - ändert nichts an der Anforderung selbst.
-  const ownsGold = state.pets.some((p) => p.petId === next.petId && p.mutation === "gold");
+  // Rein kosmetisch: falls eine der besessenen Instanzen eine Mutation hat,
+  // zeigen wir sie hier auch so - ändert nichts an der Anforderung selbst.
+  // Bei mehreren Mutationen wird die seltenste (niedrigste Chance) bevorzugt.
+  const ownedMutations = state.pets
+    .filter((p) => p.petId === next.petId && p.mutation)
+    .map((p) => p.mutation);
+  const bestOwnedMutation = [...MUTATIONS]
+    .sort((a, b) => a.chance - b.chance)
+    .find((m) => ownedMutations.includes(m.id))?.id ?? null;
   const canAfford = state.coins >= next.price;
 
   const card = document.createElement("div");
@@ -787,7 +805,7 @@ function renderRebirth() {
 
   const petReq = document.createElement("div");
   petReq.className = "rebirth-req";
-  petReq.appendChild(createArtEl("pets", pet.id, pet.name, rarity.color, false, !ownsPet, ownsGold));
+  petReq.appendChild(createArtEl("pets", pet.id, pet.name, rarity.color, false, !ownsPet, bestOwnedMutation));
   petReq.insertAdjacentHTML("beforeend", `<div class="rebirth-req-label">${pet.name}</div>`);
   reqRow.appendChild(petReq);
 

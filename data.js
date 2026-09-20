@@ -288,9 +288,9 @@ function getRarity(id) {
 
 // ---- Mutationen ---------------------------------------------------------
 // Zusätzlich zur normalen Seltenheit kann ein Pet beim Ausbrüten eine
-// Mutation bekommen (aktuell nur "Gold") - unabhängig vom Ei/Glück, mit
-// eigener Chance und eigenem Geld-Bonus. Als Array angelegt, damit sich
-// später leicht weitere Mutationen ergänzen lassen.
+// Mutation bekommen - unabhängig vom Ei/Glück, mit eigener Chance und
+// eigenem Geld-Bonus. Als Array angelegt, damit sich leicht weitere
+// Mutationen ergänzen lassen.
 const MUTATIONS = [
   {
     id: "gold",
@@ -298,12 +298,22 @@ const MUTATIONS = [
     chance: 0.05, // 5% pro Ausbrüten, für jedes Pet gleich
     moneyMultiplier: 3,
   },
+  {
+    id: "diamond",
+    name: "Diamant",
+    chance: 0.01, // 1% pro Ausbrüten, für jedes Pet gleich
+    moneyMultiplier: 7,
+  },
 ];
 const MUTATION_BY_ID = Object.fromEntries(MUTATIONS.map((m) => [m.id, m]));
 
 // Würfelt, ob ein frisch gezogenes Pet eine Mutation bekommt (oder null).
+// Prüft von der seltensten zur häufigsten Mutation, damit deren Chance nicht
+// durch eine vorher schon "verbrauchte" häufigere Mutation verwässert wird
+// (die Reihenfolge in MUTATIONS selbst bleibt frei für die Anzeige).
 function rollMutation() {
-  for (const mutation of MUTATIONS) {
+  const byRarityAsc = [...MUTATIONS].sort((a, b) => a.chance - b.chance);
+  for (const mutation of byRarityAsc) {
     if (Math.random() < mutation.chance) return mutation.id;
   }
   return null;

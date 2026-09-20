@@ -98,7 +98,7 @@
 
 <div id="toast"></div>
 
-<!-- Globaler Filter für die Gold-Mutation (siehe .pet-gold-img in style.css) -->
+<!-- Globale Filter für Mutationen (siehe .pet-<id>-img in style.css) -->
 <svg width="0" height="0" style="position:absolute">
   <defs>
     <filter id="goldDuotone" color-interpolation-filters="sRGB">
@@ -110,6 +110,17 @@
         <feFuncR type="table" tableValues="0.30 0.55 0.85 1.0"/>
         <feFuncG type="table" tableValues="0.14 0.34 0.66 0.90"/>
         <feFuncB type="table" tableValues="0.00 0.02 0.20 0.45"/>
+      </feComponentTransfer>
+    </filter>
+    <filter id="diamondDuotone" color-interpolation-filters="sRGB">
+      <feColorMatrix type="matrix" values="0.33 0.33 0.33 0 0
+                                            0.33 0.33 0.33 0 0
+                                            0.33 0.33 0.33 0 0
+                                            0    0    0    1 0"/>
+      <feComponentTransfer>
+        <feFuncR type="table" tableValues="0.04 0.28 0.68 0.92"/>
+        <feFuncG type="table" tableValues="0.10 0.46 0.86 0.98"/>
+        <feFuncB type="table" tableValues="0.22 0.62 0.95 1.0"/>
       </feComponentTransfer>
     </filter>
   </defs>
