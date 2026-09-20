@@ -45,6 +45,8 @@ const ASSET_OVERRIDES = {
     baer: "https://static.wikia.nocookie.net/pets-go/images/a/a4/Bear.png",
     elefant: "https://static.wikia.nocookie.net/pets-go/images/6/60/Elephant.png",
     hase: "https://static.wikia.nocookie.net/pets-go/images/8/82/Bunny.png",
+    hund: "https://static.wikia.nocookie.net/pets-go/images/3/35/Dog.png",
+    biene: "https://static.wikia.nocookie.net/pets-go/images/5/56/Bee.png",
   },
 };
 
