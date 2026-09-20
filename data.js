@@ -145,7 +145,7 @@ const EGGS = [
   { id: "regenbogen",name: "Regenbogen-Ei", rarity: "secret",       luckPercent: 40000000,   hatchSeconds: 36000,  basePrice: 15000000000,  appearChance: 0.003,stock: [1, 1] },
   { id: "schatten",  name: "Schatten-Ei",   rarity: "celestial",    luckPercent: 150000000,  hatchSeconds: 39600,  basePrice: 70000000000,  appearChance: 0.001,stock: [1, 1] },
   { id: "empyreum",  name: "Empyreum-Ei",   rarity: "astral",       luckPercent: 600000000,  hatchSeconds: 43200,  basePrice: 350000000000, appearChance: 0.0003,stock: [1, 1] },
-  { id: "nebel",     name: "Nebel-Ei",      rarity: "nebula",       luckPercent: 60000000000,hatchSeconds: 86400,  basePrice: 5000000000000,appearChance: 0.0001,stock: [1, 1] },
+  { id: "nebel",     name: "Engel-Ei",      rarity: "nebula",       luckPercent: 60000000000,hatchSeconds: 86400,  basePrice: 5000000000000,appearChance: 0.0001,stock: [1, 1] },
 ];
 
 // ---- Gewichts-Ausreißer-Tabelle -------------------------------------------

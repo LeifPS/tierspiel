@@ -40,6 +40,7 @@ const ASSET_OVERRIDES = {
     schatz: "https://static.wikia.nocookie.net/pet-simulator/images/b/b4/PS99_Treasure_Egg.png",
     verlies: "https://static.wikia.nocookie.net/pet-simulator/images/e/e9/PS99_Dungeon_Egg.png",
     koeniglich: "https://static.wikia.nocookie.net/pet-simulator/images/2/2c/PS99_Royal_Egg.png",
+    nebel: "https://static.wikia.nocookie.net/pet-simulator/images/8/83/PS99_Angel_Egg.png",
   },
   pets: {
     fuchs: "https://static.wikia.nocookie.net/pets-go/images/7/73/Fox.png",
