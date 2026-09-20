@@ -219,22 +219,14 @@ function minEligibleRarityIndex(luckPercent) {
 // am häufigsten gezogen). Der Abkling-Faktor verhindert das.
 const LUCK_BOOST_STRENGTH = 10;
 
-// Ab dieser Ei-Stufe gibt es zusätzlich zum Glücks-Mechanismus die feste
-// Garantie auf mindestens ein Pet der Seltenheit des Eis selbst. Bewusst nur
-// ab Legendär: bei günstigen/mittleren Eiern (Standard bis Selten) gehört
-// die Chance auf ein niedrigeres Pet weiterhin zum "Glücksspiel"-Reiz und
-// zur Progression dazu; bei teuren Eiern soll sich der Kauf aber immer
-// lohnen und nicht mit einem enttäuschend niedrigen Pet enden.
-const GUARANTEE_FLOOR_RARITY = "legendary";
-
 function drawPetFromPool(luckPercent, eggRarity) {
   const luckFactor = Math.max(luckPercent, 100) / 100; // 100% => 1.0
   let minTierIdx = minEligibleRarityIndex(luckPercent);
+  // Zusätzlich zum Glücks-Mechanismus gibt es immer die feste Garantie auf
+  // mindestens ein Pet der Seltenheit des Eis selbst - jedes Ei liefert also
+  // nie ein niedrigeres Pet, als es selbst eingestuft ist.
   if (eggRarity !== undefined) {
-    const eggTierIdx = RARITY_INDEX[eggRarity];
-    if (eggTierIdx >= RARITY_INDEX[GUARANTEE_FLOOR_RARITY]) {
-      minTierIdx = Math.max(minTierIdx, eggTierIdx);
-    }
+    minTierIdx = Math.max(minTierIdx, RARITY_INDEX[eggRarity]);
   }
   const eligiblePets = PETS.filter((pet) => RARITY_INDEX[pet.rarity] >= minTierIdx);
   const pool = eligiblePets.length > 0 ? eligiblePets : PETS; // Sicherheitsnetz
