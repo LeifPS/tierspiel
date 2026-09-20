@@ -80,6 +80,13 @@ body {
 #coins-display { color: var(--accent); }
 #income-display { color: var(--success); }
 
+.coin-icon {
+  width: 1.1em;
+  height: 1.1em;
+  object-fit: contain;
+  vertical-align: -0.2em;
+}
+
 #reset-btn {
   background: none;
   border: 1px solid var(--border-soft);

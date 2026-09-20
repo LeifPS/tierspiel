@@ -87,39 +87,40 @@ const PETS = [
 // ---- Eier -----------------------------------------------------------------
 // rarity: bestimmt Hauptfarbe/Rahmen des Eis (rein kosmetisch/Einordnung)
 // luckPercent: 100 = neutral (1x). 100000 = 1000x Glücksfaktor.
-// weightMultiplier: mittlerer Gewichtsfaktor der Tiere aus diesem Ei
+// Das Gewicht der geschlüpften Tiere ist unabhängig vom Ei komplett zufällig
+// (siehe rollWeightFactor) – alle Eier sind "gleich schwer".
 // hatchSeconds: Bebrütungsdauer
 // basePrice: Münzpreis im Shop
 // stock: { min, max } normale Stückzahl, wenn im Shop verfügbar
 // appearChance: Wahrscheinlichkeit (0–1), dass das Ei bei einem Shop-Refresh
 //               überhaupt angeboten wird
 const EGGS = [
-  { id: "standard",  name: "Standard-Ei",   rarity: "common",       luckPercent: 100,        weightMultiplier: 1.0, hatchSeconds: 10,     basePrice: 25,           appearChance: 1.0,  stock: [40, 70] },
-  { id: "holz",      name: "Holz-Ei",       rarity: "common",       luckPercent: 150,        weightMultiplier: 1.05,hatchSeconds: 30,     basePrice: 75,           appearChance: 1.0,  stock: [40, 70] },
-  { id: "getupft",   name: "Getupftes Ei",  rarity: "uncommon",     luckPercent: 250,        weightMultiplier: 1.1, hatchSeconds: 120,    basePrice: 300,          appearChance: 1.0,  stock: [20, 40] },
-  { id: "stein",     name: "Stein-Ei",      rarity: "uncommon",     luckPercent: 400,        weightMultiplier: 1.15,hatchSeconds: 300,    basePrice: 900,          appearChance: 1.0,  stock: [20, 40] },
-  { id: "keimling",  name: "Keimlings-Ei",  rarity: "rare",         luckPercent: 700,        weightMultiplier: 1.2, hatchSeconds: 600,    basePrice: 3000,         appearChance: 1.0,  stock: [8, 20] },
-  { id: "dschungel", name: "Dschungel-Ei",  rarity: "rare",         luckPercent: 1200,       weightMultiplier: 1.25,hatchSeconds: 900,    basePrice: 8000,         appearChance: 1.0,  stock: [8, 20] },
-  { id: "sonnen",    name: "Sonnen-Ei",     rarity: "epic",         luckPercent: 2500,       weightMultiplier: 1.3, hatchSeconds: 1800,   basePrice: 25000,        appearChance: 0.9,  stock: [3, 8] },
-  { id: "piraten",   name: "Piraten-Ei",    rarity: "epic",         luckPercent: 5000,       weightMultiplier: 1.35,hatchSeconds: 3600,   basePrice: 70000,        appearChance: 0.9,  stock: [3, 8] },
-  { id: "fossil",    name: "Fossil-Ei",     rarity: "legendary",    luckPercent: 10000,      weightMultiplier: 1.4, hatchSeconds: 5400,   basePrice: 250000,       appearChance: 0.6,  stock: [1, 3] },
-  { id: "aegyptisch",name: "Ägyptisches Ei",rarity: "legendary",    luckPercent: 20000,      weightMultiplier: 1.45,hatchSeconds: 7200,   basePrice: 700000,       appearChance: 0.6,  stock: [1, 3] },
-  { id: "schnee",    name: "Schnee-Ei",     rarity: "mythic",       luckPercent: 45000,      weightMultiplier: 1.5, hatchSeconds: 10800,  basePrice: 2500000,      appearChance: 0.3,  stock: [1, 2] },
-  { id: "knochen",   name: "Knochen-Ei",    rarity: "mythic",       luckPercent: 100000,     weightMultiplier: 1.55,hatchSeconds: 14400,  basePrice: 7000000,      appearChance: 0.3,  stock: [1, 2] },
-  { id: "obsidian",  name: "Obsidian-Ei",   rarity: "divine",       luckPercent: 250000,     weightMultiplier: 1.6, hatchSeconds: 18000,  basePrice: 25000000,     appearChance: 0.12, stock: [1, 1] },
-  { id: "hoellen",   name: "Höllen-Ei",     rarity: "divine",       luckPercent: 600000,     weightMultiplier: 1.65,hatchSeconds: 21600,  basePrice: 70000000,     appearChance: 0.12, stock: [1, 1] },
-  { id: "metall",    name: "Metall-Ei",     rarity: "prismatic",    luckPercent: 1500000,    weightMultiplier: 1.7, hatchSeconds: 25200,  basePrice: 250000000,    appearChance: 0.05, stock: [1, 1] },
-  { id: "mosaik",    name: "Mosaik-Ei",     rarity: "transcendent", luckPercent: 4000000,    weightMultiplier: 1.8, hatchSeconds: 28800,  basePrice: 900000000,    appearChance: 0.02, stock: [1, 1] },
-  { id: "runen",     name: "Runen-Ei",      rarity: "ethereal",     luckPercent: 12000000,   weightMultiplier: 1.9, hatchSeconds: 32400,  basePrice: 3500000000,   appearChance: 0.008,stock: [1, 1] },
-  { id: "regenbogen",name: "Regenbogen-Ei", rarity: "secret",       luckPercent: 40000000,   weightMultiplier: 2.0, hatchSeconds: 36000,  basePrice: 15000000000,  appearChance: 0.003,stock: [1, 1] },
-  { id: "schatten",  name: "Schatten-Ei",   rarity: "celestial",    luckPercent: 150000000,  weightMultiplier: 2.15,hatchSeconds: 39600,  basePrice: 70000000000,  appearChance: 0.001,stock: [1, 1] },
-  { id: "empyreum",  name: "Empyreum-Ei",   rarity: "astral",       luckPercent: 600000000,  weightMultiplier: 2.3, hatchSeconds: 43200,  basePrice: 350000000000, appearChance: 0.0003,stock: [1, 1] },
+  { id: "standard",  name: "Standard-Ei",   rarity: "common",       luckPercent: 100,        hatchSeconds: 10,     basePrice: 25,           appearChance: 1.0,  stock: [40, 70] },
+  { id: "holz",      name: "Holz-Ei",       rarity: "common",       luckPercent: 150,        hatchSeconds: 30,     basePrice: 75,           appearChance: 1.0,  stock: [40, 70] },
+  { id: "getupft",   name: "Getupftes Ei",  rarity: "uncommon",     luckPercent: 250,        hatchSeconds: 120,    basePrice: 300,          appearChance: 1.0,  stock: [20, 40] },
+  { id: "stein",     name: "Stein-Ei",      rarity: "uncommon",     luckPercent: 400,        hatchSeconds: 300,    basePrice: 900,          appearChance: 1.0,  stock: [20, 40] },
+  { id: "keimling",  name: "Keimlings-Ei",  rarity: "rare",         luckPercent: 700,        hatchSeconds: 600,    basePrice: 3000,         appearChance: 1.0,  stock: [8, 20] },
+  { id: "dschungel", name: "Dschungel-Ei",  rarity: "rare",         luckPercent: 1200,       hatchSeconds: 900,    basePrice: 8000,         appearChance: 1.0,  stock: [8, 20] },
+  { id: "sonnen",    name: "Sonnen-Ei",     rarity: "epic",         luckPercent: 2500,       hatchSeconds: 1800,   basePrice: 25000,        appearChance: 0.9,  stock: [3, 8] },
+  { id: "piraten",   name: "Piraten-Ei",    rarity: "epic",         luckPercent: 5000,       hatchSeconds: 3600,   basePrice: 70000,        appearChance: 0.9,  stock: [3, 8] },
+  { id: "fossil",    name: "Fossil-Ei",     rarity: "legendary",    luckPercent: 10000,      hatchSeconds: 5400,   basePrice: 250000,       appearChance: 0.6,  stock: [1, 3] },
+  { id: "aegyptisch",name: "Ägyptisches Ei",rarity: "legendary",    luckPercent: 20000,      hatchSeconds: 7200,   basePrice: 700000,       appearChance: 0.6,  stock: [1, 3] },
+  { id: "schnee",    name: "Schnee-Ei",     rarity: "mythic",       luckPercent: 45000,      hatchSeconds: 10800,  basePrice: 2500000,      appearChance: 0.3,  stock: [1, 2] },
+  { id: "knochen",   name: "Knochen-Ei",    rarity: "mythic",       luckPercent: 100000,     hatchSeconds: 14400,  basePrice: 7000000,      appearChance: 0.3,  stock: [1, 2] },
+  { id: "obsidian",  name: "Obsidian-Ei",   rarity: "divine",       luckPercent: 250000,     hatchSeconds: 18000,  basePrice: 25000000,     appearChance: 0.12, stock: [1, 1] },
+  { id: "hoellen",   name: "Höllen-Ei",     rarity: "divine",       luckPercent: 600000,     hatchSeconds: 21600,  basePrice: 70000000,     appearChance: 0.12, stock: [1, 1] },
+  { id: "metall",    name: "Metall-Ei",     rarity: "prismatic",    luckPercent: 1500000,    hatchSeconds: 25200,  basePrice: 250000000,    appearChance: 0.05, stock: [1, 1] },
+  { id: "mosaik",    name: "Mosaik-Ei",     rarity: "transcendent", luckPercent: 4000000,    hatchSeconds: 28800,  basePrice: 900000000,    appearChance: 0.02, stock: [1, 1] },
+  { id: "runen",     name: "Runen-Ei",      rarity: "ethereal",     luckPercent: 12000000,   hatchSeconds: 32400,  basePrice: 3500000000,   appearChance: 0.008,stock: [1, 1] },
+  { id: "regenbogen",name: "Regenbogen-Ei", rarity: "secret",       luckPercent: 40000000,   hatchSeconds: 36000,  basePrice: 15000000000,  appearChance: 0.003,stock: [1, 1] },
+  { id: "schatten",  name: "Schatten-Ei",   rarity: "celestial",    luckPercent: 150000000,  hatchSeconds: 39600,  basePrice: 70000000000,  appearChance: 0.001,stock: [1, 1] },
+  { id: "empyreum",  name: "Empyreum-Ei",   rarity: "astral",       luckPercent: 600000000,  hatchSeconds: 43200,  basePrice: 350000000000, appearChance: 0.0003,stock: [1, 1] },
 ];
 
 // ---- Gewichts-Ausreißer-Tabelle -------------------------------------------
 // Kumulative Wahrscheinlichkeitsverteilung für den "Rand-Roll" beim Schlüpfen.
-// Der finale Gewichtsfaktor = weightMultiplier(Ei) * rollFactor.
-// P(rollFactor >= 2.0) ≈ 1% (bezogen auf ein 1x-Ei), wie gewünscht.
+// Der finale Gewichtsfaktor eines Pets ist rein zufällig = rollFactor.
+// P(rollFactor >= 2.0) ≈ 1%, wie gewünscht.
 const WEIGHT_ROLL_TABLE = [
   { chance: 0.74,   min: 0.85, max: 1.15 },
   { chance: 0.20,   min: 1.15, max: 1.4 },

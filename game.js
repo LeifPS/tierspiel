@@ -23,7 +23,7 @@ function defaultPlayerState() {
     equipSlots: START_EQUIP_SLOTS,
     equipped: [],       // Array von pet-instanceIds
     pets: [],           // { instanceId, petId, weightKg, ratio, moneyPerSec, obtainedAtMs }
-    hatching: [],        // { instanceId, eggId, startMs, durationMs }
+    hatching: [],        // { instanceId, eggId, durationMs, remainingMs }
     seenEggs: [],        // eggIds, die der Spieler schonmal gekauft hat (für den Index)
     lastActiveMs: Date.now(),
   };
@@ -32,11 +32,19 @@ function defaultPlayerState() {
 function loadPlayer() {
   const raw = localStorage.getItem(SAVE_KEY);
   if (!raw) return defaultPlayerState();
+  let state;
   try {
-    return { ...defaultPlayerState(), ...JSON.parse(raw) };
+    state = { ...defaultPlayerState(), ...JSON.parse(raw) };
   } catch {
     return defaultPlayerState();
   }
+  // Alte Spielstände hatten "startMs" statt "remainingMs" – umrechnen.
+  state.hatching = state.hatching.map((h) => (
+    h.remainingMs !== undefined
+      ? h
+      : { instanceId: h.instanceId, eggId: h.eggId, durationMs: h.durationMs, remainingMs: h.durationMs - (Date.now() - h.startMs) }
+  ));
+  return state;
 }
 
 function savePlayer(state) {
@@ -51,19 +59,29 @@ function resetPlayer() {
 function startHatching(state, eggId) {
   const egg = EGG_BY_ID[eggId];
   if (!egg) throw new Error("Unbekanntes Ei.");
+  const durationMs = egg.hatchSeconds * 1000;
   state.hatching.push({
     instanceId: newInstanceId(),
     eggId,
-    startMs: Date.now(),
-    durationMs: egg.hatchSeconds * 1000,
+    durationMs,
+    remainingMs: durationMs,
   });
   if (!state.seenEggs) state.seenEggs = [];
   if (!state.seenEggs.includes(eggId)) state.seenEggs.push(eggId);
 }
 
+// ---- Brütezeit voranschreiten lassen ---------------------------------------
+// speedMultiplier: 1x während der Spieler weg war (Offline-Zeit),
+// 2x während das Spiel aktiv im Browser-Tab läuft.
+function tickHatching(state, elapsedMs, speedMultiplier = 1) {
+  for (const h of state.hatching) {
+    h.remainingMs -= elapsedMs * speedMultiplier;
+  }
+}
+
 // ---- Fertige Eier erkennen (löst sie NICHT aus – das macht hatchEgg) -------
 function isHatchingFinished(hatchEntry) {
-  return Date.now() - hatchEntry.startMs >= hatchEntry.durationMs;
+  return hatchEntry.remainingMs <= 0;
 }
 
 function getFinishedHatching(state) {
@@ -80,7 +98,7 @@ function hatchEgg(state, instanceId) {
   const egg = EGG_BY_ID[entry.eggId];
   const pet = drawPetFromPool(egg.luckPercent);
   const rollFactor = rollWeightFactor();
-  const weightKg = pet.baseWeightKg * egg.weightMultiplier * rollFactor;
+  const weightKg = pet.baseWeightKg * rollFactor;
   const ratio = weightKg / pet.baseWeightKg; // Vielfaches des Basisgewichts
   const moneyPerSec = pet.baseMoney * moneyMultiplierFromWeightRatio(ratio);
   const petInstance = {
@@ -138,13 +156,13 @@ function autoEquipBest(state) {
 }
 
 function timeRemainingMs(hatchEntry) {
-  return Math.max(0, hatchEntry.startMs + hatchEntry.durationMs - Date.now());
+  return Math.max(0, hatchEntry.remainingMs);
 }
 
 export {
   EGG_BY_ID, PET_BY_ID, START_COINS, START_EQUIP_SLOTS,
   defaultPlayerState, loadPlayer, savePlayer, resetPlayer,
-  startHatching, isHatchingFinished, getFinishedHatching, hatchEgg,
+  startHatching, tickHatching, isHatchingFinished, getFinishedHatching, hatchEgg,
   accrueMoney, totalMoneyPerSecond,
   equipPet, unequipPet, autoEquipBest, timeRemainingMs,
 };

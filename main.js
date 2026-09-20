@@ -2,7 +2,7 @@ import { EGGS, PETS, RARITY_INDEX, getRarity, formatNumber, formatDuration } fro
 import { getOrRotateShop, buyEgg, msUntilNextRotation, ROTATION_MS } from "./shop.js";
 import {
   EGG_BY_ID, PET_BY_ID, loadPlayer, savePlayer, resetPlayer, startHatching,
-  isHatchingFinished, hatchEgg, accrueMoney, totalMoneyPerSecond, equipPet, unequipPet,
+  tickHatching, isHatchingFinished, hatchEgg, accrueMoney, totalMoneyPerSecond, equipPet, unequipPet,
   autoEquipBest, timeRemainingMs,
 } from "./game.js";
 
@@ -50,6 +50,9 @@ const ASSET_OVERRIDES = {
   },
 };
 
+const COIN_ICON_URL = "https://static.wikia.nocookie.net/pet-simulator/images/b/b2/PS99_-_Coin.png";
+const coinIcon = () => `<img src="${COIN_ICON_URL}" alt="Münzen" class="coin-icon">`;
+
 function assetSrc(kind, id) {
   const override = ASSET_OVERRIDES[kind]?.[id];
   if (override) return override;
@@ -94,6 +97,8 @@ bootGame();
 
 function bootGame() {
   state = loadPlayer();
+  const offlineElapsedMs = Math.max(0, Date.now() - state.lastActiveMs);
+  tickHatching(state, offlineElapsedMs, 1); // Offline brüten Eier mit normaler Geschwindigkeit
   const earned = accrueMoney(state); // rechnet Offline-Geld ab
   savePlayer(state);
 
@@ -104,8 +109,10 @@ function bootGame() {
   refreshShop();
   renderAll();
 
-  // Live-Ticker: einmal pro Sekunde Geld gutschreiben & Anzeige aktualisieren
+  // Live-Ticker: einmal pro Sekunde Geld gutschreiben & Anzeige aktualisieren.
+  // Solange aktiv gespielt wird, brüten Eier mit doppelter Geschwindigkeit.
   setInterval(() => {
+    tickHatching(state, 1000, 2);
     accrueMoney(state);
     renderAll();
   }, 1000);
@@ -156,7 +163,7 @@ function playHatchReveal(result) {
   $("#reveal-name").textContent = pet.name;
   $("#reveal-stats").innerHTML = `
     ⚖️ ${instance.weightKg < 1 ? (instance.weightKg * 1000).toFixed(1) + "g" : formatNumber(instance.weightKg) + "kg"}
-    (${instance.ratio.toFixed(2)}x) · 💰 ${formatNumber(instance.moneyPerSec)}/s
+    (${instance.ratio.toFixed(2)}x) · ${coinIcon()} ${formatNumber(instance.moneyPerSec)}/s
   `;
 
   return new Promise((resolve) => {
@@ -181,8 +188,8 @@ function renderAll() {
 }
 
 function renderTopBar() {
-  $("#coins-display").textContent = formatNumber(state.coins) + " Münzen";
-  $("#income-display").textContent = formatNumber(totalMoneyPerSecond(state)) + "/s";
+  $("#coins-display").innerHTML = `${coinIcon()} ${formatNumber(state.coins)}`;
+  $("#income-display").innerHTML = `${coinIcon()} ${formatNumber(totalMoneyPerSecond(state))}/s`;
   $("#slots-display").textContent = `${state.equipped.length}/${state.equipSlots} Plätze belegt`;
 }
 
@@ -211,14 +218,13 @@ function renderShop() {
       <div class="card-rarity" style="background:${rarity.color}">${rarity.name}</div>
       <div class="card-stat">🍀 ${formatNumber(egg.luckPercent)}% Glück</div>
       <div class="card-stat">⏱ ${formatDuration(egg.hatchSeconds)}</div>
-      <div class="card-stat">⚖️ ~${egg.weightMultiplier}x Gewicht</div>
       <div class="card-stat">📦 Lager: ${stock}</div>
     `;
     card.appendChild(info);
 
     const btn = document.createElement("button");
     btn.className = "buy-btn";
-    btn.textContent = `Kaufen · ${formatNumber(egg.basePrice)}`;
+    btn.innerHTML = `Kaufen · ${coinIcon()} ${formatNumber(egg.basePrice)}`;
     btn.disabled = state.coins < egg.basePrice;
     btn.addEventListener("click", () => handleBuy(egg));
     card.appendChild(btn);
@@ -319,7 +325,7 @@ function renderInventory() {
       <div class="card-name">${pet.name}</div>
       <div class="card-rarity" style="background:${rarity.color}">${rarity.name}</div>
       <div class="card-stat">⚖️ ${inst.weightKg < 1 ? (inst.weightKg * 1000).toFixed(1) + "g" : formatNumber(inst.weightKg) + "kg"} (${inst.ratio.toFixed(2)}x)</div>
-      <div class="card-stat">💰 ${formatNumber(inst.moneyPerSec)}/s</div>
+      <div class="card-stat">${coinIcon()} ${formatNumber(inst.moneyPerSec)}/s</div>
     `;
     card.appendChild(info);
     const btn = document.createElement("button");
@@ -364,7 +370,6 @@ function renderIndex() {
         <div class="card-rarity" style="background:${rarity.color}">${rarity.name}</div>
         <div class="card-stat">🍀 ${formatNumber(egg.luckPercent)}% Glück</div>
         <div class="card-stat">⏱ ${formatDuration(egg.hatchSeconds)}</div>
-        <div class="card-stat">⚖️ ~${egg.weightMultiplier}x Gewicht</div>
       `;
     } else {
       info.innerHTML = `<div class="card-name">???</div>`;
@@ -392,7 +397,7 @@ function renderIndex() {
         <div class="card-name">${pet.name}</div>
         <div class="card-rarity" style="background:${rarity.color}">${rarity.name}</div>
         <div class="card-stat">⚖️ Basis: ${pet.baseWeightKg < 1 ? (pet.baseWeightKg * 1000).toFixed(1) + "g" : formatNumber(pet.baseWeightKg) + "kg"}</div>
-        <div class="card-stat">💰 Basis: ${formatNumber(pet.baseMoney)}/s</div>
+        <div class="card-stat">${coinIcon()} Basis: ${formatNumber(pet.baseMoney)}/s</div>
       `;
     } else {
       info.innerHTML = `<div class="card-name">???</div>`;
