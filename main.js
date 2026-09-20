@@ -5,6 +5,7 @@ import {
   tickHatching, isHatchingFinished, hatchEgg, accrueMoney, totalMoneyPerSecond, getMoneyMultiplier,
   performRebirth, equipPet, unequipPet, autoEquipBest, timeRemainingMs,
 } from "./game.js";
+import { getOrCreatePlayerId, getPlayerName, setPlayerName, submitScore, fetchLeaderboard } from "./leaderboard.js";
 
 // ---------------------------------------------------------------------------
 // Kleine DOM-Helfer
@@ -152,6 +153,7 @@ let shop = null;
 // komplette Karte (inkl. Bild) neu zu erzeugen – sonst würde die
 // Schwenk-Animation bei jedem Tick neu starten und ruckeln.
 let hatcheryCardRefs = new Map();
+let cachedLeaderboard = [];
 
 bootGame();
 
@@ -187,6 +189,10 @@ function bootGame() {
 
   // Shop alle 15s auf Rotation prüfen (leichtgewichtig)
   setInterval(refreshShop, 15000);
+
+  // Online-Rangliste: beim Login und danach alle 2 Minuten für alle aktualisieren.
+  refreshLeaderboard();
+  setInterval(refreshLeaderboard, 2 * 60 * 1000);
 }
 
 function refreshShop() {
@@ -250,6 +256,7 @@ function renderAll() {
   renderInventory();
   renderIndex();
   renderRebirth();
+  renderLeaderboard();
 }
 
 function renderTopBar() {
@@ -608,6 +615,47 @@ function renderRebirth() {
 
   content.appendChild(card);
 }
+
+function renderLeaderboard() {
+  const list = $("#leaderboard-list");
+  list.innerHTML = "";
+
+  if (cachedLeaderboard.length === 0) {
+    list.innerHTML = `<div class="empty-hint">Noch keine Einträge – lade kurz…</div>`;
+    return;
+  }
+
+  const myId = getOrCreatePlayerId();
+  cachedLeaderboard.forEach((entry, i) => {
+    const row = document.createElement("div");
+    row.className = "leaderboard-row" + (entry.id === myId ? " me" : "");
+    row.innerHTML = `
+      <div class="leaderboard-rank">#${i + 1}</div>
+      <div class="leaderboard-name">${entry.name || "Anonym"}</div>
+      <div class="leaderboard-score">${coinIcon()} ${formatNumber(entry.moneyPerSec || 0)}/s</div>
+    `;
+    list.appendChild(row);
+  });
+}
+
+async function refreshLeaderboard() {
+  try {
+    await submitScore(totalMoneyPerSecond(state));
+    cachedLeaderboard = await fetchLeaderboard();
+    $("#leaderboard-updated").textContent = `Aktualisiert: ${new Date().toLocaleTimeString()}`;
+    renderLeaderboard();
+  } catch (err) {
+    $("#leaderboard-updated").textContent = "Rangliste gerade nicht erreichbar";
+  }
+}
+
+$("#leaderboard-name-input").value = getPlayerName();
+$("#leaderboard-name-save").addEventListener("click", () => {
+  const saved = setPlayerName($("#leaderboard-name-input").value);
+  $("#leaderboard-name-input").value = saved;
+  toast(`Name gespeichert: ${saved}`);
+  refreshLeaderboard();
+});
 
 $("#auto-equip-btn").addEventListener("click", () => {
   autoEquipBest(state);

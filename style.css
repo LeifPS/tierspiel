@@ -316,6 +316,42 @@ button:active { transform: scale(0.97); }
 
 .rebirth-missing { color: var(--danger); font-size: 0.85rem; margin-top: 12px; }
 
+/* ---------- Rangliste ---------- */
+#leaderboard-updated { font-size: 0.8rem; color: var(--text-dim); }
+
+.leaderboard-name-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  max-width: 420px;
+}
+.leaderboard-name-row input {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-soft);
+  background: var(--bg-deep);
+  color: var(--text-main);
+  font-size: 0.9rem;
+}
+.leaderboard-name-row input:focus { outline: 2px solid var(--accent); }
+
+.leaderboard-row {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  margin-bottom: 8px;
+}
+.leaderboard-row.me { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.leaderboard-rank { font-family: 'Baloo 2', sans-serif; font-weight: 700; color: var(--text-dim); }
+.leaderboard-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.leaderboard-score { color: var(--success); font-weight: 700; white-space: nowrap; }
+
 .card-name { font-weight: 700; font-family: 'Baloo 2', sans-serif; }
 .card-rarity {
   display: inline-block;

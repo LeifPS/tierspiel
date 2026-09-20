@@ -25,6 +25,7 @@
     <button class="tab-btn" data-tab="pets"><span class="tab-icon">🐾</span><span class="tab-label">Tiere</span></button>
     <button class="tab-btn" data-tab="index"><span class="tab-icon">📖</span><span class="tab-label">Index</span></button>
     <button class="tab-btn" data-tab="rebirth"><span class="tab-icon">🔁</span><span class="tab-label">Rebirth</span></button>
+    <button class="tab-btn" data-tab="leaderboard"><span class="tab-icon">🏆</span><span class="tab-label">Rangliste</span></button>
   </div>
 
   <div id="panel-shop" class="tab-panel active">
@@ -62,6 +63,18 @@
   <div id="panel-rebirth" class="tab-panel">
     <div class="panel-header"><span>Gib Münzen + ein bestimmtes Tier ab für dauerhafte Boni</span></div>
     <div id="rebirth-content"></div>
+  </div>
+
+  <div id="panel-leaderboard" class="tab-panel">
+    <div class="panel-header">
+      <span>Beste Geld/Sekunde – wird alle 2 Minuten aktualisiert</span>
+      <span id="leaderboard-updated"></span>
+    </div>
+    <div class="leaderboard-name-row">
+      <input id="leaderboard-name-input" type="text" maxlength="20" placeholder="Dein Name">
+      <button id="leaderboard-name-save" class="action-btn">Speichern</button>
+    </div>
+    <div id="leaderboard-list"></div>
   </div>
 </div>
 
