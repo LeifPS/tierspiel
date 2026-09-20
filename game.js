@@ -116,9 +116,14 @@ function hatchEgg(state, instanceId) {
 }
 
 // ---- Geld aus equippten Pets (auch für die Offline-Zeit) ------------------
+const MAX_OFFLINE_EARN_SECONDS = 2 * 60 * 60; // Offline-Geld wird auf 2h gedeckelt
+
 function accrueMoney(state) {
   const now = Date.now();
-  const elapsedSec = Math.max(0, (now - state.lastActiveMs) / 1000);
+  const elapsedSec = Math.min(
+    Math.max(0, (now - state.lastActiveMs) / 1000),
+    MAX_OFFLINE_EARN_SECONDS
+  );
   const perSec = totalMoneyPerSecond(state);
   const earned = perSec * elapsedSec;
   state.coins += earned;
