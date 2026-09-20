@@ -33,6 +33,11 @@ const ASSET_OVERRIDES = {
     knochen: "https://static.wikia.nocookie.net/pet-simulator/images/5/58/PS99_Bone_Egg.png",
     hoellen: "https://static.wikia.nocookie.net/pet-simulator/images/b/bc/PS99_Hell_Egg.png",
     metall: "https://static.wikia.nocookie.net/pet-simulator/images/4/4d/PS99_Metal_Egg.png",
+    regenbogen: "https://static.wikia.nocookie.net/pet-simulator/images/9/9f/PS99_Colorful_Egg.png",
+    runen: "https://static.wikia.nocookie.net/pet-simulator/images/3/3c/PS99_Runic_Egg.png",
+    schatten: "https://static.wikia.nocookie.net/pet-simulator/images/5/59/PS99_Eerie_Egg.png",
+    empyreum: "https://static.wikia.nocookie.net/pet-simulator/images/e/e6/PS99_Empyrean_Egg.png",
+    mosaik: "https://static.wikia.nocookie.net/pet-simulator/images/2/2c/PS99_Colorful_Mosaic_Egg.png",
   },
   pets: {
     fuchs: "https://static.wikia.nocookie.net/pets-go/images/7/73/Fox.png",
