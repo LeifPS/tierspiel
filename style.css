@@ -503,6 +503,22 @@ button:active { transform: scale(0.97); }
   color: #0c0a16;
   width: fit-content;
 }
+/* Ab Prismatisch ist rarity.color ein linear-gradient statt einer festen
+   Farbe - der Verlauf wird hier sanft hin- und herbewegt statt statt zu
+   stehen (background-size größer als das Badge, background-position
+   animiert). !important nötig, weil das Inline-"background"-Shorthand
+   sonst background-size wieder auf "auto" zurücksetzt. */
+.rarity-gradient-anim {
+  background-size: 300% 300% !important;
+  animation: rarity-gradient-shift 3s ease-in-out infinite alternate;
+}
+@keyframes rarity-gradient-shift {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rarity-gradient-anim { animation: none; background-position: 50% 50%; }
+}
 .card-stat { font-size: 0.8rem; color: var(--text-dim); }
 
 .buy-btn {

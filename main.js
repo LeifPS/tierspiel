@@ -155,6 +155,14 @@ function createArtEl(kind, id, label, rarityColor, locked = false, dimmed = fals
   return wrap;
 }
 
+// Seltenheits-Badge (Name-Pille). Ab Prismatisch sind die Farben ein
+// linear-gradient statt einer einzelnen Farbe - der bekommt zusätzlich
+// eine Klasse, die den Verlauf sanft hin und her animiert.
+function rarityBadgeHTML(rarity) {
+  const animated = rarity.color.startsWith("linear") ? " rarity-gradient-anim" : "";
+  return `<div class="card-rarity${animated}" style="background:${rarity.color}">${rarity.name}</div>`;
+}
+
 $("#reset-btn").addEventListener("click", () => {
   if (!confirm("Spielstand wirklich löschen und neu anfangen?")) return;
   resetPlayer();
@@ -380,7 +388,7 @@ function renderShop() {
     info.className = "card-info";
     info.innerHTML = `
       <div class="card-name">${egg.name}</div>
-      <div class="card-rarity" style="background:${rarity.color}">${rarity.name}</div>
+      ${rarityBadgeHTML(rarity)}
       <div class="card-stat">🍀 ${formatNumber(egg.luckPercent)}% Glück</div>
       <div class="card-stat">⏱ ${formatDuration(egg.hatchSeconds)}</div>
       <div class="card-stat">📦 Lager: ${soldOut ? "Ausverkauft" : stock}</div>
@@ -603,7 +611,7 @@ function renderInventory() {
     info.className = "card-info";
     info.innerHTML = `
       <div class="card-name">${mutationVisuals ? mutationVisuals.emoji + " " : ""}${pet.name}</div>
-      <div class="card-rarity" style="background:${rarity.color}">${rarity.name}</div>
+      ${rarityBadgeHTML(rarity)}
       ${mutation ? `<div class="${mutationVisuals.badgeClass}">${mutation.name} ×${mutation.moneyMultiplier}</div>` : ""}
       <div class="card-stat">⚖️ ${inst.weightKg < 1 ? (inst.weightKg * 1000).toFixed(1) + "g" : formatNumber(inst.weightKg) + "kg"} (${inst.ratio.toFixed(2)}x)</div>
       <div class="card-stat">${coinIcon()} ${formatNumber(inst.moneyPerSec)}/s</div>
@@ -667,14 +675,14 @@ function renderIndex() {
     if (discovered) {
       info.innerHTML = `
         <div class="card-name">${egg.name}</div>
-        <div class="card-rarity" style="background:${rarity.color}">${rarity.name}</div>
+        ${rarityBadgeHTML(rarity)}
         <div class="card-stat">🍀 ${formatNumber(egg.luckPercent)}% Glück</div>
         <div class="card-stat">⏱ ${formatDuration(egg.hatchSeconds)}</div>
       `;
     } else {
       info.innerHTML = `
         <div class="card-name">???</div>
-        <div class="card-rarity" style="background:${rarity.color}">${rarity.name}</div>
+        ${rarityBadgeHTML(rarity)}
       `;
     }
     card.appendChild(info);
@@ -698,7 +706,7 @@ function renderIndex() {
     if (discovered) {
       info.innerHTML = `
         <div class="card-name">${pet.name}</div>
-        <div class="card-rarity" style="background:${rarity.color}">${rarity.name}</div>
+        ${rarityBadgeHTML(rarity)}
         <div class="card-stat">🍀 Chance: 1 in ${formatNumber(pet.baseChanceCache)}</div>
         <div class="card-stat">⚖️ Basis: ${pet.baseWeightKg < 1 ? (pet.baseWeightKg * 1000).toFixed(1) + "g" : formatNumber(pet.baseWeightKg) + "kg"}</div>
         <div class="card-stat">${coinIcon()} Basis: ${formatNumber(pet.baseMoney)}/s</div>
@@ -706,7 +714,7 @@ function renderIndex() {
     } else {
       info.innerHTML = `
         <div class="card-name">???</div>
-        <div class="card-rarity" style="background:${rarity.color}">${rarity.name}</div>
+        ${rarityBadgeHTML(rarity)}
       `;
     }
     card.appendChild(info);
