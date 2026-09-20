@@ -440,6 +440,7 @@ function renderIndex() {
       info.innerHTML = `
         <div class="card-name">${pet.name}</div>
         <div class="card-rarity" style="background:${rarity.color}">${rarity.name}</div>
+        <div class="card-stat">🍀 Chance: 1 in ${formatNumber(pet.baseChanceCache)}</div>
         <div class="card-stat">⚖️ Basis: ${pet.baseWeightKg < 1 ? (pet.baseWeightKg * 1000).toFixed(1) + "g" : formatNumber(pet.baseWeightKg) + "kg"}</div>
         <div class="card-stat">${coinIcon()} Basis: ${formatNumber(pet.baseMoney)}/s</div>
       `;
