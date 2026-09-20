@@ -16,7 +16,16 @@ import {
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
+const ASSET_OVERRIDES = {
+  eggs: {
+    standard: "https://static.wikia.nocookie.net/pet-simulator/images/5/58/PS99_Cracked_Egg.png/revision/latest/scale-to-width-down/50?cb=20231203134928",
+    holz: "https://static.wikia.nocookie.net/pet-simulator/images/0/04/PS99_Wood_Egg.png/revision/latest/scale-to-width-down/50?cb=20231203135015",
+  },
+};
+
 function assetSrc(kind, id) {
+  const override = ASSET_OVERRIDES[kind]?.[id];
+  if (override) return override;
   // Später: echte Bilder einfach unter /assets/{kind}/{id}.png ablegen –
   // wird automatisch verwendet, sobald die Datei existiert.
   return `assets/${kind}/${id}.png`;
