@@ -56,6 +56,11 @@ const ASSET_OVERRIDES = {
     schattendominus: "https://static.wikia.nocookie.net/pets-go/images/1/1c/Shadow_Dominus.png",
     wyvern: "https://static.wikia.nocookie.net/pets-go/images/e/e3/Wyvern_of_Hades.png",
     tikidominus: "https://static.wikia.nocookie.net/pets-go/images/6/6d/Tiki_Dominus.png",
+    a36: "https://static.wikia.nocookie.net/pets-go/images/5/5b/A-36.png",
+    pegasus: "https://static.wikia.nocookie.net/pets-go/images/4/4a/Pegasus.png",
+    phoenix: "https://static.wikia.nocookie.net/pets-go/images/c/c1/Phoenix.png",
+    sphinx: "https://static.wikia.nocookie.net/pets-go/images/0/0e/Sphinx.png",
+    narwal: "https://static.wikia.nocookie.net/pets-go/images/e/ed/Narwhal.png",
   },
 };
 
