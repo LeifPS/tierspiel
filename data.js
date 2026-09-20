@@ -299,8 +299,8 @@ const MUTATIONS = [
     moneyMultiplier: 3,
   },
   {
-    id: "diamond",
-    name: "Diamant",
+    id: "rainbow",
+    name: "Regenbogen",
     chance: 0.01, // 1% pro Ausbrüten, für jedes Pet gleich
     moneyMultiplier: 7,
   },

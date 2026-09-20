@@ -112,7 +112,7 @@ function assetSrc(kind, id) {
 // neue Mutation nur hier + in data.js (MUTATIONS) ergänzt werden muss.
 const MUTATION_VISUALS = {
   gold: { emoji: "✨", badgeClass: "gold-badge", glowColor: "#ffd54f", placeholderGradient: "linear-gradient(135deg, #ffd54f, #ffb703)" },
-  diamond: { emoji: "💎", badgeClass: "diamond-badge", glowColor: "#8fe3ff", placeholderGradient: "linear-gradient(135deg, #e8fbff, #4fc3f7)" },
+  rainbow: { emoji: "🌈", badgeClass: "rainbow-badge", glowColor: "#ff6ec7", placeholderGradient: "linear-gradient(90deg, #ff3b3b, #ff9f1c, #ffe135, #4ade80, #38bdf8, #a78bfa)" },
 };
 
 function renderPlaceholderIcon(container, label, rarityColor, locked = false, mutation = null) {
