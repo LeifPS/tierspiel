@@ -61,6 +61,11 @@ const ASSET_OVERRIDES = {
     phoenix: "https://static.wikia.nocookie.net/pets-go/images/c/c1/Phoenix.png",
     sphinx: "https://static.wikia.nocookie.net/pets-go/images/0/0e/Sphinx.png",
     narwal: "https://static.wikia.nocookie.net/pets-go/images/e/ed/Narwhal.png",
+    kitsune: "https://static.wikia.nocookie.net/pets-go/images/4/41/Kitsune_Fox.png",
+    diamanthase: "https://static.wikia.nocookie.net/pets-go/images/e/e2/Diamond_Bunny.png",
+    hydra: "https://static.wikia.nocookie.net/pets-go/images/9/9d/Hydra.png",
+    engelhund: "https://static.wikia.nocookie.net/pets-go/images/c/ce/Angel_Dog.png",
+    kraken: "https://static.wikia.nocookie.net/pets-go/images/d/d3/Kraken.png",
   },
 };
 
