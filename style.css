@@ -209,7 +209,17 @@ button:active { transform: scale(0.97); }
 
 .card:not(.locked):not(.sold-out):active { transform: translateY(1px) scale(0.985); }
 
+@media (hover: hover) {
+  .card:not(.locked):not(.sold-out):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+  }
+}
+
 .card.equipped { box-shadow: 0 0 0 2px var(--accent) inset, 0 4px 14px rgba(0, 0, 0, 0.18); }
+
+.card.sold-out { opacity: 0.55; }
+.card.sold-out .art img { filter: grayscale(0.6); }
 
 .art {
   width: 100%;
@@ -256,6 +266,8 @@ button:active { transform: scale(0.97); }
 .placeholder-icon.locked { background: #000 !important; color: #000; }
 
 .card.locked { border-color: var(--border-soft) !important; opacity: 0.85; }
+
+#inventory-sort-switch { margin-bottom: 14px; width: fit-content; }
 
 .index-switch {
   display: flex;
@@ -617,6 +629,7 @@ button:active { transform: scale(0.97); }
   z-index: 100;
 }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
+#toast.toast-error { border-color: var(--danger); color: #ffd7d5; }
 
 @media (max-width: 500px) {
   .grid { grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 10px; }

@@ -61,8 +61,13 @@ function getOrRotateShop() {
   if (existing && existing.rotationIndex === rotationIndex) {
     return existing; // gleiches Zeitfenster – lokal ggf. schon gekaufte Bestände behalten
   }
+  const stock = rollShopStockForRotation(rotationIndex);
   return writeShop({
-    stock: rollShopStockForRotation(rotationIndex),
+    stock,
+    // Unveränderter Bestand zum Rotationsstart – damit ein leergekauftes Ei
+    // im UI weiterhin (ausgegraut) als "war diese Rotation im Angebot"
+    // erkennbar bleibt, auch nach einem Neuladen der Seite.
+    rolledStock: { ...stock },
     rotatedAtMs: rotationIndex * ROTATION_MS,
     rotationIndex,
   });

@@ -159,6 +159,12 @@ let cachedLeaderboard = [];
 const PAGE_SIZE = 50;
 let inventoryPage = 0;
 let hatcheryPage = 0;
+let inventorySort = "money";
+const INVENTORY_SORTERS = {
+  money: (a, b) => b.moneyPerSec - a.moneyPerSec,
+  rarity: (a, b) => RARITY_INDEX[PET_BY_ID[b.petId].rarity] - RARITY_INDEX[PET_BY_ID[a.petId].rarity],
+  weight: (a, b) => b.weightKg - a.weightKg,
+};
 
 bootGame();
 
@@ -206,9 +212,10 @@ function refreshShop() {
   renderShop();
 }
 
-function toast(msg) {
+function toast(msg, type = "success") {
   const el = $("#toast");
   el.textContent = msg;
+  el.className = "toast-" + type;
   el.classList.add("show");
   clearTimeout(toast._t);
   toast._t = setTimeout(() => el.classList.remove("show"), 4000);
@@ -302,15 +309,17 @@ function renderTopBar() {
 function renderShop() {
   const grid = $("#shop-grid");
   grid.innerHTML = "";
-  const eggsInStock = EGGS.filter((egg) => (shop.stock?.[egg.id] || 0) > 0);
-  if (eggsInStock.length === 0) {
+  const rolledStock = shop.rolledStock || shop.stock; // Fallback für alte Shop-Daten ohne rolledStock
+  const eggsInRotation = EGGS.filter((egg) => (rolledStock?.[egg.id] || 0) > 0);
+  if (eggsInRotation.length === 0) {
     grid.innerHTML = `<div class="empty-hint">Gerade keine Eier im Angebot. Warte auf die nächste Rotation!</div>`;
   }
-  for (const egg of eggsInStock) {
-    const stock = shop.stock[egg.id];
+  for (const egg of eggsInRotation) {
+    const stock = shop.stock?.[egg.id] || 0;
+    const soldOut = stock <= 0;
     const rarity = getRarity(egg.rarity);
     const card = document.createElement("div");
-    card.className = "card egg-card";
+    card.className = "card egg-card" + (soldOut ? " sold-out" : "");
     card.style.setProperty("--rarity-color", rarity.color.startsWith("linear") ? "#888" : rarity.color);
     if (rarity.color.startsWith("linear")) card.style.borderImage = "";
 
@@ -324,14 +333,14 @@ function renderShop() {
       <div class="card-rarity" style="background:${rarity.color}">${rarity.name}</div>
       <div class="card-stat">🍀 ${formatNumber(egg.luckPercent)}% Glück</div>
       <div class="card-stat">⏱ ${formatDuration(egg.hatchSeconds)}</div>
-      <div class="card-stat">📦 Lager: ${stock}</div>
+      <div class="card-stat">📦 Lager: ${soldOut ? "Ausverkauft" : stock}</div>
     `;
     card.appendChild(info);
 
     const btn = document.createElement("button");
     btn.className = "buy-btn";
-    btn.innerHTML = `Kaufen · ${coinIcon()} ${formatNumber(egg.basePrice)}`;
-    btn.disabled = state.coins < egg.basePrice;
+    btn.innerHTML = soldOut ? "Ausverkauft" : `Kaufen · ${coinIcon()} ${formatNumber(egg.basePrice)}`;
+    btn.disabled = soldOut || state.coins < egg.basePrice;
     btn.addEventListener("click", () => handleBuy(egg));
     card.appendChild(btn);
 
@@ -348,11 +357,11 @@ function updateShopRotationText() {
 }
 
 function handleBuy(egg) {
-  if (state.coins < egg.basePrice) { toast("Nicht genug Münzen."); return; }
+  if (state.coins < egg.basePrice) { toast("Nicht genug Münzen.", "error"); return; }
   try {
     buyEgg(egg.id);
   } catch (err) {
-    toast(err.message || "Kauf fehlgeschlagen.");
+    toast(err.message || "Kauf fehlgeschlagen.", "error");
     refreshShop();
     return;
   }
@@ -369,7 +378,7 @@ async function hatchAndReveal(instanceId) {
   try {
     result = hatchEgg(state, instanceId);
   } catch (err) {
-    toast(err.message);
+    toast(err.message, "error");
     return;
   }
   savePlayer(state);
@@ -485,6 +494,15 @@ function renderHatchery() {
   });
 }
 
+$$("#inventory-sort-switch .index-switch-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    inventorySort = btn.dataset.sort;
+    inventoryPage = 0;
+    $$("#inventory-sort-switch .index-switch-btn").forEach((b) => b.classList.toggle("active", b === btn));
+    renderInventory();
+  });
+});
+
 function renderInventory() {
   const grid = $("#inventory-grid");
   grid.innerHTML = "";
@@ -493,7 +511,7 @@ function renderInventory() {
     renderPaginationControls("inventory-pagination", 0, 0, () => {});
     return;
   }
-  const sortedAll = [...state.pets].sort((a, b) => b.moneyPerSec - a.moneyPerSec);
+  const sortedAll = [...state.pets].sort(INVENTORY_SORTERS[inventorySort]);
   const totalPages = Math.max(1, Math.ceil(sortedAll.length / PAGE_SIZE));
   inventoryPage = Math.min(inventoryPage, totalPages - 1);
   const sorted = sortedAll.slice(inventoryPage * PAGE_SIZE, (inventoryPage + 1) * PAGE_SIZE);
@@ -525,7 +543,7 @@ function renderInventory() {
         savePlayer(state);
         renderAll();
       } catch (err) {
-        toast(err.message);
+        toast(err.message, "error");
       }
     });
     card.appendChild(btn);
@@ -689,7 +707,7 @@ function renderRebirth() {
     try {
       result = performRebirth(state);
     } catch (err) {
-      toast(err.message);
+      toast(err.message, "error");
       return;
     }
     savePlayer(state);
