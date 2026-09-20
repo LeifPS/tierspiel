@@ -485,6 +485,21 @@ button:active { transform: scale(0.97); }
   transition: opacity 0.35s ease, transform 0.35s ease;
 }
 
+/* Runder, weicher Glow hinter dem Pet-Bild (statt eckigem box-shadow um das
+   viereckige Bild) – eigenes Element, damit die Form unabhängig vom
+   (viereckigen) Bild ein Kreis bleibt. */
+.reveal-slot .slot-glow {
+  position: absolute;
+  inset: -25%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--glow-color, #fff) 0%, transparent 70%);
+  opacity: 0;
+  filter: blur(3px);
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.reveal-slot.opened .slot-glow { opacity: 0.85; }
+
 /* Kein Kasten/Hintergrund um Ei- oder Tierbild – nur das Bild selbst schwebt frei. */
 .reveal-slot .slot-egg-art,
 .reveal-slot .slot-pet-art {
@@ -506,10 +521,10 @@ button:active { transform: scale(0.97); }
   opacity: 1;
   transform: scale(1);
   animation: pet-pop-in 0.45s cubic-bezier(0.2, 0.7, 0.3, 1);
-  box-shadow: 0 0 22px var(--glow-color, rgba(255,255,255,0.5));
 }
 
 .reveal-slot.fading { opacity: 0; transform: scale(0.85); }
+.reveal-slot.fading .slot-glow { opacity: 0; }
 
 .slot-label {
   position: absolute;

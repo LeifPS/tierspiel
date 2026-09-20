@@ -253,6 +253,10 @@ function playHatchRevealBatch(results) {
     slot.className = "reveal-slot";
     slot.style.setProperty("--glow-color", glowColor);
 
+    const glow = document.createElement("div");
+    glow.className = "slot-glow";
+    slot.appendChild(glow);
+
     const eggArt = createArtEl("eggs", egg.id, egg.name, rarity.color);
     eggArt.classList.add("slot-egg-art");
     slot.appendChild(eggArt);
