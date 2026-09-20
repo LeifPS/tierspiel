@@ -1,13 +1,9 @@
-import {
-  auth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  signOut, onAuthStateChanged,
-} from "./firebase.js";
-import { EGGS, PETS, getRarity, formatNumber, formatDuration } from "./data.js";
+import { EGGS, PETS, RARITY_INDEX, getRarity, formatNumber, formatDuration } from "./data.js";
 import { getOrRotateShop, buyEgg, msUntilNextRotation, ROTATION_MS } from "./shop.js";
 import {
-  EGG_BY_ID, PET_BY_ID, loadPlayer, savePlayer, startHatching,
+  EGG_BY_ID, PET_BY_ID, loadPlayer, savePlayer, resetPlayer, startHatching,
   isHatchingFinished, hatchEgg, accrueMoney, totalMoneyPerSecond, equipPet, unequipPet,
-  timeRemainingMs,
+  autoEquipBest, timeRemainingMs,
 } from "./game.js";
 
 // ---------------------------------------------------------------------------
@@ -47,6 +43,8 @@ const ASSET_OVERRIDES = {
     hase: "https://static.wikia.nocookie.net/pets-go/images/8/82/Bunny.png",
     hund: "https://static.wikia.nocookie.net/pets-go/images/3/35/Dog.png",
     biene: "https://static.wikia.nocookie.net/pets-go/images/5/56/Bee.png",
+    katze: "https://static.wikia.nocookie.net/pets-go/images/0/05/Cat.png",
+    kosmosdrache: "https://static.wikia.nocookie.net/pets-go/images/3/3e/Cosmic_Dragon.png",
   },
 };
 
@@ -78,115 +76,48 @@ function createArtEl(kind, id, label, rarityColor, locked = false) {
   return wrap;
 }
 
-// ---------------------------------------------------------------------------
-// Auth-UI
-// ---------------------------------------------------------------------------
-const authScreen = $("#auth-screen");
-const gameScreen = $("#game-screen");
-const authForm = $("#auth-form");
-const authError = $("#auth-error");
-const authTitle = $("#auth-title");
-const authSubmitBtn = $("#auth-submit");
-const authToggleBtn = $("#auth-toggle");
-let authMode = "login"; // oder "register"
-
-authToggleBtn.addEventListener("click", () => {
-  authMode = authMode === "login" ? "register" : "login";
-  authTitle.textContent = authMode === "login" ? "Anmelden" : "Konto erstellen";
-  authSubmitBtn.textContent = authMode === "login" ? "Anmelden" : "Konto erstellen";
-  authToggleBtn.textContent = authMode === "login"
-    ? "Noch kein Konto? Registrieren"
-    : "Schon ein Konto? Anmelden";
-  authError.textContent = "";
+$("#reset-btn").addEventListener("click", () => {
+  if (!confirm("Spielstand wirklich löschen und neu anfangen?")) return;
+  resetPlayer();
+  location.reload();
 });
-
-authForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  authError.textContent = "";
-  const email = $("#auth-email").value.trim();
-  const password = $("#auth-password").value;
-  authSubmitBtn.disabled = true;
-  try {
-    if (authMode === "login") {
-      await signInWithEmailAndPassword(auth, email, password);
-    } else {
-      if (password.length < 6) throw { code: "custom/short-password" };
-      await createUserWithEmailAndPassword(auth, email, password);
-    }
-  } catch (err) {
-    authError.textContent = translateAuthError(err.code);
-  } finally {
-    authSubmitBtn.disabled = false;
-  }
-});
-
-function translateAuthError(code) {
-  const map = {
-    "auth/invalid-email": "Ungültige E-Mail-Adresse.",
-    "auth/user-not-found": "Kein Konto mit dieser E-Mail gefunden.",
-    "auth/wrong-password": "Falsches Passwort.",
-    "auth/invalid-credential": "E-Mail oder Passwort ist falsch.",
-    "auth/email-already-in-use": "Diese E-Mail wird schon verwendet.",
-    "auth/weak-password": "Das Passwort muss mindestens 6 Zeichen haben.",
-    "custom/short-password": "Das Passwort muss mindestens 6 Zeichen haben.",
-  };
-  return map[code] || "Etwas ist schiefgelaufen. Versuch es nochmal.";
-}
-
-$("#logout-btn").addEventListener("click", () => signOut(auth));
 
 // ---------------------------------------------------------------------------
 // Spielzustand & Haupt-Loop
 // ---------------------------------------------------------------------------
-let uid = null;
 let state = null;
 let shop = null;
-let saveTimer = null;
 
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    uid = user.uid;
-    authScreen.classList.add("hidden");
-    gameScreen.classList.remove("hidden");
-    await bootGame();
-  } else {
-    uid = null;
-    state = null;
-    if (saveTimer) clearInterval(saveTimer);
-    gameScreen.classList.add("hidden");
-    authScreen.classList.remove("hidden");
-  }
-});
+bootGame();
 
-async function bootGame() {
-  state = await loadPlayer(uid);
+function bootGame() {
+  state = loadPlayer();
   const earned = accrueMoney(state); // rechnet Offline-Geld ab
-  await savePlayer(uid, state);
+  savePlayer(state);
 
   if (earned > 1) {
     toast(`Willkommen zurück! +${formatNumber(earned)} Münzen verdient, während du weg warst.`);
   }
 
-  await refreshShop();
+  refreshShop();
   renderAll();
 
   // Live-Ticker: einmal pro Sekunde Geld gutschreiben & Anzeige aktualisieren
   setInterval(() => {
-    if (!state) return;
     accrueMoney(state);
     renderAll();
   }, 1000);
 
   // Alle 5s speichern, damit bei Tab schließen nicht zu viel Fortschritt fehlt
-  saveTimer = setInterval(() => { if (state) savePlayer(uid, state); }, 5000);
-  window.addEventListener("beforeunload", () => { if (state) savePlayer(uid, state); });
+  setInterval(() => savePlayer(state), 5000);
+  window.addEventListener("beforeunload", () => savePlayer(state));
 
   // Shop alle 15s auf Rotation prüfen (leichtgewichtig)
   setInterval(refreshShop, 15000);
 }
 
-async function refreshShop() {
-  shop = await getOrRotateShop();
+function refreshShop() {
+  shop = getOrRotateShop();
   renderShop();
 }
 
@@ -198,8 +129,43 @@ function toast(msg) {
   toast._t = setTimeout(() => el.classList.remove("show"), 4000);
 }
 
-function showHatchSummary(hatched) {
-  toast(`Geschlüpft: ${hatched.pet.name} (${getRarity(hatched.pet.rarity).name}, ${hatched.instance.ratio.toFixed(2)}x)`);
+function revealTierClass(rarityId) {
+  const idx = RARITY_INDEX[rarityId] ?? 0;
+  if (idx <= 1) return "tier-common";
+  if (idx <= 3) return "tier-rare";
+  if (idx <= 5) return "tier-epic";
+  return "tier-legendary";
+}
+
+function playHatchReveal(result) {
+  const { pet, instance } = result;
+  const rarity = getRarity(pet.rarity);
+  const overlay = $("#reveal-overlay");
+
+  overlay.className = `reveal-overlay ${revealTierClass(pet.rarity)}`;
+
+  const artHost = $("#reveal-art");
+  artHost.innerHTML = "";
+  artHost.appendChild(createArtEl("pets", pet.id, pet.name, rarity.color));
+
+  const rarityEl = $("#reveal-rarity");
+  rarityEl.textContent = rarity.name;
+  rarityEl.style.background = rarity.color;
+  $("#reveal-name").textContent = pet.name;
+  $("#reveal-stats").innerHTML = `
+    ⚖️ ${instance.weightKg < 1 ? (instance.weightKg * 1000).toFixed(1) + "g" : formatNumber(instance.weightKg) + "kg"}
+    (${instance.ratio.toFixed(2)}x) · 💰 ${formatNumber(instance.moneyPerSec)}/s
+  `;
+
+  return new Promise((resolve) => {
+    const closeBtn = $("#reveal-close");
+    const onClose = () => {
+      overlay.classList.add("hidden");
+      closeBtn.removeEventListener("click", onClose);
+      resolve();
+    };
+    closeBtn.addEventListener("click", onClose);
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -259,20 +225,20 @@ function renderShop() {
   rotationEl.textContent = `Nächste Rotation in ${formatDuration(remaining / 1000)}`;
 }
 
-async function handleBuy(egg) {
+function handleBuy(egg) {
   if (state.coins < egg.basePrice) { toast("Nicht genug Münzen."); return; }
   try {
-    await buyEgg(egg.id);
+    buyEgg(egg.id);
   } catch (err) {
     toast(err.message || "Kauf fehlgeschlagen.");
-    await refreshShop();
+    refreshShop();
     return;
   }
   state.coins -= egg.basePrice;
   startHatching(state, egg.id);
-  await savePlayer(uid, state);
+  savePlayer(state);
   renderAll();
-  await refreshShop();
+  refreshShop();
   toast(`${egg.name} gekauft – es brütet jetzt!`);
 }
 
@@ -314,9 +280,9 @@ function renderHatchery() {
           toast(err.message);
           return;
         }
-        await savePlayer(uid, state);
-        showHatchSummary(result);
+        savePlayer(state);
         renderAll();
+        await playHatchReveal(result);
       });
       card.appendChild(btn);
     }
@@ -353,11 +319,11 @@ function renderInventory() {
     const btn = document.createElement("button");
     btn.className = "buy-btn" + (equipped ? " unequip" : "");
     btn.textContent = equipped ? "Ablegen" : "Ausrüsten";
-    btn.addEventListener("click", async () => {
+    btn.addEventListener("click", () => {
       try {
         if (equipped) unequipPet(state, inst.instanceId);
         else equipPet(state, inst.instanceId);
-        await savePlayer(uid, state);
+        savePlayer(state);
         renderAll();
       } catch (err) {
         toast(err.message);
@@ -429,6 +395,13 @@ function renderIndex() {
     petGrid.appendChild(card);
   }
 }
+
+$("#auto-equip-btn").addEventListener("click", () => {
+  autoEquipBest(state);
+  savePlayer(state);
+  renderAll();
+  toast("Die stärksten Tiere sind jetzt ausgerüstet!");
+});
 
 // Nav zwischen Tabs (Shop / Brüten / Tiere)
 $$(".tab-btn").forEach((btn) => {

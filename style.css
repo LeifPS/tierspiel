@@ -29,55 +29,6 @@ body {
 
 .hidden { display: none !important; }
 
-/* ---------- Auth ---------- */
-#auth-screen {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-
-.auth-card {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-lg);
-  padding: 36px 32px;
-  width: 100%;
-  max-width: 380px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-}
-
-.auth-card h1 {
-  font-family: 'Baloo 2', sans-serif;
-  font-size: 2rem;
-  margin: 0 0 4px;
-  background: linear-gradient(135deg, #ffb703, #ff6d00, #e91e8c);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.auth-card .tagline {
-  color: var(--text-dim);
-  margin: 0 0 24px;
-  font-size: 0.9rem;
-}
-
-#auth-title { font-family: 'Baloo 2', sans-serif; font-weight: 700; margin: 0 0 16px; }
-
-.auth-card input {
-  width: 100%;
-  padding: 12px 14px;
-  margin-bottom: 12px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-soft);
-  background: var(--bg-deep);
-  color: var(--text-main);
-  font-size: 0.95rem;
-}
-.auth-card input:focus { outline: 2px solid var(--accent); }
-
 .primary-btn {
   width: 100%;
   padding: 12px;
@@ -92,19 +43,6 @@ body {
 }
 .primary-btn:hover { transform: translateY(-1px); }
 .primary-btn:disabled { opacity: 0.6; cursor: default; transform: none; }
-
-.link-btn {
-  background: none;
-  border: none;
-  color: var(--text-dim);
-  text-decoration: underline;
-  cursor: pointer;
-  margin-top: 14px;
-  font-size: 0.85rem;
-  display: block;
-}
-
-#auth-error { color: var(--danger); font-size: 0.85rem; min-height: 1.2em; margin-top: 8px; }
 
 /* ---------- Game shell ---------- */
 #game-screen { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
@@ -142,7 +80,7 @@ body {
 #coins-display { color: var(--accent); }
 #income-display { color: var(--success); }
 
-#logout-btn {
+#reset-btn {
   background: none;
   border: 1px solid var(--border-soft);
   color: var(--text-dim);
@@ -271,6 +209,116 @@ body {
 .progress-fill { height: 100%; background: linear-gradient(90deg, #ffb703, #4caf50); }
 
 .empty-hint { color: var(--text-dim); padding: 30px; text-align: center; grid-column: 1 / -1; }
+
+.action-btn {
+  background: linear-gradient(135deg, #ff8f00, #ffb703);
+  color: #221400;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+/* ---------- Ei-Reveal-Cutscene ---------- */
+.reveal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 6, 20, 0.85);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  overflow: hidden;
+}
+.reveal-overlay.hidden { display: none; }
+
+.reveal-rays {
+  position: absolute;
+  inset: -60%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.reveal-card {
+  position: relative;
+  background: var(--bg-panel);
+  border: 2px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  width: min(90vw, 320px);
+  text-align: center;
+  animation: reveal-pop 0.4s ease;
+  box-shadow: 0 0 30px rgba(255, 255, 255, 0.12);
+}
+
+@keyframes reveal-pop {
+  from { transform: scale(0.5); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes reveal-pulse {
+  0%, 100% { box-shadow: 0 0 30px var(--glow-color, rgba(255,255,255,0.25)); }
+  50% { box-shadow: 0 0 70px var(--glow-color, rgba(255,255,255,0.55)); }
+}
+@keyframes reveal-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+@keyframes reveal-spin {
+  to { transform: rotate(360deg); }
+}
+
+.reveal-art {
+  width: 150px;
+  height: 150px;
+  margin: 0 auto 16px;
+  border-radius: var(--radius-md);
+  background: var(--bg-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.reveal-art img { width: 100%; height: 100%; object-fit: contain; }
+
+.reveal-rarity {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 999px;
+  color: #0c0a16;
+  margin-bottom: 10px;
+}
+.reveal-name { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1.4rem; margin-bottom: 6px; }
+.reveal-stats { color: var(--text-dim); font-size: 0.85rem; margin-bottom: 20px; }
+
+/* Seltenheits-Stufen: je höher, desto auffälliger die Cutscene */
+.reveal-overlay.tier-rare .reveal-card {
+  --glow-color: rgba(33, 150, 243, 0.5);
+  border-color: #2196f3;
+  animation: reveal-pop 0.4s ease, reveal-pulse 1.8s ease-in-out infinite;
+}
+.reveal-overlay.tier-epic .reveal-card {
+  --glow-color: rgba(156, 39, 176, 0.55);
+  border-color: #9c27b0;
+  animation: reveal-pop 0.4s ease, reveal-pulse 1.3s ease-in-out infinite;
+}
+.reveal-overlay.tier-legendary .reveal-card {
+  --glow-color: rgba(255, 183, 3, 0.65);
+  border-color: #ffb703;
+  animation: reveal-pop 0.4s ease, reveal-shake 0.5s ease, reveal-pulse 0.9s ease-in-out infinite;
+}
+.reveal-overlay.tier-legendary .reveal-rays {
+  opacity: 1;
+  background: conic-gradient(from 0deg, transparent, rgba(255, 183, 3, 0.3), transparent 30%);
+  animation: reveal-spin 3s linear infinite;
+}
 
 /* ---------- Toast ---------- */
 #toast {

@@ -1,16 +1,11 @@
 // ============================================================
-// Globaler Shop – ein einziges Firestore-Dokument (shop/current),
-// das alle Spieler teilen. Da wir keine Cloud Function deployen,
-// übernimmt der Client die Rotation: Sobald jemand die Seite lädt
-// und die letzte Rotation älter als 5 Minuten ist, wird per
-// Transaktion ein neuer Shop-Zustand geschrieben. Die Transaktion
-// verhindert, dass zwei Spieler gleichzeitig unterschiedliche
-// Shops erzeugen.
+// Shop – rein lokal. Rotiert alle paar Minuten und merkt sich den
+// Zustand im localStorage, damit er auch nach einem Reload gleich
+// bleibt, bis die Rotationszeit abgelaufen ist.
 // ============================================================
-import { db, doc, getDoc, runTransaction, serverTimestamp } from "./firebase.js";
 import { EGGS } from "./data.js";
 
-const SHOP_REF_PATH = ["shop", "current"];
+const SHOP_KEY = "tierspiel_shop_v1";
 const ROTATION_MS = 5 * 60 * 1000;
 
 function randInt(min, max) {
@@ -31,42 +26,38 @@ function rollNewShopStock() {
   return stock;
 }
 
-async function getOrRotateShop() {
-  const ref = doc(db, ...SHOP_REF_PATH);
-  const result = await runTransaction(db, async (tx) => {
-    const snap = await tx.get(ref);
-    const now = Date.now();
-    if (!snap.exists()) {
-      const stock = rollNewShopStock();
-      const data = { stock, rotatedAtMs: now, rotatedAt: serverTimestamp() };
-      tx.set(ref, data);
-      return data;
-    }
-    const data = snap.data();
-    const age = now - (data.rotatedAtMs || 0);
-    if (age >= ROTATION_MS) {
-      const stock = rollNewShopStock();
-      const newData = { stock, rotatedAtMs: now, rotatedAt: serverTimestamp() };
-      tx.set(ref, newData);
-      return newData;
-    }
-    return data;
-  });
-  return result; // { stock, rotatedAtMs }
+function readShop() {
+  const raw = localStorage.getItem(SHOP_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
 }
 
-async function buyEgg(eggId) {
-  const ref = doc(db, ...SHOP_REF_PATH);
-  return runTransaction(db, async (tx) => {
-    const snap = await tx.get(ref);
-    if (!snap.exists()) throw new Error("Shop noch nicht initialisiert.");
-    const data = snap.data();
-    const current = data.stock?.[eggId] || 0;
-    if (current <= 0) throw new Error("Dieses Ei ist gerade nicht auf Lager.");
-    const newStock = { ...data.stock, [eggId]: current - 1 };
-    tx.update(ref, { stock: newStock });
-    return true;
-  });
+function writeShop(data) {
+  localStorage.setItem(SHOP_KEY, JSON.stringify(data));
+  return data;
+}
+
+function getOrRotateShop() {
+  const now = Date.now();
+  const existing = readShop();
+  if (!existing || now - (existing.rotatedAtMs || 0) >= ROTATION_MS) {
+    return writeShop({ stock: rollNewShopStock(), rotatedAtMs: now });
+  }
+  return existing;
+}
+
+function buyEgg(eggId) {
+  const data = readShop();
+  if (!data) throw new Error("Shop noch nicht initialisiert.");
+  const current = data.stock?.[eggId] || 0;
+  if (current <= 0) throw new Error("Dieses Ei ist gerade nicht auf Lager.");
+  data.stock[eggId] = current - 1;
+  writeShop(data);
+  return true;
 }
 
 function msUntilNextRotation(rotatedAtMs) {

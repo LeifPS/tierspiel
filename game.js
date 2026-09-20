@@ -1,7 +1,7 @@
 // ============================================================
 // Spiellogik – Spielerstand, Brüten (auch offline), Ausrüsten, Geld
+// Läuft komplett lokal: der Spielstand liegt im localStorage des Browsers.
 // ============================================================
-import { db, doc, getDoc, setDoc, updateDoc } from "./firebase.js";
 import {
   EGGS, PETS, rollWeightFactor, moneyMultiplierFromWeightRatio, drawPetFromPool,
 } from "./data.js";
@@ -11,6 +11,7 @@ const PET_BY_ID = Object.fromEntries(PETS.map((p) => [p.id, p]));
 
 const START_COINS = 500;
 const START_EQUIP_SLOTS = 3;
+const SAVE_KEY = "tierspiel_save_v1";
 
 function newInstanceId() {
   return (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)) ;
@@ -28,20 +29,22 @@ function defaultPlayerState() {
   };
 }
 
-async function loadPlayer(uid) {
-  const ref = doc(db, "users", uid);
-  const snap = await getDoc(ref);
-  if (!snap.exists()) {
-    const state = defaultPlayerState();
-    await setDoc(ref, state);
-    return state;
+function loadPlayer() {
+  const raw = localStorage.getItem(SAVE_KEY);
+  if (!raw) return defaultPlayerState();
+  try {
+    return { ...defaultPlayerState(), ...JSON.parse(raw) };
+  } catch {
+    return defaultPlayerState();
   }
-  return snap.data();
 }
 
-async function savePlayer(uid, state) {
-  const ref = doc(db, "users", uid);
-  await setDoc(ref, state, { merge: false });
+function savePlayer(state) {
+  localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+}
+
+function resetPlayer() {
+  localStorage.removeItem(SAVE_KEY);
 }
 
 // ---- Eier kaufen & starten -------------------------------------------------
@@ -126,14 +129,22 @@ function unequipPet(state, instanceId) {
   state.equipped = state.equipped.filter((id) => id !== instanceId);
 }
 
+// ---- Automatisch die Tiere mit dem höchsten Geld/Sekunde ausrüsten --------
+function autoEquipBest(state) {
+  const best = [...state.pets]
+    .sort((a, b) => b.moneyPerSec - a.moneyPerSec)
+    .slice(0, state.equipSlots);
+  state.equipped = best.map((p) => p.instanceId);
+}
+
 function timeRemainingMs(hatchEntry) {
   return Math.max(0, hatchEntry.startMs + hatchEntry.durationMs - Date.now());
 }
 
 export {
   EGG_BY_ID, PET_BY_ID, START_COINS, START_EQUIP_SLOTS,
-  defaultPlayerState, loadPlayer, savePlayer,
+  defaultPlayerState, loadPlayer, savePlayer, resetPlayer,
   startHatching, isHatchingFinished, getFinishedHatching, hatchEgg,
   accrueMoney, totalMoneyPerSecond,
-  equipPet, unequipPet, timeRemainingMs,
+  equipPet, unequipPet, autoEquipBest, timeRemainingMs,
 };

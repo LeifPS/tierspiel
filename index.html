@@ -8,30 +8,14 @@
 </head>
 <body>
 
-<!-- ===================== AUTH ===================== -->
-<div id="auth-screen">
-  <div class="auth-card">
-    <h1>Tierspiel</h1>
-    <p class="tagline">Eier ausbrüten. Tiere sammeln. Münzen verdienen.</p>
-    <h2 id="auth-title">Anmelden</h2>
-    <form id="auth-form">
-      <input id="auth-email" type="email" placeholder="E-Mail" required autocomplete="email">
-      <input id="auth-password" type="password" placeholder="Passwort" required autocomplete="current-password">
-      <button id="auth-submit" class="primary-btn" type="submit">Anmelden</button>
-    </form>
-    <div id="auth-error"></div>
-    <button id="auth-toggle" class="link-btn">Noch kein Konto? Registrieren</button>
-  </div>
-</div>
-
 <!-- ===================== GAME ===================== -->
-<div id="game-screen" class="hidden">
+<div id="game-screen">
   <div class="topbar">
     <div class="logo">Tierspiel</div>
     <div class="stat-pill" id="coins-display">0 Münzen</div>
     <div class="stat-pill" id="income-display">0/s</div>
     <div class="stat-pill" id="slots-display">0/0 Plätze belegt</div>
-    <button id="logout-btn">Abmelden</button>
+    <button id="reset-btn">🔄 Zurücksetzen</button>
   </div>
 
   <div class="tab-nav">
@@ -55,7 +39,10 @@
   </div>
 
   <div id="panel-pets" class="tab-panel">
-    <div class="panel-header"><span>Deine Tiere – ausgerüstete verdienen Geld/Sekunde</span></div>
+    <div class="panel-header">
+      <span>Deine Tiere – ausgerüstete verdienen Geld/Sekunde</span>
+      <button id="auto-equip-btn" class="action-btn">⚡ Bestes Ausrüsten</button>
+    </div>
     <div id="inventory-grid" class="grid"></div>
   </div>
 
@@ -65,6 +52,17 @@
     <div id="index-eggs-grid" class="grid"></div>
     <h3 class="index-section-title">Tiere</h3>
     <div id="index-pets-grid" class="grid"></div>
+  </div>
+</div>
+
+<div id="reveal-overlay" class="reveal-overlay hidden">
+  <div class="reveal-rays"></div>
+  <div class="reveal-card">
+    <div id="reveal-art" class="reveal-art"></div>
+    <div id="reveal-rarity" class="reveal-rarity"></div>
+    <div id="reveal-name" class="reveal-name"></div>
+    <div id="reveal-stats" class="reveal-stats"></div>
+    <button id="reveal-close" class="primary-btn">Weiter</button>
   </div>
 </div>
 
