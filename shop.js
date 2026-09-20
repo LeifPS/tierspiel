@@ -1,25 +1,39 @@
 // ============================================================
-// Shop – rein lokal. Rotiert alle paar Minuten und merkt sich den
-// Zustand im localStorage, damit er auch nach einem Reload gleich
-// bleibt, bis die Rotationszeit abgelaufen ist.
-// ============================================================
+// Shop – rotiert alle 5 Minuten, exakt zeitgleich für ALLE Spieler,
+// komplett ohne Netzwerk: Statt echtem Zufall wird ein deterministischer
+// Zufallsgenerator verwendet, der mit dem aktuellen 5-Minuten-Zeitfenster
+// geseedet ist. Dadurch würfeln alle Clients unabhängig voneinander exakt
+// dasselbe Ergebnis, solange ihre Uhren einigermaßen synchron sind – ganz
+// ohne Firestore-Abhängigkeit oder Race-Conditions am Rotationszeitpunkt.
+// Bereits getätigte Käufe werden weiterhin nur lokal je Spieler verfolgt.
 import { EGGS } from "./data.js";
 
 const SHOP_KEY = "tierspiel_shop_v1";
 const ROTATION_MS = 5 * 60 * 1000;
 
-function randInt(min, max) {
-  return Math.floor(min + Math.random() * (max - min + 1));
+// mulberry32: kleiner, schneller seedbarer PRNG (öffentliches Verfahren).
+function createSeededRandom(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
-function rollNewShopStock() {
+function currentRotationIndex() {
+  return Math.floor(Date.now() / ROTATION_MS);
+}
+
+function rollShopStockForRotation(rotationIndex) {
+  const rand = createSeededRandom(rotationIndex);
+  const randInt = (min, max) => Math.floor(min + rand() * (max - min + 1));
+
   const stock = {};
   for (const egg of EGGS) {
-    if (Math.random() <= egg.appearChance) {
-      stock[egg.id] = randInt(egg.stock[0], egg.stock[1]);
-    } else {
-      stock[egg.id] = 0;
-    }
+    stock[egg.id] = rand() <= egg.appearChance ? randInt(egg.stock[0], egg.stock[1]) : 0;
   }
   // Sicherstellen, dass es nie komplett leer ist: Standard-Ei immer verfügbar
   if (!stock.standard) stock.standard = randInt(EGGS[0].stock[0], EGGS[0].stock[1]);
@@ -42,12 +56,16 @@ function writeShop(data) {
 }
 
 function getOrRotateShop() {
-  const now = Date.now();
+  const rotationIndex = currentRotationIndex();
   const existing = readShop();
-  if (!existing || now - (existing.rotatedAtMs || 0) >= ROTATION_MS) {
-    return writeShop({ stock: rollNewShopStock(), rotatedAtMs: now });
+  if (existing && existing.rotationIndex === rotationIndex) {
+    return existing; // gleiches Zeitfenster – lokal ggf. schon gekaufte Bestände behalten
   }
-  return existing;
+  return writeShop({
+    stock: rollShopStockForRotation(rotationIndex),
+    rotatedAtMs: rotationIndex * ROTATION_MS,
+    rotationIndex,
+  });
 }
 
 function buyEgg(eggId) {
