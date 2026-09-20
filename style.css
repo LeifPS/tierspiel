@@ -459,15 +459,19 @@ button:active { transform: scale(0.97); }
 }
 .reveal-overlay.hidden { display: none; }
 
-/* Bis zu 12 Eier gleichzeitig: waagerecht (Landscape) 4x3, senkrecht (Portrait) 3x4. */
+/* Bis zu 12 Eier gleichzeitig: waagerecht (Landscape) max. 4 Spalten, senkrecht
+   (Portrait) max. 3 Spalten. Die Spaltenzahl wird in JS auf die tatsächliche
+   Anzahl geöffneter Eier begrenzt (--reveal-cols) – bei wenigen Eiern gibt es
+   dadurch automatisch weniger, dafür größere Slots (minmax-Obergrenze). */
 .reveal-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(var(--reveal-cols, 4), minmax(90px, 220px));
   gap: 14px;
-  width: min(90vw, 480px);
+  max-width: min(90vw, 520px);
+  justify-content: center;
 }
 @media (orientation: portrait) {
-  .reveal-grid { grid-template-columns: repeat(3, 1fr); width: min(88vw, 380px); }
+  .reveal-grid { max-width: min(88vw, 380px); }
 }
 @media (max-width: 380px) {
   .reveal-grid { gap: 10px; }
@@ -477,19 +481,18 @@ button:active { transform: scale(0.97); }
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
-  border-radius: var(--radius-md);
-  background: var(--bg-panel);
-  border: 2px solid var(--border-soft);
   overflow: visible;
   transition: opacity 0.35s ease, transform 0.35s ease;
 }
 
+/* Kein Kasten/Hintergrund um Ei- oder Tierbild – nur das Bild selbst schwebt frei. */
 .reveal-slot .slot-egg-art,
 .reveal-slot .slot-pet-art {
   position: absolute;
   inset: 0;
-  border-radius: var(--radius-md);
   margin: 0;
+  background: none;
+  padding: 0;
   transition: opacity 0.25s ease, transform 0.25s ease;
 }
 

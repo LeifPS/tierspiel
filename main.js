@@ -237,6 +237,12 @@ function playHatchRevealBatch(results) {
   grid.innerHTML = "";
   overlay.classList.remove("hidden");
 
+  // Weniger Eier auf einmal -> weniger Spalten -> größere Slots (siehe
+  // minmax-Obergrenze in .reveal-grid). Spaltenzahl nie größer als das
+  // Maximum für die aktuelle Bildschirm-Orientierung.
+  const maxCols = window.matchMedia("(orientation: portrait)").matches ? 3 : 4;
+  grid.style.setProperty("--reveal-cols", Math.min(results.length, maxCols));
+
   const slots = results.map((result) => {
     const { pet, egg } = result;
     const rarity = getRarity(pet.rarity);
