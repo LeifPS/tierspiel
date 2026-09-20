@@ -297,12 +297,15 @@ button:active { transform: scale(0.97); }
 /* ---------- Mutationen-Übersicht (Index) ---------- */
 /* Kleinere, mittig zentrierte Fläche statt der vollen Kartengröße - sowohl
    optisch dezenter als auch weniger Pixel, die der (per Filter+Maske teure)
-   Glanz-Effekt jeden Frame neu einfärben muss. */
+   Glanz-Effekt jeden Frame neu einfärben muss.
+   Das Überblenden zwischen den Pets läuft NICHT über CSS-Keyframes, sondern
+   per Web-Animations-API (element.animate() in main.js) - die Anzahl der
+   durchzycelnden Pets ist dynamisch (alle besessenen Arten dieser Mutation),
+   und mit fester %-Keyframe-Aufteilung ließe sich das nicht abbilden. */
 .mutation-cycle-img {
   position: absolute;
   inset: 18%;
   opacity: 0;
-  animation: mutation-cycle-fade 6s linear infinite;
 }
 /* Höhere Spezifität nötig, um die generelle ".art img { width/height:100% }"-
    Regel zu überstimmen - sonst füllt das Bild trotz "inset" die volle
@@ -311,33 +314,11 @@ button:active { transform: scale(0.97); }
   width: 64%;
   height: 64%;
 }
-.mutation-cycle-img.pet-mutation-shine {
-  animation: mutation-cycle-fade 6s linear infinite, shine-sweep 2.6s ease-in-out infinite alternate;
-}
-/* .mutation-cycle-img und .pet-rainbow-img setzen beide "animation" - ohne
-   diese kombinierte Regel würde eine der beiden Animationen (Crossfade oder
-   Farbton-Zyklus) die andere einfach überschreiben statt dass sie parallel
-   laufen (das "animation"-Shorthand ersetzt sich komplett, statt zu mergen). */
-.mutation-cycle-img.pet-rainbow-img {
-  animation: mutation-cycle-fade 6s linear infinite, rainbow-hue-cycle 4s linear infinite;
-}
-/* 0% und 100% sind bewusst identisch (opacity 1), damit der Loop nahtlos
-   ist statt am Ende sichtbar zurückzuspringen. Die beiden Bilder laufen per
-   negativem animation-delay um exakt die halbe Laufzeit versetzt (siehe
-   main.js) - das Ausblend-Fenster [40%,50%] und das Einblend-Fenster
-   [90%,100%] liegen dadurch (mit linear-Timing) exakt gegenläufig
-   übereinander, sodass die Summe beider Opazitäten die ganze Zeit ~1
-   bleibt. Vorher gab es hier eine spürbare Verdunklungs-Delle mitten in
-   der Überblendung - das war das eigentliche "Stocken".) */
-@keyframes mutation-cycle-fade {
-  0%, 40%  { opacity: 1; }
-  50%, 90% { opacity: 0; }
-  100%     { opacity: 1; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .mutation-cycle-img { animation: none; opacity: 1; }
-  .mutation-cycle-img:nth-child(n+3) { display: none; }
-}
+/* .pet-mutation-shine/.pet-rainbow-img bringen ihre eigene "animation"
+   (shine-sweep/rainbow-hue-cycle) schon mit - da .mutation-cycle-img selbst
+   keine "animation" mehr setzt, gibt es hier (anders als beim Tiere-Tab mit
+   der Schwenk-Animation) keinen Konflikt, der eine kombinierte Regel nötig
+   macht. */
 
 @keyframes pet-sway {
   0%   { transform: scale(var(--hatch-scale, 1)) translate(0, 0) rotate(0deg); }

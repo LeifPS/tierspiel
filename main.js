@@ -195,6 +195,8 @@ const INVENTORY_SORTERS = {
 // Demo-Karte, die zwischen zwei Beispiel-Pets (Hund/Katze) durchwechselt,
 // damit man den Effekt unabhängig vom eigenen Bestand sehen kann.
 const MUTATION_DEMO_PET_IDS = ["hund", "katze"];
+const PREFERS_REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const MS_PER_CYCLE_SLOT = 3000; // jedes Pet ist ca. 3s "dran", Gesamtdauer wächst mit der Anzahl
 
 bootGame();
 
@@ -722,20 +724,48 @@ function renderIndex() {
   }
 }
 
+// Erzeugt für ein Bild in einer N-teiligen Überblend-Rotation die passenden
+// Web-Animations-API-Keyframes: sichtbar für seinen eigenen "Slot"
+// (100/N Prozent des Zyklus), mit weichem Ein-/Ausblenden an dessen Rändern.
+// Das Ausblend-Fenster eines Bildes und das Einblend-Fenster des nächsten
+// liegen dabei exakt eine Slot-Breite auseinander - bei linearem Timing
+// bleibt die Summe aller Opazitäten dadurch konstant bei ~1 (kein Moment,
+// in dem alle Bilder gleichzeitig unsichtbar oder verdunkelt sind).
+function buildCrossfadeKeyframes(n) {
+  const slot = 100 / n;
+  const fade = slot * 0.2;
+  return [
+    { offset: 0, opacity: 1 },
+    { offset: (slot - fade) / 100, opacity: 1 },
+    { offset: slot / 100, opacity: 0 },
+    { offset: (100 - fade) / 100, opacity: 0 },
+    { offset: 1, opacity: 1 },
+  ];
+}
+
 function renderMutationsIndex() {
   const grid = $("#index-mutations-grid");
-  const discovered = new Set(state.pets.filter((p) => p.mutation).map((p) => p.mutation));
-  // Nur neu aufbauen, wenn sich der Entdeckt-Status wirklich geändert hat -
-  // sonst würden die Cycle-/Glanz-Animationen bei jedem renderAll() (z.B.
-  // nach jedem Kauf) neu starten und sichtbar ruckeln.
-  const signature = MUTATIONS.map((m) => (discovered.has(m.id) ? "1" : "0")).join("");
+  // Für jede Mutation: welche Pet-Arten hat der Spieler damit tatsächlich
+  // schon bekommen? Nur die werden durchgecycelt (keine Demo-Pets mehr).
+  const ownedByMutation = {};
+  for (const p of state.pets) {
+    if (!p.mutation) continue;
+    (ownedByMutation[p.mutation] ??= new Set()).add(p.petId);
+  }
+  // Nur neu aufbauen, wenn sich die besessenen Arten je Mutation wirklich
+  // geändert haben - sonst würden die Cycle-/Glanz-Animationen bei jedem
+  // renderAll() (z.B. nach jedem Kauf) neu starten und sichtbar ruckeln.
+  const signature = MUTATIONS
+    .map((m) => m.id + ":" + [...(ownedByMutation[m.id] || [])].sort().join(","))
+    .join("|");
   if (grid.dataset.signature === signature) return;
   grid.dataset.signature = signature;
 
   grid.innerHTML = "";
   for (const mutation of MUTATIONS) {
+    const ownedPetIds = [...(ownedByMutation[mutation.id] || [])];
     const card = document.createElement("div");
-    const isDiscovered = discovered.has(mutation.id);
+    const isDiscovered = ownedPetIds.length > 0;
     card.className = "card mutation-card" + (isDiscovered ? "" : " locked");
 
     if (!isDiscovered) {
@@ -750,28 +780,38 @@ function renderMutationsIndex() {
 
     const artWrap = document.createElement("div");
     artWrap.className = "art";
-    MUTATION_DEMO_PET_IDS.forEach((petId, i) => {
+    const n = ownedPetIds.length;
+    const keyframes = n > 1 ? buildCrossfadeKeyframes(n) : null;
+    const totalMs = n * MS_PER_CYCLE_SLOT;
+
+    ownedPetIds.forEach((petId, i) => {
       const pet = PET_BY_ID[petId];
       const src = assetSrc("pets", pet.id);
-      // Negativer Delay statt positiv: die Animation läuft für jedes Bild
-      // von Anfang an "schon mittendrin" statt erst nach X Sekunden zu
-      // starten - so gibt es keinen Sprung, wenn das zweite Bild "einsetzt".
-      const delay = `-${i * 3}s`;
 
       const img = document.createElement("img");
       img.src = src;
       img.alt = pet.name;
       img.className = `mutation-cycle-img pet-${mutation.id}-img`;
-      img.style.animationDelay = delay;
       img.onerror = () => { img.style.visibility = "hidden"; };
       artWrap.appendChild(img);
 
       const shine = document.createElement("div");
       shine.className = "mutation-cycle-img pet-mutation-shine";
-      shine.style.animationDelay = delay;
       shine.style.setProperty("mask-image", `url('${src}')`);
       shine.style.setProperty("-webkit-mask-image", `url('${src}')`);
       artWrap.appendChild(shine);
+
+      if (n === 1 || PREFERS_REDUCED_MOTION) {
+        // Nur ein Pet (oder reduzierte Bewegung gewünscht) -> einfach das
+        // erste/einzige dauerhaft zeigen, kein Über-/Ausblenden nötig.
+        if (i === 0) { img.style.opacity = "1"; shine.style.opacity = "1"; }
+        return;
+      }
+      // Negativer Delay: die Animation läuft für jedes Bild von Anfang an
+      // "schon mittendrin" statt erst später zu starten - kein Sprung.
+      const timing = { duration: totalMs, iterations: Infinity, easing: "linear", delay: -(i * MS_PER_CYCLE_SLOT) };
+      img.animate(keyframes, timing);
+      shine.animate(keyframes, timing);
     });
     card.appendChild(artWrap);
 
