@@ -24,6 +24,12 @@ const ASSET_OVERRIDES = {
     stein: "https://static.wikia.nocookie.net/pet-simulator/images/0/0c/PS99_Rock_Egg.png",
     keimling: "https://static.wikia.nocookie.net/pet-simulator/images/d/d2/PS99_Sprout_Egg.png",
   },
+  pets: {
+    fuchs: "https://static.wikia.nocookie.net/pets-go/images/7/73/Fox.png",
+    kuh: "https://static.wikia.nocookie.net/pets-go/images/8/84/Cow.png",
+    baer: "https://static.wikia.nocookie.net/pets-go/images/a/a4/Bear.png",
+    elefant: "https://static.wikia.nocookie.net/pets-go/images/6/60/Elephant.png",
+  },
 };
 
 function assetSrc(kind, id) {
