@@ -221,7 +221,7 @@ function toast(msg, type = "success") {
   toast._t = setTimeout(() => el.classList.remove("show"), 4000);
 }
 
-const MAX_REVEAL_SLOTS = 10; // 5x2-Raster: so viele Eier können gleichzeitig geöffnet werden
+const MAX_REVEAL_SLOTS = 12; // Raster: waagerecht 4x3, senkrecht 3x4 – so viele Eier können gleichzeitig geöffnet werden
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -796,7 +796,15 @@ $("#auto-equip-btn").addEventListener("click", () => {
 });
 
 $("#hatch-all-btn").addEventListener("click", async () => {
-  const instanceIds = state.hatching.filter(isHatchingFinished).map((h) => h.instanceId);
+  // Schlechteste Eier zuerst öffnen (niedrigste Seltenheit, bei Gleichstand
+  // niedrigstes Glück) – so werden bei vielen fertigen Eiern zuerst die
+  // uninteressantesten "weggeklickt" und die besten kommen zuletzt dran.
+  const finished = [...state.hatching].filter(isHatchingFinished).sort((a, b) => {
+    const eggA = EGG_BY_ID[a.eggId];
+    const eggB = EGG_BY_ID[b.eggId];
+    return RARITY_INDEX[eggA.rarity] - RARITY_INDEX[eggB.rarity] || eggA.luckPercent - eggB.luckPercent;
+  });
+  const instanceIds = finished.map((h) => h.instanceId);
   for (let i = 0; i < instanceIds.length; i += MAX_REVEAL_SLOTS) {
     await hatchAndRevealBatch(instanceIds.slice(i, i + MAX_REVEAL_SLOTS));
   }
