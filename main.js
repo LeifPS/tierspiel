@@ -82,6 +82,7 @@ const ASSET_OVERRIDES = {
     eisigerphoenix: "https://static.wikia.nocookie.net/pets-go/images/7/7c/Icy_Phoenix.png",
     glitchdrache: "https://static.wikia.nocookie.net/pets-go/images/f/f6/Glitched_Dragon.png",
     schattenhai: "https://static.wikia.nocookie.net/pets-go/images/7/77/Shadow_Shark.png",
+    gepard: "https://static.wikia.nocookie.net/pets-go/images/9/9e/Cheetah.png",
   },
 };
 
