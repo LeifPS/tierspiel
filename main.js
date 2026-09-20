@@ -158,7 +158,11 @@ function bootGame() {
   setInterval(() => {
     tickHatching(state, 333, 3);
     accrueMoney(state);
-    renderAll();
+    // Nur die zeitabhängigen Anzeigen aktualisieren (Münzen, Brüt-Fortschritt).
+    // Tiere/Index nicht neu rendern, sonst rucken CSS-Animationen dort bei
+    // jedem Tick, weil ihre DOM-Elemente ständig neu erzeugt würden.
+    renderTopBar();
+    renderHatchery();
   }, 333);
 
   // Alle 5s speichern, damit bei Tab schließen nicht zu viel Fortschritt fehlt
