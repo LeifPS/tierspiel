@@ -47,6 +47,11 @@ const ASSET_OVERRIDES = {
     kosmosdrache: "https://static.wikia.nocookie.net/pets-go/images/3/3e/Cosmic_Dragon.png",
     loewe: "https://static.wikia.nocookie.net/pets-go/images/4/47/Lion.png",
     delfin: "https://static.wikia.nocookie.net/pets-go/images/0/0b/Dolphin.png",
+    tiger: "https://static.wikia.nocookie.net/pets-go/images/a/ae/Tiger.png",
+    hai: "https://static.wikia.nocookie.net/pets-go/images/1/14/Shark.png",
+    greif: "https://static.wikia.nocookie.net/pets-go/images/f/f8/Griffin.png",
+    drache: "https://static.wikia.nocookie.net/pets-go/images/c/c7/Dragon.png",
+    einhorn: "https://static.wikia.nocookie.net/pets-go/images/7/7e/Unicorn.png",
   },
 };
 
