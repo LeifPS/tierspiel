@@ -88,4 +88,4 @@ function msUntilNextRotation(rotatedAtMs) {
   return Math.max(0, ROTATION_MS - elapsed);
 }
 
-export { getOrRotateShop, buyEgg, msUntilNextRotation, ROTATION_MS };
+export { getOrRotateShop, buyEgg, msUntilNextRotation, currentRotationIndex, ROTATION_MS };

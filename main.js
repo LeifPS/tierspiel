@@ -1,5 +1,5 @@
 import { EGGS, PETS, REBIRTHS, RARITY_INDEX, getRarity, formatNumber, formatDuration } from "./data.js";
-import { getOrRotateShop, buyEgg, msUntilNextRotation, ROTATION_MS } from "./shop.js";
+import { getOrRotateShop, buyEgg, msUntilNextRotation, currentRotationIndex, ROTATION_MS } from "./shop.js";
 import {
   EGG_BY_ID, PET_BY_ID, loadPlayer, savePlayer, resetPlayer, startHatching,
   tickHatching, isHatchingFinished, hatchEgg, accrueMoney, totalMoneyPerSecond, getMoneyMultiplier,
@@ -200,8 +200,8 @@ function bootGame() {
   setInterval(() => savePlayer(state), 5000);
   window.addEventListener("beforeunload", () => savePlayer(state));
 
-  // Shop alle 15s auf Rotation prüfen (leichtgewichtig)
-  setInterval(refreshShop, 15000);
+  // Shop-Rotation wird bereits im schnellen 333ms-Tick über
+  // updateShopRotationText() geprüft, ein separates Intervall ist nicht mehr nötig.
 
   // Online-Rangliste: beim Login und danach alle 2 Minuten für alle aktualisieren.
   refreshLeaderboard();
@@ -388,6 +388,14 @@ function updateShopAffordability() {
 
 function updateShopRotationText() {
   if (!shop) return;
+  // Lief bisher nur alle 15s (siehe refreshShop-Intervall) – die Anzeige
+  // konnte dadurch schon "0s" zeigen, obwohl die eigentliche Rotation erst
+  // bis zu 15s später tatsächlich ausgeführt wurde. Da diese Funktion jeden
+  // schnellen Tick (333ms) läuft, prüfen wir die Rotation gleich hier mit.
+  if (currentRotationIndex() !== shop.rotationIndex) {
+    refreshShop();
+    return;
+  }
   const remaining = msUntilNextRotation(shop.rotatedAtMs);
   $("#shop-rotation").textContent = `Nächste Rotation in ${formatDuration(remaining / 1000)}`;
 }
