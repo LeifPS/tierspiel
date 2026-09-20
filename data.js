@@ -95,17 +95,17 @@ const PETS = [
   // Astral
   { id: "kosmosdrache", name: "Kosmischer Drache", rarity: "astral", baseWeightKg: 3000, baseMoney: 150000000 },
   // Nova
-  { id: "diamantkatze", name: "Diamond Cat",  rarity: "nova", baseWeightKg: 5,    baseMoney: 750000000 },
+  { id: "diamantkatze", name: "Diamantkatze",  rarity: "nova", baseWeightKg: 5,    baseMoney: 750000000 },
   // Solar
-  { id: "minenroboter", name: "Mining Robot", rarity: "solar", baseWeightKg: 800,  baseMoney: 4000000000 },
+  { id: "minenroboter", name: "Minenroboter", rarity: "solar", baseWeightKg: 800,  baseMoney: 4000000000 },
   // Lunar
-  { id: "tiefseedelfin",name: "Abyssal Dolphin", rarity: "lunar", baseWeightKg: 250, baseMoney: 20000000000 },
+  { id: "tiefseedelfin",name: "Abgrunddelfin", rarity: "lunar", baseWeightKg: 250, baseMoney: 20000000000 },
   // Galaktisch
-  { id: "reliktdrache", name: "Relic Dragon", rarity: "galactic", baseWeightKg: 2500, baseMoney: 100000000000 },
+  { id: "reliktdrache", name: "Reliktdrache", rarity: "galactic", baseWeightKg: 2500, baseMoney: 100000000000 },
   // Stellar
-  { id: "sturmdrache",  name: "Storm Dragon", rarity: "stellar", baseWeightKg: 1800, baseMoney: 500000000000 },
+  { id: "sturmdrache",  name: "Sturmdrache", rarity: "stellar", baseWeightKg: 1800, baseMoney: 500000000000 },
   // Nebula
-  { id: "runenqual",    name: "Runic Agony",  rarity: "nebula", baseWeightKg: 400,  baseMoney: 2500000000000 },
+  { id: "runenqual",    name: "Runen-Qual",  rarity: "nebula", baseWeightKg: 400,  baseMoney: 2500000000000 },
 ];
 
 // ---- Eier -----------------------------------------------------------------
@@ -134,6 +134,7 @@ const EGGS = [
   { id: "gekroent",  name: "Gekröntes Ei",  rarity: "legendary",    luckPercent: 15000,      hatchSeconds: 6300,   basePrice: 450000,       appearChance: 0.6,  stock: [1, 2] },
   { id: "aegyptisch",name: "Ägyptisches Ei",rarity: "legendary",    luckPercent: 20000,      hatchSeconds: 7200,   basePrice: 700000,       appearChance: 0.6,  stock: [1, 2] },
   { id: "schnee",    name: "Schnee-Ei",     rarity: "mythic",       luckPercent: 45000,      hatchSeconds: 10800,  basePrice: 2500000,      appearChance: 0.3,  stock: [1, 1] },
+  { id: "koeniglich",name: "Königliches Ei",rarity: "mythic",       luckPercent: 70000,      hatchSeconds: 12500,  basePrice: 5000000,      appearChance: 0.3,  stock: [1, 1] },
   { id: "knochen",   name: "Knochen-Ei",    rarity: "mythic",       luckPercent: 100000,     hatchSeconds: 14400,  basePrice: 7000000,      appearChance: 0.3,  stock: [1, 1] },
   { id: "obsidian",  name: "Obsidian-Ei",   rarity: "divine",       luckPercent: 250000,     hatchSeconds: 18000,  basePrice: 25000000,     appearChance: 0.12, stock: [1, 1] },
   { id: "verlies",   name: "Verlies-Ei",    rarity: "divine",       luckPercent: 400000,     hatchSeconds: 19800,  basePrice: 45000000,     appearChance: 0.12, stock: [1, 1] },

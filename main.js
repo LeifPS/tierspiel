@@ -39,6 +39,7 @@ const ASSET_OVERRIDES = {
     gekroent: "https://static.wikia.nocookie.net/pet-simulator/images/2/2a/PS99_Crowned_Egg.png",
     schatz: "https://static.wikia.nocookie.net/pet-simulator/images/b/b4/PS99_Treasure_Egg.png",
     verlies: "https://static.wikia.nocookie.net/pet-simulator/images/e/e9/PS99_Dungeon_Egg.png",
+    koeniglich: "https://static.wikia.nocookie.net/pet-simulator/images/2/2c/PS99_Royal_Egg.png",
   },
   pets: {
     fuchs: "https://static.wikia.nocookie.net/pets-go/images/7/73/Fox.png",
@@ -83,6 +84,12 @@ const ASSET_OVERRIDES = {
     glitchdrache: "https://static.wikia.nocookie.net/pets-go/images/f/f6/Glitched_Dragon.png",
     schattenhai: "https://static.wikia.nocookie.net/pets-go/images/7/77/Shadow_Shark.png",
     gepard: "https://static.wikia.nocookie.net/pets-go/images/9/9e/Cheetah.png",
+    diamantkatze: "https://static.wikia.nocookie.net/pets-go/images/a/a5/Diamond_Cat.png",
+    minenroboter: "https://static.wikia.nocookie.net/pets-go/images/4/4f/Mining_Robot.png",
+    tiefseedelfin: "https://static.wikia.nocookie.net/pets-go/images/9/99/Abyssal_Dolphin.png",
+    reliktdrache: "https://static.wikia.nocookie.net/pets-go/images/b/b0/Relic_Dragon.png",
+    sturmdrache: "https://static.wikia.nocookie.net/pets-go/images/a/a7/Storm_Dragon.png",
+    runenqual: "https://static.wikia.nocookie.net/pets-go/images/e/e8/Runic_Agony.png",
   },
 };
 
@@ -416,7 +423,10 @@ function renderIndex() {
         <div class="card-stat">⏱ ${formatDuration(egg.hatchSeconds)}</div>
       `;
     } else {
-      info.innerHTML = `<div class="card-name">???</div>`;
+      info.innerHTML = `
+        <div class="card-name">???</div>
+        <div class="card-rarity" style="background:${rarity.color}">${rarity.name}</div>
+      `;
     }
     card.appendChild(info);
     eggGrid.appendChild(card);
@@ -445,7 +455,10 @@ function renderIndex() {
         <div class="card-stat">${coinIcon()} Basis: ${formatNumber(pet.baseMoney)}/s</div>
       `;
     } else {
-      info.innerHTML = `<div class="card-name">???</div>`;
+      info.innerHTML = `
+        <div class="card-name">???</div>
+        <div class="card-rarity" style="background:${rarity.color}">${rarity.name}</div>
+      `;
     }
     card.appendChild(info);
     petGrid.appendChild(card);
