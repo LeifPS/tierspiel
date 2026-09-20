@@ -193,6 +193,7 @@ function bootGame() {
     renderTopBar();
     renderHatchery();
     updateShopRotationText();
+    updateShopAffordability();
   }, 333);
 
   // Alle 5s speichern, damit bei Tab schließen nicht zu viel Fortschritt fehlt
@@ -361,6 +362,7 @@ function renderShop() {
     btn.className = "buy-btn";
     btn.innerHTML = soldOut ? "Ausverkauft" : `Kaufen · ${coinIcon()} ${formatNumber(egg.basePrice)}`;
     btn.disabled = soldOut || state.coins < egg.basePrice;
+    if (!soldOut) btn.dataset.price = egg.basePrice;
     btn.addEventListener("click", () => handleBuy(egg));
     card.appendChild(btn);
 
@@ -368,6 +370,16 @@ function renderShop() {
   }
 
   updateShopRotationText();
+}
+
+// Aktualisiert nur, ob die Kaufen-Buttons aktiv/deaktiviert sind (abhängig vom
+// aktuellen Münzstand), ohne die Shop-Karten neu zu erzeugen. Wird bei jedem
+// schnellen Tick aufgerufen, damit ein Ei nicht erst nach der nächsten
+// 15s-Rotationsprüfung kaufbar wird, sobald genug Geld da ist.
+function updateShopAffordability() {
+  for (const btn of $$("#shop-grid .buy-btn[data-price]")) {
+    btn.disabled = state.coins < Number(btn.dataset.price);
+  }
 }
 
 function updateShopRotationText() {
