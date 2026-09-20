@@ -97,7 +97,7 @@ function hatchEgg(state, instanceId) {
 
   const now = Date.now();
   const egg = EGG_BY_ID[entry.eggId];
-  const pet = drawPetFromPool(egg.luckPercent);
+  const pet = drawPetFromPool(egg.luckPercent, egg.rarity);
   const rollFactor = rollWeightFactor();
   const weightKg = pet.baseWeightKg * rollFactor;
   const ratio = weightKg / pet.baseWeightKg; // Vielfaches des Basisgewichts
