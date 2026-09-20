@@ -146,6 +146,11 @@ $("#reset-btn").addEventListener("click", () => {
 // ---------------------------------------------------------------------------
 let state = null;
 let shop = null;
+// Merkt sich die zuletzt gerenderten Brüt-Karten pro Ei-Instanz, damit der
+// schnelle Live-Ticker nur noch Zahlen/Balken aktualisiert statt die
+// komplette Karte (inkl. Bild) neu zu erzeugen – sonst würde die
+// Schwenk-Animation bei jedem Tick neu starten und ruckeln.
+let hatcheryCardRefs = new Map();
 
 bootGame();
 
@@ -327,46 +332,71 @@ async function hatchAndReveal(instanceId) {
 
 function renderHatchery() {
   const grid = $("#hatchery-grid");
-  grid.innerHTML = "";
   const finishedCount = state.hatching.filter(isHatchingFinished).length;
   $("#hatch-all-btn").disabled = finishedCount === 0;
+
   if (state.hatching.length === 0) {
     grid.innerHTML = `<div class="empty-hint">Keine Eier am Brüten. Kauf welche im Shop!</div>`;
+    hatcheryCardRefs = new Map();
     return;
   }
+
   const sorted = [...state.hatching].sort((a, b) => a.remainingMs - b.remainingMs);
+  const sameOrder = sorted.length === hatcheryCardRefs.size
+    && sorted.every((h) => hatcheryCardRefs.has(h.instanceId))
+    && [...hatcheryCardRefs.keys()].every((id, i) => sorted[i].instanceId === id);
+
+  if (!sameOrder) {
+    grid.innerHTML = "";
+    hatcheryCardRefs = new Map();
+    for (const h of sorted) {
+      const egg = EGG_BY_ID[h.eggId];
+      const rarity = getRarity(egg.rarity);
+      const card = document.createElement("div");
+      card.className = "card hatch-card";
+      const art = createArtEl("eggs", egg.id, egg.name, rarity.color);
+      art.style.setProperty("--sway-delay", swayDelayFor(h.instanceId));
+      card.appendChild(art);
+
+      const info = document.createElement("div");
+      info.className = "card-info";
+      info.innerHTML = `
+        <div class="card-name">${egg.name}</div>
+        <div class="progress-bar"><div class="progress-fill"></div></div>
+        <div class="card-stat"></div>
+      `;
+      card.appendChild(info);
+
+      grid.appendChild(card);
+      hatcheryCardRefs.set(h.instanceId, {
+        card,
+        art,
+        progressFill: info.querySelector(".progress-fill"),
+        statText: info.querySelector(".card-stat"),
+        btn: null,
+      });
+    }
+  }
+
   for (const h of sorted) {
-    const egg = EGG_BY_ID[h.eggId];
-    const rarity = getRarity(egg.rarity);
-    const card = document.createElement("div");
-    card.className = "card hatch-card";
-    const art = createArtEl("eggs", egg.id, egg.name, rarity.color);
-    art.style.setProperty("--sway-delay", swayDelayFor(h.instanceId));
-    card.appendChild(art);
+    const refs = hatcheryCardRefs.get(h.instanceId);
     const remaining = timeRemainingMs(h);
     const finished = isHatchingFinished(h);
     const pct = Math.min(100, 100 * (1 - remaining / h.durationMs));
     // Ei wächst optisch mit dem Brütefortschritt: klein am Anfang, volle Größe wenn fertig.
     const hatchScale = 0.35 + 0.65 * (pct / 100);
-    art.style.setProperty("--hatch-scale", hatchScale.toFixed(3));
-    const info = document.createElement("div");
-    info.className = "card-info";
-    info.innerHTML = `
-      <div class="card-name">${egg.name}</div>
-      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-      <div class="card-stat">${finished ? "Fertig!" : formatDuration(remaining / 1000) + " übrig"}</div>
-    `;
-    card.appendChild(info);
+    refs.art.style.setProperty("--hatch-scale", hatchScale.toFixed(3));
+    refs.progressFill.style.width = `${pct}%`;
+    refs.statText.textContent = finished ? "Fertig!" : formatDuration(remaining / 1000) + " übrig";
 
-    if (finished) {
+    if (finished && !refs.btn) {
       const btn = document.createElement("button");
       btn.className = "buy-btn";
       btn.textContent = "Ausbrüten";
       btn.addEventListener("click", () => hatchAndReveal(h.instanceId));
-      card.appendChild(btn);
+      refs.card.appendChild(btn);
+      refs.btn = btn;
     }
-
-    grid.appendChild(card);
   }
 }
 
