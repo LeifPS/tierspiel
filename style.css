@@ -216,6 +216,7 @@ body {
   justify-content: center;
 }
 .art img { width: 100%; height: 100%; object-fit: contain; }
+.art.locked img { filter: brightness(0); }
 
 .placeholder-icon {
   width: 100%;
@@ -228,6 +229,17 @@ body {
   font-size: 1.6rem;
   color: rgba(255,255,255,0.85);
 }
+
+.placeholder-icon.locked { background: #000 !important; color: #000; }
+
+.card.locked { border-color: var(--border-soft) !important; opacity: 0.85; }
+
+.index-section-title {
+  font-family: 'Baloo 2', sans-serif;
+  color: var(--text-dim);
+  margin: 20px 0 12px;
+}
+.index-section-title:first-of-type { margin-top: 0; }
 
 .card-name { font-weight: 700; font-family: 'Baloo 2', sans-serif; }
 .card-rarity {

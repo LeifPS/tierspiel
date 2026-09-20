@@ -21,6 +21,8 @@ const ASSET_OVERRIDES = {
     standard: "https://static.wikia.nocookie.net/pet-simulator/images/5/58/PS99_Cracked_Egg.png/revision/latest/scale-to-width-down/50?cb=20231203134928",
     holz: "https://static.wikia.nocookie.net/pet-simulator/images/0/04/PS99_Wood_Egg.png/revision/latest/scale-to-width-down/50?cb=20231203135015",
     getupft: "https://static.wikia.nocookie.net/pet-simulator/images/2/24/PS99_Spotted_Egg.png/revision/latest/scale-to-width-down/50?cb=20231203135007",
+    stein: "https://static.wikia.nocookie.net/pet-simulator/images/0/0c/PS99_Rock_Egg.png/revision/latest/scale-to-width-down/50?cb=20231203134958",
+    keimling: "https://static.wikia.nocookie.net/pet-simulator/images/d/d2/PS99_Sprout_Egg.png/revision/latest/scale-to-width-down/50?cb=20231203135008",
   },
 };
 
@@ -32,22 +34,22 @@ function assetSrc(kind, id) {
   return `assets/${kind}/${id}.png`;
 }
 
-function renderPlaceholderIcon(container, label, rarityColor) {
+function renderPlaceholderIcon(container, label, rarityColor, locked = false) {
   container.innerHTML = "";
   const el = document.createElement("div");
-  el.className = "placeholder-icon";
-  el.style.background = rarityColor.startsWith("linear-gradient") ? rarityColor : rarityColor;
-  el.textContent = label.slice(0, 2).toUpperCase();
+  el.className = "placeholder-icon" + (locked ? " locked" : "");
+  el.style.background = locked ? "#000" : rarityColor;
+  el.textContent = locked ? "" : label.slice(0, 2).toUpperCase();
   container.appendChild(el);
 }
 
-function createArtEl(kind, id, label, rarityColor) {
+function createArtEl(kind, id, label, rarityColor, locked = false) {
   const wrap = document.createElement("div");
-  wrap.className = "art";
+  wrap.className = "art" + (locked ? " locked" : "");
   const img = document.createElement("img");
-  img.alt = label;
+  img.alt = locked ? "???" : label;
   img.src = assetSrc(kind, id);
-  img.onerror = () => renderPlaceholderIcon(wrap, label, rarityColor);
+  img.onerror = () => renderPlaceholderIcon(wrap, label, rarityColor, locked);
   wrap.appendChild(img);
   return wrap;
 }
@@ -183,6 +185,7 @@ function renderAll() {
   renderTopBar();
   renderHatchery();
   renderInventory();
+  renderIndex();
 }
 
 function renderTopBar() {
@@ -338,6 +341,68 @@ function renderInventory() {
     });
     card.appendChild(btn);
     grid.appendChild(card);
+  }
+}
+
+function renderIndex() {
+  const knownPetIds = new Set(state.pets.map((p) => p.petId));
+  const knownEggIds = new Set(state.seenEggs || []);
+
+  const eggGrid = $("#index-eggs-grid");
+  eggGrid.innerHTML = "";
+  for (const egg of EGGS) {
+    const discovered = knownEggIds.has(egg.id);
+    const rarity = getRarity(egg.rarity);
+    const card = document.createElement("div");
+    card.className = "card" + (discovered ? "" : " locked");
+    if (discovered) {
+      card.style.setProperty("--rarity-color", rarity.color.startsWith("linear") ? "#888" : rarity.color);
+    }
+    card.appendChild(createArtEl("eggs", egg.id, egg.name, rarity.color, !discovered));
+
+    const info = document.createElement("div");
+    info.className = "card-info";
+    if (discovered) {
+      info.innerHTML = `
+        <div class="card-name">${egg.name}</div>
+        <div class="card-rarity" style="background:${rarity.color}">${rarity.name}</div>
+        <div class="card-stat">🍀 ${formatNumber(egg.luckPercent)}% Glück</div>
+        <div class="card-stat">⏱ ${formatDuration(egg.hatchSeconds)}</div>
+        <div class="card-stat">⚖️ ~${egg.weightMultiplier}x Gewicht</div>
+      `;
+    } else {
+      info.innerHTML = `<div class="card-name">???</div>`;
+    }
+    card.appendChild(info);
+    eggGrid.appendChild(card);
+  }
+
+  const petGrid = $("#index-pets-grid");
+  petGrid.innerHTML = "";
+  for (const pet of PETS) {
+    const discovered = knownPetIds.has(pet.id);
+    const rarity = getRarity(pet.rarity);
+    const card = document.createElement("div");
+    card.className = "card" + (discovered ? "" : " locked");
+    if (discovered) {
+      card.style.setProperty("--rarity-color", rarity.color.startsWith("linear") ? "#888" : rarity.color);
+    }
+    card.appendChild(createArtEl("pets", pet.id, pet.name, rarity.color, !discovered));
+
+    const info = document.createElement("div");
+    info.className = "card-info";
+    if (discovered) {
+      info.innerHTML = `
+        <div class="card-name">${pet.name}</div>
+        <div class="card-rarity" style="background:${rarity.color}">${rarity.name}</div>
+        <div class="card-stat">⚖️ Basis: ${pet.baseWeightKg < 1 ? (pet.baseWeightKg * 1000).toFixed(1) + "g" : formatNumber(pet.baseWeightKg) + "kg"}</div>
+        <div class="card-stat">💰 Basis: ${formatNumber(pet.baseMoney)}/s</div>
+      `;
+    } else {
+      info.innerHTML = `<div class="card-name">???</div>`;
+    }
+    card.appendChild(info);
+    petGrid.appendChild(card);
   }
 }
 

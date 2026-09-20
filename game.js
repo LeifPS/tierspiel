@@ -23,6 +23,7 @@ function defaultPlayerState() {
     equipped: [],       // Array von pet-instanceIds
     pets: [],           // { instanceId, petId, weightKg, ratio, moneyPerSec, obtainedAtMs }
     hatching: [],        // { instanceId, eggId, startMs, durationMs }
+    seenEggs: [],        // eggIds, die der Spieler schonmal gekauft hat (für den Index)
     lastActiveMs: Date.now(),
   };
 }
@@ -53,6 +54,8 @@ function startHatching(state, eggId) {
     startMs: Date.now(),
     durationMs: egg.hatchSeconds * 1000,
   });
+  if (!state.seenEggs) state.seenEggs = [];
+  if (!state.seenEggs.includes(eggId)) state.seenEggs.push(eggId);
 }
 
 // ---- Fertige Eier erkennen (löst sie NICHT aus – das macht hatchEgg) -------
