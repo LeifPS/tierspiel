@@ -1,9 +1,9 @@
-import { EGGS, PETS, RARITY_INDEX, getRarity, formatNumber, formatDuration } from "./data.js";
+import { EGGS, PETS, REBIRTHS, RARITY_INDEX, getRarity, formatNumber, formatDuration } from "./data.js";
 import { getOrRotateShop, buyEgg, msUntilNextRotation, ROTATION_MS } from "./shop.js";
 import {
   EGG_BY_ID, PET_BY_ID, loadPlayer, savePlayer, resetPlayer, startHatching,
-  tickHatching, isHatchingFinished, hatchEgg, accrueMoney, totalMoneyPerSecond, equipPet, unequipPet,
-  autoEquipBest, timeRemainingMs,
+  tickHatching, isHatchingFinished, hatchEgg, accrueMoney, totalMoneyPerSecond, getMoneyMultiplier,
+  performRebirth, equipPet, unequipPet, autoEquipBest, timeRemainingMs,
 } from "./game.js";
 
 // ---------------------------------------------------------------------------
@@ -248,12 +248,14 @@ function renderAll() {
   renderHatchery();
   renderInventory();
   renderIndex();
+  renderRebirth();
 }
 
 function renderTopBar() {
   $("#coins-display").innerHTML = `${coinIcon()} ${formatNumber(state.coins)}`;
   $("#income-display").innerHTML = `${coinIcon()} ${formatNumber(totalMoneyPerSecond(state))}/s`;
   $("#slots-display").textContent = `${state.equipped.length}/${state.equipSlots} Plätze belegt`;
+  $("#rebirth-display").textContent = `R${state.rebirth} · ×${getMoneyMultiplier(state)}`;
 }
 
 function renderShop() {
@@ -509,6 +511,89 @@ function renderIndex() {
     }
     card.appendChild(info);
     petGrid.appendChild(card);
+  }
+}
+
+function renderRebirth() {
+  const content = $("#rebirth-content");
+  content.innerHTML = "";
+
+  const currentMultiplier = getMoneyMultiplier(state);
+  const summary = document.createElement("div");
+  summary.className = "empty-hint";
+  summary.style.marginBottom = "16px";
+  summary.innerHTML = state.rebirth > 0
+    ? `Aktuelle Rebirth-Stufe: <strong>R${state.rebirth}</strong> · Geld-Multiplikator: <strong>×${currentMultiplier}</strong> · ${state.equipSlots} Ausrüstungsplätze`
+    : `Noch keine Rebirth durchgeführt. Geld-Multiplikator: <strong>×1</strong>`;
+  content.appendChild(summary);
+
+  const grid = document.createElement("div");
+  grid.className = "grid";
+  content.appendChild(grid);
+
+  for (const r of REBIRTHS) {
+    const pet = PET_BY_ID[r.petId];
+    const rarity = getRarity(pet.rarity);
+    const achieved = state.rebirth >= r.level;
+    const isNext = state.rebirth === r.level - 1;
+    const ownsPet = state.pets.some((p) => p.petId === r.petId);
+    const canAfford = state.coins >= r.price;
+
+    const card = document.createElement("div");
+    card.className = "card" + (achieved ? " equipped" : "");
+    card.style.setProperty("--rarity-color", rarity.color.startsWith("linear") ? "#888" : rarity.color);
+    card.appendChild(createArtEl("pets", pet.id, pet.name, rarity.color));
+
+    const info = document.createElement("div");
+    info.className = "card-info";
+    info.innerHTML = `
+      <div class="card-name">Rebirth ${r.level}</div>
+      <div class="card-rarity" style="background:${rarity.color}">${pet.name} benötigt</div>
+      <div class="card-stat">${coinIcon()} Kosten: ${formatNumber(r.price)}</div>
+      <div class="card-stat">🎒 ${r.equipSlots} Ausrüstungsplätze</div>
+      <div class="card-stat">💹 Geld-Multiplikator: ×${r.moneyMultiplier}</div>
+    `;
+    card.appendChild(info);
+
+    const btn = document.createElement("button");
+    btn.className = "buy-btn";
+    if (achieved) {
+      btn.textContent = "Erreicht ✓";
+      btn.disabled = true;
+    } else if (!isNext) {
+      btn.textContent = "Erst vorherige Stufe nötig";
+      btn.disabled = true;
+    } else {
+      btn.textContent = "Rebirth durchführen";
+      btn.disabled = !ownsPet || !canAfford;
+      btn.addEventListener("click", () => {
+        let result;
+        try {
+          result = performRebirth(state);
+        } catch (err) {
+          toast(err.message);
+          return;
+        }
+        savePlayer(state);
+        renderAll();
+        toast(`Rebirth ${result.level} erreicht! ×${result.moneyMultiplier} Geld, ${result.equipSlots} Plätze.`);
+      });
+    }
+    card.appendChild(btn);
+
+    if (isNext && !achieved) {
+      const missing = [];
+      if (!ownsPet) missing.push(`ein ${pet.name}`);
+      if (!canAfford) missing.push(`${formatNumber(r.price)} Münzen`);
+      if (missing.length > 0) {
+        const hint = document.createElement("div");
+        hint.className = "card-stat";
+        hint.textContent = `Fehlt noch: ${missing.join(" und ")}`;
+        card.appendChild(hint);
+      }
+    }
+
+    grid.appendChild(card);
   }
 }
 

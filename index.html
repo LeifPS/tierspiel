@@ -15,6 +15,7 @@
     <div class="stat-pill" id="coins-display">0 Münzen</div>
     <div class="stat-pill" id="income-display">0/s</div>
     <div class="stat-pill" id="slots-display">0/0 Plätze belegt</div>
+    <div class="stat-pill" id="rebirth-display">R0 · ×1</div>
     <button id="reset-btn">🔄 Zurücksetzen</button>
   </div>
 
@@ -23,6 +24,7 @@
     <button class="tab-btn" data-tab="hatchery"><span class="tab-icon">🥚</span><span class="tab-label">Brüten</span></button>
     <button class="tab-btn" data-tab="pets"><span class="tab-icon">🐾</span><span class="tab-label">Tiere</span></button>
     <button class="tab-btn" data-tab="index"><span class="tab-icon">📖</span><span class="tab-label">Index</span></button>
+    <button class="tab-btn" data-tab="rebirth"><span class="tab-icon">🔁</span><span class="tab-label">Rebirth</span></button>
   </div>
 
   <div id="panel-shop" class="tab-panel active">
@@ -55,6 +57,11 @@
     <div id="index-eggs-grid" class="grid"></div>
     <h3 class="index-section-title">Tiere</h3>
     <div id="index-pets-grid" class="grid"></div>
+  </div>
+
+  <div id="panel-rebirth" class="tab-panel">
+    <div class="panel-header"><span>Gib Münzen + ein bestimmtes Tier ab für dauerhafte Boni</span></div>
+    <div id="rebirth-content"></div>
   </div>
 </div>
 

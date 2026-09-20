@@ -3,7 +3,7 @@
 // Läuft komplett lokal: der Spielstand liegt im localStorage des Browsers.
 // ============================================================
 import {
-  EGGS, PETS, rollWeightFactor, moneyMultiplierFromWeightRatio, drawPetFromPool,
+  EGGS, PETS, REBIRTHS, rollWeightFactor, moneyMultiplierFromWeightRatio, drawPetFromPool,
 } from "./data.js";
 
 const EGG_BY_ID = Object.fromEntries(EGGS.map((e) => [e.id, e]));
@@ -25,6 +25,7 @@ function defaultPlayerState() {
     pets: [],           // { instanceId, petId, weightKg, ratio, moneyPerSec, obtainedAtMs }
     hatching: [],        // { instanceId, eggId, durationMs, remainingMs }
     seenEggs: [],        // eggIds, die der Spieler schonmal gekauft hat (für den Index)
+    rebirth: 0,          // erreichte Rebirth-Stufe (0 = noch keine)
     lastActiveMs: Date.now(),
   };
 }
@@ -125,11 +126,32 @@ function accrueMoney(state) {
   return earned;
 }
 
+function getMoneyMultiplier(state) {
+  return state.rebirth > 0 ? REBIRTHS[state.rebirth - 1].moneyMultiplier : 1;
+}
+
 function totalMoneyPerSecond(state) {
   const equippedSet = new Set(state.equipped);
-  return state.pets
+  const base = state.pets
     .filter((p) => equippedSet.has(p.instanceId))
     .reduce((sum, p) => sum + p.moneyPerSec, 0);
+  return base * getMoneyMultiplier(state);
+}
+
+// ---- Rebirth: Geld + ein bestimmtes Pet gegen dauerhafte Boni tauschen -----
+function performRebirth(state) {
+  const next = REBIRTHS[state.rebirth];
+  if (!next) throw new Error("Du hast bereits die maximale Rebirth-Stufe erreicht.");
+  if (state.coins < next.price) throw new Error("Nicht genug Münzen für diese Rebirth-Stufe.");
+  const petInstance = state.pets.find((p) => p.petId === next.petId);
+  if (!petInstance) throw new Error(`Du brauchst ein ${PET_BY_ID[next.petId].name} für diese Rebirth-Stufe.`);
+
+  state.coins -= next.price;
+  state.pets = state.pets.filter((p) => p.instanceId !== petInstance.instanceId);
+  state.equipped = state.equipped.filter((id) => id !== petInstance.instanceId);
+  state.rebirth = next.level;
+  state.equipSlots = next.equipSlots;
+  return next;
 }
 
 function equipPet(state, instanceId) {
@@ -163,6 +185,6 @@ export {
   EGG_BY_ID, PET_BY_ID, START_COINS, START_EQUIP_SLOTS,
   defaultPlayerState, loadPlayer, savePlayer, resetPlayer,
   startHatching, tickHatching, isHatchingFinished, getFinishedHatching, hatchEgg,
-  accrueMoney, totalMoneyPerSecond,
+  accrueMoney, totalMoneyPerSecond, getMoneyMultiplier, performRebirth,
   equipPet, unequipPet, autoEquipBest, timeRemainingMs,
 };

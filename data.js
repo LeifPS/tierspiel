@@ -144,6 +144,17 @@ const EGGS = [
   { id: "nebel",     name: "Engel-Ei",      rarity: "astral",       luckPercent: 20000000000,hatchSeconds: 86400,  basePrice: 5000000000000,appearChance: 0.0001,stock: [1, 1] },
 ];
 
+// ---- Rebirth-System ---------------------------------------------------------
+// Für Münzen UND ein bestimmtes Pet (wird dabei verbraucht, der Rest der
+// Sammlung bleibt) bekommt man dauerhaft mehr Ausrüstungsplätze und einen
+// Geld-Multiplikator. "moneyMultiplier" ist der GESAMT-Multiplikator dieser
+// Stufe (ersetzt den der vorherigen Stufe, addiert sich nicht).
+const REBIRTHS = [
+  { level: 1, petId: "einhorn", price: 1000000,    equipSlots: 4, moneyMultiplier: 2 },
+  { level: 2, petId: "kitsune", price: 10000000,   equipSlots: 5, moneyMultiplier: 3 },
+  { level: 3, petId: "phoenix", price: 100000000,  equipSlots: 6, moneyMultiplier: 4 },
+];
+
 // ---- Gewichts-Ausreißer-Tabelle -------------------------------------------
 // Kumulative Wahrscheinlichkeitsverteilung für den "Rand-Roll" beim Schlüpfen.
 // Der finale Gewichtsfaktor eines Pets ist rein zufällig = rollFactor.
@@ -258,7 +269,7 @@ function getRarity(id) {
 }
 
 export {
-  RARITIES, RARITY_INDEX, PETS, EGGS, WEIGHT_ROLL_TABLE,
+  RARITIES, RARITY_INDEX, PETS, EGGS, REBIRTHS, WEIGHT_ROLL_TABLE,
   rollWeightFactor, moneyMultiplierFromWeightRatio, drawPetFromPool,
   formatNumber, formatDuration, getRarity,
 };
