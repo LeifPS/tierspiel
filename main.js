@@ -297,7 +297,8 @@ function renderHatchery() {
     grid.innerHTML = `<div class="empty-hint">Keine Eier am Brüten. Kauf welche im Shop!</div>`;
     return;
   }
-  for (const h of state.hatching) {
+  const sorted = [...state.hatching].sort((a, b) => a.remainingMs - b.remainingMs);
+  for (const h of sorted) {
     const egg = EGG_BY_ID[h.eggId];
     const rarity = getRarity(egg.rarity);
     const card = document.createElement("div");
