@@ -189,11 +189,15 @@ function renderTopBar() {
 function renderShop() {
   const grid = $("#shop-grid");
   grid.innerHTML = "";
-  for (const egg of EGGS) {
-    const stock = shop.stock?.[egg.id] || 0;
+  const eggsInStock = EGGS.filter((egg) => (shop.stock?.[egg.id] || 0) > 0);
+  if (eggsInStock.length === 0) {
+    grid.innerHTML = `<div class="empty-hint">Gerade keine Eier im Angebot. Warte auf die nächste Rotation!</div>`;
+  }
+  for (const egg of eggsInStock) {
+    const stock = shop.stock[egg.id];
     const rarity = getRarity(egg.rarity);
     const card = document.createElement("div");
-    card.className = "card egg-card" + (stock <= 0 ? " sold-out" : "");
+    card.className = "card egg-card";
     card.style.setProperty("--rarity-color", rarity.color.startsWith("linear") ? "#888" : rarity.color);
     if (rarity.color.startsWith("linear")) card.style.borderImage = "";
 
@@ -215,7 +219,7 @@ function renderShop() {
     const btn = document.createElement("button");
     btn.className = "buy-btn";
     btn.textContent = `Kaufen · ${formatNumber(egg.basePrice)}`;
-    btn.disabled = stock <= 0 || state.coins < egg.basePrice;
+    btn.disabled = state.coins < egg.basePrice;
     btn.addEventListener("click", () => handleBuy(egg));
     card.appendChild(btn);
 

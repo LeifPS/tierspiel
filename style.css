@@ -141,7 +141,6 @@ body {
 }
 
 .card.equipped { box-shadow: 0 0 0 2px var(--accent) inset; }
-.card.sold-out { opacity: 0.5; }
 
 .art {
   width: 100%;
