@@ -18,11 +18,11 @@ const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
 const ASSET_OVERRIDES = {
   eggs: {
-    standard: "https://static.wikia.nocookie.net/pet-simulator/images/5/58/PS99_Cracked_Egg.png/revision/latest/scale-to-width-down/50?cb=20231203134928",
-    holz: "https://static.wikia.nocookie.net/pet-simulator/images/0/04/PS99_Wood_Egg.png/revision/latest/scale-to-width-down/50?cb=20231203135015",
-    getupft: "https://static.wikia.nocookie.net/pet-simulator/images/2/24/PS99_Spotted_Egg.png/revision/latest/scale-to-width-down/50?cb=20231203135007",
-    stein: "https://static.wikia.nocookie.net/pet-simulator/images/0/0c/PS99_Rock_Egg.png/revision/latest/scale-to-width-down/50?cb=20231203134958",
-    keimling: "https://static.wikia.nocookie.net/pet-simulator/images/d/d2/PS99_Sprout_Egg.png/revision/latest/scale-to-width-down/50?cb=20231203135008",
+    standard: "https://static.wikia.nocookie.net/pet-simulator/images/5/58/PS99_Cracked_Egg.png",
+    holz: "https://static.wikia.nocookie.net/pet-simulator/images/0/04/PS99_Wood_Egg.png",
+    getupft: "https://static.wikia.nocookie.net/pet-simulator/images/2/24/PS99_Spotted_Egg.png",
+    stein: "https://static.wikia.nocookie.net/pet-simulator/images/0/0c/PS99_Rock_Egg.png",
+    keimling: "https://static.wikia.nocookie.net/pet-simulator/images/d/d2/PS99_Sprout_Egg.png",
   },
 };
 
