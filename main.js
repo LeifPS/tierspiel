@@ -221,69 +221,83 @@ function toast(msg, type = "success") {
   toast._t = setTimeout(() => el.classList.remove("show"), 4000);
 }
 
-function revealTierClass(rarityId) {
-  const idx = RARITY_INDEX[rarityId] ?? 0;
-  if (idx <= 1) return "tier-common";
-  if (idx <= 3) return "tier-rare";
-  if (idx <= 5) return "tier-epic";
-  return "tier-legendary";
+const MAX_REVEAL_SLOTS = 10; // 5x2-Raster: so viele Eier können gleichzeitig geöffnet werden
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Anzahl + Farben der Partikel für den Reveal-Effekt je Seltenheits-Stufe.
-const PARTICLE_CONFIG = {
-  "tier-common": { count: 0, colors: [] },
-  "tier-rare": { count: 0, colors: [] },
-  "tier-epic": { count: 16, colors: ["#e1bee7", "#ce93d8", "#ffffff"] },
-  "tier-legendary": { count: 26, colors: ["#ffe082", "#ffb703", "#ffffff"] },
-};
-
-function spawnRevealParticles(tierClass) {
-  const host = $("#reveal-particles");
-  host.innerHTML = "";
-  const config = PARTICLE_CONFIG[tierClass] || PARTICLE_CONFIG["tier-common"];
-  for (let i = 0; i < config.count; i++) {
-    const particle = document.createElement("div");
-    particle.className = "reveal-particle";
-    const angle = (360 / config.count) * i + (Math.random() * 12 - 6);
-    const distance = 90 + Math.random() * 70;
-    particle.style.setProperty("--angle", `${angle}deg`);
-    particle.style.setProperty("--distance", `${distance}px`);
-    particle.style.setProperty("--particle-delay", `${Math.random() * 0.15}s`);
-    particle.style.setProperty("--particle-color", config.colors[i % config.colors.length]);
-    host.appendChild(particle);
-  }
-}
-
-function playHatchReveal(result) {
-  const { pet, instance } = result;
-  const rarity = getRarity(pet.rarity);
+// Öffnet bis zu 10 Eier gleichzeitig in einem Raster: jedes Ei schüttelt sich
+// kurz, öffnet sich dann und das Pet erscheint mit einem Glow in seiner
+// Seltenheits-Farbe, bevor alles wieder ausblendet. Ein Klick auf "Überspringen"
+// beendet die Animation sofort.
+function playHatchRevealBatch(results) {
   const overlay = $("#reveal-overlay");
-  const tierClass = revealTierClass(pet.rarity);
+  const grid = $("#reveal-grid");
+  grid.innerHTML = "";
+  overlay.classList.remove("hidden");
 
-  overlay.className = `reveal-overlay ${tierClass}`;
-  spawnRevealParticles(tierClass);
+  const slots = results.map((result) => {
+    const { pet, egg } = result;
+    const rarity = getRarity(pet.rarity);
+    const glowColor = rarity.color.startsWith("linear") ? "#ffffff" : rarity.color;
 
-  const artHost = $("#reveal-art");
-  artHost.innerHTML = "";
-  artHost.appendChild(createArtEl("pets", pet.id, pet.name, rarity.color));
+    const slot = document.createElement("div");
+    slot.className = "reveal-slot";
+    slot.style.setProperty("--glow-color", glowColor);
 
-  const rarityEl = $("#reveal-rarity");
-  rarityEl.textContent = rarity.name;
-  rarityEl.style.background = rarity.color;
-  $("#reveal-name").textContent = pet.name;
-  $("#reveal-stats").innerHTML = `
-    ⚖️ ${instance.weightKg < 1 ? (instance.weightKg * 1000).toFixed(1) + "g" : formatNumber(instance.weightKg) + "kg"}
-    (${instance.ratio.toFixed(2)}x) · ${coinIcon()} ${formatNumber(instance.moneyPerSec)}/s
-  `;
+    const eggArt = createArtEl("eggs", egg.id, egg.name, rarity.color);
+    eggArt.classList.add("slot-egg-art");
+    slot.appendChild(eggArt);
+
+    const petArt = createArtEl("pets", pet.id, pet.name, rarity.color);
+    petArt.classList.add("slot-pet-art");
+    slot.appendChild(petArt);
+
+    const label = document.createElement("div");
+    label.className = "slot-label";
+    label.textContent = pet.name;
+    slot.appendChild(label);
+
+    grid.appendChild(slot);
+    return { slot, eggArt };
+  });
 
   return new Promise((resolve) => {
-    const closeBtn = $("#reveal-close");
-    const onClose = () => {
+    let done = false;
+    const skipBtn = $("#reveal-skip");
+    const finish = () => {
+      if (done) return;
+      done = true;
       overlay.classList.add("hidden");
-      closeBtn.removeEventListener("click", onClose);
+      skipBtn.removeEventListener("click", onSkip);
       resolve();
     };
-    closeBtn.addEventListener("click", onClose);
+    const onSkip = () => finish();
+    skipBtn.addEventListener("click", onSkip);
+
+    (async () => {
+      const stagger = 60;
+
+      // Phase 1: Eier schütteln, leicht zeitversetzt für einen "Popcorn"-Effekt.
+      slots.forEach((s, i) => setTimeout(() => {
+        if (!done) s.eggArt.classList.add("shaking");
+      }, i * stagger));
+      await sleep(stagger * slots.length + 550);
+      if (done) return;
+
+      // Phase 2: Ei öffnet sich, Pet erscheint mit Glow.
+      slots.forEach((s, i) => setTimeout(() => {
+        if (!done) s.slot.classList.add("opened");
+      }, i * stagger));
+      await sleep(stagger * slots.length + 1400);
+      if (done) return;
+
+      // Phase 3: alles ausblenden.
+      slots.forEach((s) => s.slot.classList.add("fading"));
+      await sleep(350);
+      finish();
+    })();
   });
 }
 
@@ -373,17 +387,21 @@ function handleBuy(egg) {
   toast(`${egg.name} gekauft – es brütet jetzt!`);
 }
 
-async function hatchAndReveal(instanceId) {
-  let result;
-  try {
-    result = hatchEgg(state, instanceId);
-  } catch (err) {
-    toast(err.message, "error");
-    return;
+// Bütet bis zu MAX_REVEAL_SLOTS Eier auf einmal aus und zeigt sie zusammen
+// in einem Raster an, statt einzeln nacheinander (siehe playHatchRevealBatch).
+async function hatchAndRevealBatch(instanceIds) {
+  const results = [];
+  for (const instanceId of instanceIds.slice(0, MAX_REVEAL_SLOTS)) {
+    try {
+      results.push(hatchEgg(state, instanceId));
+    } catch (err) {
+      toast(err.message, "error");
+    }
   }
+  if (results.length === 0) return;
   savePlayer(state);
   renderAll();
-  await playHatchReveal(result);
+  await playHatchRevealBatch(results);
 }
 
 // Rendert Zurück/Weiter-Buttons + Seitenanzeige; onChange(neueSeite) wird
@@ -481,7 +499,7 @@ function renderHatchery() {
       const btn = document.createElement("button");
       btn.className = "buy-btn";
       btn.textContent = "Ausbrüten";
-      btn.addEventListener("click", () => hatchAndReveal(h.instanceId));
+      btn.addEventListener("click", () => hatchAndRevealBatch([h.instanceId]));
       refs.card.appendChild(btn);
       refs.btn = btn;
     }
@@ -779,8 +797,8 @@ $("#auto-equip-btn").addEventListener("click", () => {
 
 $("#hatch-all-btn").addEventListener("click", async () => {
   const instanceIds = state.hatching.filter(isHatchingFinished).map((h) => h.instanceId);
-  for (const instanceId of instanceIds) {
-    await hatchAndReveal(instanceId);
+  for (let i = 0; i < instanceIds.length; i += MAX_REVEAL_SLOTS) {
+    await hatchAndRevealBatch(instanceIds.slice(i, i + MAX_REVEAL_SLOTS));
   }
 });
 
