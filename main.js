@@ -109,13 +109,13 @@ function bootGame() {
   refreshShop();
   renderAll();
 
-  // Live-Ticker: alle 0.5s Brütefortschritt & Geld gutschreiben, Anzeige aktualisieren.
+  // Live-Ticker: alle 0.33s Brütefortschritt & Geld gutschreiben, Anzeige aktualisieren.
   // Solange aktiv gespielt wird, brüten Eier mit 3-facher Geschwindigkeit.
   setInterval(() => {
-    tickHatching(state, 500, 3);
+    tickHatching(state, 333, 3);
     accrueMoney(state);
     renderAll();
-  }, 500);
+  }, 333);
 
   // Alle 5s speichern, damit bei Tab schließen nicht zu viel Fortschritt fehlt
   setInterval(() => savePlayer(state), 5000);

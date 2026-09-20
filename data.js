@@ -149,14 +149,36 @@ function moneyMultiplierFromWeightRatio(ratio) {
 }
 
 // ---- Ziehungs-Formel (Ei-Glück → Pet aus dem Pool) -------------------------
-// Jedes Ei kann grundsätzlich JEDES der 30 Pets ziehen. Das Glück des Eis
-// potenziert das Grundgewicht seltener Tiere stärker als das häufiger Tiere,
-// dadurch verschiebt sich die Verteilung spürbar nach oben, ohne dass
-// Glück=100% (Faktor 1) irgendetwas verändert.
+// Stufen, deren Basis-Chance im Vergleich zum Glück des Eis "trivial" wird,
+// fallen komplett aus dem Pool – seltenere Eier können so ab einem gewissen
+// Glückswert gar keine häufigen Tiere mehr geben, statt sie nur seltener zu
+// machen. Innerhalb des verbliebenen Pools potenziert das Glück weiterhin
+// das Grundgewicht seltener Tiere stärker als das häufiger Tiere.
+// Bei Glück=100% (Faktor 1) ändert sich nichts an der Basisverteilung.
 const MAX_TIER_INDEX = RARITY_INDEX["astral"]; // 12 – höchste im Pool vertretene Stufe
+
+function minEligibleRarityIndex(luckPercent) {
+  let floorIdx = -1;
+  for (let i = 0; i < RARITIES.length; i++) {
+    if (RARITIES[i].petChance === undefined) break;
+    // Sobald das Glück die Basis-Chance dieser Stufe "trivial" macht
+    // (rechnerisch quasi garantiert), fällt sie aus dem Pool.
+    if (luckPercent >= RARITIES[i].petChance * 100) {
+      floorIdx = i;
+    } else {
+      break; // petChance steigt monoton, alles Weitere bleibt also im Pool
+    }
+  }
+  return floorIdx + 1;
+}
+
 function drawPetFromPool(luckPercent) {
   const luckFactor = Math.max(luckPercent, 100) / 100; // 100% => 1.0
-  const weights = PETS.map((pet) => {
+  const minTierIdx = minEligibleRarityIndex(luckPercent);
+  const eligiblePets = PETS.filter((pet) => RARITY_INDEX[pet.rarity] >= minTierIdx);
+  const pool = eligiblePets.length > 0 ? eligiblePets : PETS; // Sicherheitsnetz
+
+  const weights = pool.map((pet) => {
     const tierIdx = RARITY_INDEX[pet.rarity];
     const raw = 1 / pet.baseChanceCache; // baseChanceCache wird unten gesetzt
     const exponent = tierIdx / MAX_TIER_INDEX; // 0 (common) .. 1 (astral)
@@ -164,11 +186,11 @@ function drawPetFromPool(luckPercent) {
   });
   const total = weights.reduce((a, b) => a + b, 0);
   let r = Math.random() * total;
-  for (let i = 0; i < PETS.length; i++) {
+  for (let i = 0; i < pool.length; i++) {
     r -= weights[i];
-    if (r <= 0) return PETS[i];
+    if (r <= 0) return pool[i];
   }
-  return PETS[PETS.length - 1];
+  return pool[pool.length - 1];
 }
 // Basis-Chance pro Pet aus der Rarity-Tabelle cachen
 PETS.forEach((p) => { p.baseChanceCache = RARITIES[RARITY_INDEX[p.rarity]].petChance; });
