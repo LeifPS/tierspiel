@@ -20,7 +20,7 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-html { overflow-x: hidden; }
+html { overflow-x: hidden; touch-action: manipulation; }
 
 body {
   margin: 0;
