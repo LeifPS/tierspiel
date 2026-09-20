@@ -290,6 +290,9 @@ function renderHatchery() {
     const remaining = timeRemainingMs(h);
     const finished = isHatchingFinished(h);
     const pct = Math.min(100, 100 * (1 - remaining / h.durationMs));
+    // Ei wächst optisch mit dem Brütefortschritt: klein am Anfang, volle Größe wenn fertig.
+    const hatchScale = 0.35 + 0.65 * (pct / 100);
+    art.style.setProperty("--hatch-scale", hatchScale.toFixed(3));
     const info = document.createElement("div");
     info.className = "card-info";
     info.innerHTML = `
