@@ -217,10 +217,9 @@ function minEligibleRarityIndex(luckPercent) {
 // hohen Glückswerten der Top-Eier würde eine dauerhaft starke
 // Verstärkung dagegen die Verteilung invertieren (seltenstes Tier würde
 // am häufigsten gezogen). Der Abkling-Faktor verhindert das.
-// Leicht abgeschwächt (war 10) als Ausgleich dafür, dass die Seltenheits-
-// Garantie (siehe drawPetFromPool) die Chance auf hohe Tiers bei jedem Ei
-// spürbar erhöht hat.
-const LUCK_BOOST_STRENGTH = 8;
+// War 10, dann wegen der Seltenheits-Garantie (siehe drawPetFromPool) auf 8
+// gesenkt; jetzt wieder etwas angehoben, da der Ausgleich insgesamt zu hart war.
+const LUCK_BOOST_STRENGTH = 9;
 
 function drawPetFromPool(luckPercent, eggRarity) {
   const luckFactor = Math.max(luckPercent, 100) / 100; // 100% => 1.0
@@ -250,10 +249,11 @@ function drawPetFromPool(luckPercent, eggRarity) {
   return pool[pool.length - 1];
 }
 // Basis-Chance pro Pet aus der Rarity-Tabelle cachen
-// Zweiter, kleinerer Teil des Ausgleichs: die Basis-Chance ab Legendär wird
-// zusätzlich um 15% seltener gemacht (die RARITIES-Tabelle selbst bleibt als
-// "Referenzwert" unverändert, der Nerf sitzt bewusst nur hier zentral).
-const HIGH_TIER_NERF = 1.15;
+// Zweiter Teil des Ausgleichs: die Basis-Chance ab Legendär wird zusätzlich
+// seltener gemacht (die RARITIES-Tabelle selbst bleibt als "Referenzwert"
+// unverändert, der Nerf sitzt bewusst nur hier zentral). War 1.15, jetzt
+// zusammen mit LUCK_BOOST_STRENGTH etwas abgeschwächt.
+const HIGH_TIER_NERF = 1.08;
 PETS.forEach((p) => {
   const tierIdx = RARITY_INDEX[p.rarity];
   const nerf = tierIdx >= RARITY_INDEX["legendary"] ? HIGH_TIER_NERF : 1;
