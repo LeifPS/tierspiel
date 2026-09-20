@@ -114,9 +114,19 @@ function renderPlaceholderIcon(container, label, rarityColor, locked = false) {
   container.appendChild(el);
 }
 
+// Stabiler Zeitversatz für die Schwenk-Animation, damit Karten beim
+// wiederholten Rendern (z.B. Brüt-Fortschritt) nicht neu ausgerichtet
+// werden und die Animation dadurch ruckelt.
+function swayDelayFor(id) {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  return `-${((hash % 320) / 100).toFixed(2)}s`;
+}
+
 function createArtEl(kind, id, label, rarityColor, locked = false) {
   const wrap = document.createElement("div");
   wrap.className = "art" + (locked ? " locked" : "");
+  wrap.style.setProperty("--sway-delay", swayDelayFor(id));
   const img = document.createElement("img");
   img.alt = locked ? "???" : label;
   img.src = assetSrc(kind, id);
@@ -331,6 +341,7 @@ function renderHatchery() {
     const card = document.createElement("div");
     card.className = "card hatch-card";
     const art = createArtEl("eggs", egg.id, egg.name, rarity.color);
+    art.style.setProperty("--sway-delay", swayDelayFor(h.instanceId));
     card.appendChild(art);
     const remaining = timeRemainingMs(h);
     const finished = isHatchingFinished(h);
@@ -374,7 +385,7 @@ function renderInventory() {
     const card = document.createElement("div");
     card.className = "card pet-card" + (equipped ? " equipped" : "");
     const art = createArtEl("pets", pet.id, pet.name, rarity.color);
-    art.style.setProperty("--sway-delay", `-${(Math.random() * 3.2).toFixed(2)}s`);
+    art.style.setProperty("--sway-delay", swayDelayFor(inst.instanceId));
     card.appendChild(art);
     const info = document.createElement("div");
     info.className = "card-info";
