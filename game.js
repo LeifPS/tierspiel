@@ -55,35 +55,39 @@ function startHatching(state, eggId) {
   });
 }
 
-// ---- Fertige Eier auswerten (funktioniert auch nach langer Abwesenheit) ---
-function resolveFinishedEggs(state) {
+// ---- Fertige Eier erkennen (löst sie NICHT aus – das macht hatchEgg) -------
+function isHatchingFinished(hatchEntry) {
+  return Date.now() - hatchEntry.startMs >= hatchEntry.durationMs;
+}
+
+function getFinishedHatching(state) {
+  return state.hatching.filter(isHatchingFinished);
+}
+
+// ---- Ein fertiges Ei manuell ausbrüten -------------------------------------
+function hatchEgg(state, instanceId) {
+  const entry = state.hatching.find((h) => h.instanceId === instanceId);
+  if (!entry) throw new Error("Dieses Ei brütet nicht (mehr).");
+  if (!isHatchingFinished(entry)) throw new Error("Das Ei ist noch nicht fertig.");
+
   const now = Date.now();
-  const stillHatching = [];
-  const newlyHatched = [];
-  for (const h of state.hatching) {
-    if (now - h.startMs >= h.durationMs) {
-      const egg = EGG_BY_ID[h.eggId];
-      const pet = drawPetFromPool(egg.luckPercent);
-      const rollFactor = rollWeightFactor();
-      const weightKg = pet.baseWeightKg * egg.weightMultiplier * rollFactor;
-      const ratio = weightKg / pet.baseWeightKg; // Vielfaches des Basisgewichts
-      const moneyPerSec = pet.baseMoney * moneyMultiplierFromWeightRatio(ratio);
-      const petInstance = {
-        instanceId: newInstanceId(),
-        petId: pet.id,
-        weightKg,
-        ratio,
-        moneyPerSec,
-        obtainedAtMs: now,
-      };
-      state.pets.push(petInstance);
-      newlyHatched.push({ pet, instance: petInstance, egg });
-    } else {
-      stillHatching.push(h);
-    }
-  }
-  state.hatching = stillHatching;
-  return newlyHatched;
+  const egg = EGG_BY_ID[entry.eggId];
+  const pet = drawPetFromPool(egg.luckPercent);
+  const rollFactor = rollWeightFactor();
+  const weightKg = pet.baseWeightKg * egg.weightMultiplier * rollFactor;
+  const ratio = weightKg / pet.baseWeightKg; // Vielfaches des Basisgewichts
+  const moneyPerSec = pet.baseMoney * moneyMultiplierFromWeightRatio(ratio);
+  const petInstance = {
+    instanceId: newInstanceId(),
+    petId: pet.id,
+    weightKg,
+    ratio,
+    moneyPerSec,
+    obtainedAtMs: now,
+  };
+  state.pets.push(petInstance);
+  state.hatching = state.hatching.filter((h) => h.instanceId !== instanceId);
+  return { pet, instance: petInstance, egg };
 }
 
 // ---- Geld aus equippten Pets (auch für die Offline-Zeit) ------------------
@@ -126,6 +130,7 @@ function timeRemainingMs(hatchEntry) {
 export {
   EGG_BY_ID, PET_BY_ID, START_COINS, START_EQUIP_SLOTS,
   defaultPlayerState, loadPlayer, savePlayer,
-  startHatching, resolveFinishedEggs, accrueMoney, totalMoneyPerSecond,
+  startHatching, isHatchingFinished, getFinishedHatching, hatchEgg,
+  accrueMoney, totalMoneyPerSecond,
   equipPet, unequipPet, timeRemainingMs,
 };

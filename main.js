@@ -6,7 +6,7 @@ import { EGGS, PETS, getRarity, formatNumber, formatDuration } from "./data.js";
 import { getOrRotateShop, buyEgg, msUntilNextRotation, ROTATION_MS } from "./shop.js";
 import {
   EGG_BY_ID, PET_BY_ID, loadPlayer, savePlayer, startHatching,
-  resolveFinishedEggs, accrueMoney, totalMoneyPerSecond, equipPet, unequipPet,
+  isHatchingFinished, hatchEgg, accrueMoney, totalMoneyPerSecond, equipPet, unequipPet,
   timeRemainingMs,
 } from "./game.js";
 
@@ -135,24 +135,19 @@ onAuthStateChanged(auth, async (user) => {
 async function bootGame() {
   state = await loadPlayer(uid);
   const earned = accrueMoney(state); // rechnet Offline-Geld ab
-  const hatched = resolveFinishedEggs(state); // rechnet Offline-Eier ab
   await savePlayer(uid, state);
 
-  if (hatched.length > 0) {
-    showHatchSummary(hatched);
-  } else if (earned > 1) {
+  if (earned > 1) {
     toast(`Willkommen zurück! +${formatNumber(earned)} Münzen verdient, während du weg warst.`);
   }
 
   await refreshShop();
   renderAll();
 
-  // Live-Ticker: einmal pro Sekunde Geld gutschreiben & Eier prüfen
+  // Live-Ticker: einmal pro Sekunde Geld gutschreiben & Anzeige aktualisieren
   setInterval(() => {
     if (!state) return;
     accrueMoney(state);
-    const justHatched = resolveFinishedEggs(state);
-    if (justHatched.length > 0) showHatchSummary(justHatched);
     renderAll();
   }, 1000);
 
@@ -177,11 +172,8 @@ function toast(msg) {
   toast._t = setTimeout(() => el.classList.remove("show"), 4000);
 }
 
-function showHatchSummary(hatchedList) {
-  const namesList = hatchedList
-    .map((h) => `${h.pet.name} (${getRarity(h.pet.rarity).name}, ${h.instance.ratio.toFixed(2)}x)`)
-    .join(", ");
-  toast(`Geschlüpft: ${namesList}`);
+function showHatchSummary(hatched) {
+  toast(`Geschlüpft: ${hatched.pet.name} (${getRarity(hatched.pet.rarity).name}, ${hatched.instance.ratio.toFixed(2)}x)`);
 }
 
 // ---------------------------------------------------------------------------
@@ -272,15 +264,36 @@ function renderHatchery() {
     const art = createArtEl("eggs", egg.id, egg.name, rarity.color);
     card.appendChild(art);
     const remaining = timeRemainingMs(h);
+    const finished = isHatchingFinished(h);
     const pct = Math.min(100, 100 * (1 - remaining / h.durationMs));
     const info = document.createElement("div");
     info.className = "card-info";
     info.innerHTML = `
       <div class="card-name">${egg.name}</div>
       <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-      <div class="card-stat">${remaining <= 0 ? "Fertig!" : formatDuration(remaining / 1000) + " übrig"}</div>
+      <div class="card-stat">${finished ? "Fertig!" : formatDuration(remaining / 1000) + " übrig"}</div>
     `;
     card.appendChild(info);
+
+    if (finished) {
+      const btn = document.createElement("button");
+      btn.className = "buy-btn";
+      btn.textContent = "Ausbrüten";
+      btn.addEventListener("click", async () => {
+        let result;
+        try {
+          result = hatchEgg(state, h.instanceId);
+        } catch (err) {
+          toast(err.message);
+          return;
+        }
+        await savePlayer(uid, state);
+        showHatchSummary(result);
+        renderAll();
+      });
+      card.appendChild(btn);
+    }
+
     grid.appendChild(card);
   }
 }
