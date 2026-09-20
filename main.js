@@ -96,6 +96,7 @@ const ASSET_OVERRIDES = {
 
 const COIN_ICON_URL = "https://static.wikia.nocookie.net/pet-simulator/images/b/b2/PS99_-_Coin.png";
 const coinIcon = () => `<img src="${COIN_ICON_URL}" alt="Münzen" class="coin-icon">`;
+const GOLD_BAR_ICON_URL = "https://static.wikia.nocookie.net/pet-simulator/images/e/e8/PS99_-_Gold_Bar.png";
 
 function assetSrc(kind, id) {
   const override = ASSET_OVERRIDES[kind]?.[id];
@@ -123,9 +124,9 @@ function swayDelayFor(id) {
   return `-${((hash % 320) / 100).toFixed(2)}s`;
 }
 
-function createArtEl(kind, id, label, rarityColor, locked = false) {
+function createArtEl(kind, id, label, rarityColor, locked = false, dimmed = false) {
   const wrap = document.createElement("div");
-  wrap.className = "art" + (locked ? " locked" : "");
+  wrap.className = "art" + (locked ? " locked" : "") + (dimmed ? " dimmed" : "");
   wrap.style.setProperty("--sway-delay", swayDelayFor(id));
   const img = document.createElement("img");
   img.alt = locked ? "???" : label;
@@ -518,83 +519,94 @@ function renderRebirth() {
   const content = $("#rebirth-content");
   content.innerHTML = "";
 
-  const currentMultiplier = getMoneyMultiplier(state);
   const summary = document.createElement("div");
-  summary.className = "empty-hint";
-  summary.style.marginBottom = "16px";
+  summary.className = "rebirth-summary";
   summary.innerHTML = state.rebirth > 0
-    ? `Aktuelle Rebirth-Stufe: <strong>R${state.rebirth}</strong> · Geld-Multiplikator: <strong>×${currentMultiplier}</strong> · ${state.equipSlots} Ausrüstungsplätze`
-    : `Noch keine Rebirth durchgeführt. Geld-Multiplikator: <strong>×1</strong>`;
+    ? `Aktuelle Stufe: <strong>R${state.rebirth}</strong> · Geld-Multiplikator <strong>×${getMoneyMultiplier(state)}</strong> · ${state.equipSlots} Ausrüstungsplätze`
+    : `Noch keine Rebirth durchgeführt · Geld-Multiplikator <strong>×1</strong>`;
   content.appendChild(summary);
 
-  const grid = document.createElement("div");
-  grid.className = "grid";
-  content.appendChild(grid);
+  const next = REBIRTHS[state.rebirth];
 
-  for (const r of REBIRTHS) {
-    const pet = PET_BY_ID[r.petId];
-    const rarity = getRarity(pet.rarity);
-    const achieved = state.rebirth >= r.level;
-    const isNext = state.rebirth === r.level - 1;
-    const ownsPet = state.pets.some((p) => p.petId === r.petId);
-    const canAfford = state.coins >= r.price;
-
-    const card = document.createElement("div");
-    card.className = "card" + (achieved ? " equipped" : "");
-    card.style.setProperty("--rarity-color", rarity.color.startsWith("linear") ? "#888" : rarity.color);
-    card.appendChild(createArtEl("pets", pet.id, pet.name, rarity.color));
-
-    const info = document.createElement("div");
-    info.className = "card-info";
-    info.innerHTML = `
-      <div class="card-name">Rebirth ${r.level}</div>
-      <div class="card-rarity" style="background:${rarity.color}">${pet.name} benötigt</div>
-      <div class="card-stat">${coinIcon()} Kosten: ${formatNumber(r.price)}</div>
-      <div class="card-stat">🎒 ${r.equipSlots} Ausrüstungsplätze</div>
-      <div class="card-stat">💹 Geld-Multiplikator: ×${r.moneyMultiplier}</div>
-    `;
-    card.appendChild(info);
-
-    const btn = document.createElement("button");
-    btn.className = "buy-btn";
-    if (achieved) {
-      btn.textContent = "Erreicht ✓";
-      btn.disabled = true;
-    } else if (!isNext) {
-      btn.textContent = "Erst vorherige Stufe nötig";
-      btn.disabled = true;
-    } else {
-      btn.textContent = "Rebirth durchführen";
-      btn.disabled = !ownsPet || !canAfford;
-      btn.addEventListener("click", () => {
-        let result;
-        try {
-          result = performRebirth(state);
-        } catch (err) {
-          toast(err.message);
-          return;
-        }
-        savePlayer(state);
-        renderAll();
-        toast(`Rebirth ${result.level} erreicht! ×${result.moneyMultiplier} Geld, ${result.equipSlots} Plätze.`);
-      });
-    }
-    card.appendChild(btn);
-
-    if (isNext && !achieved) {
-      const missing = [];
-      if (!ownsPet) missing.push(`ein ${pet.name}`);
-      if (!canAfford) missing.push(`${formatNumber(r.price)} Münzen`);
-      if (missing.length > 0) {
-        const hint = document.createElement("div");
-        hint.className = "card-stat";
-        hint.textContent = `Fehlt noch: ${missing.join(" und ")}`;
-        card.appendChild(hint);
-      }
-    }
-
-    grid.appendChild(card);
+  if (!next) {
+    const maxed = document.createElement("div");
+    maxed.className = "rebirth-card rebirth-maxed";
+    maxed.textContent = "Du hast den maximalen Rebirth erreicht.";
+    content.appendChild(maxed);
+    return;
   }
+
+  const pet = PET_BY_ID[next.petId];
+  const rarity = getRarity(pet.rarity);
+  const ownsPet = state.pets.some((p) => p.petId === next.petId);
+  const canAfford = state.coins >= next.price;
+
+  const card = document.createElement("div");
+  card.className = "rebirth-card";
+
+  card.innerHTML = `<div class="rebirth-title">Rebirth ${next.level}</div>`;
+
+  const reqRow = document.createElement("div");
+  reqRow.className = "rebirth-requirements";
+
+  const petReq = document.createElement("div");
+  petReq.className = "rebirth-req";
+  petReq.appendChild(createArtEl("pets", pet.id, pet.name, rarity.color, false, !ownsPet));
+  petReq.insertAdjacentHTML("beforeend", `<div class="rebirth-req-label">${pet.name}</div>`);
+  reqRow.appendChild(petReq);
+
+  const plus = document.createElement("div");
+  plus.className = "rebirth-req-plus";
+  plus.textContent = "+";
+  reqRow.appendChild(plus);
+
+  const coinReq = document.createElement("div");
+  coinReq.className = "rebirth-req";
+  coinReq.innerHTML = `
+    <div class="art${canAfford ? "" : " dimmed"}"><img src="${GOLD_BAR_ICON_URL}" alt="Münzen"></div>
+    <div class="rebirth-req-label">${formatNumber(next.price)}</div>
+  `;
+  reqRow.appendChild(coinReq);
+
+  card.appendChild(reqRow);
+
+  const rewards = document.createElement("div");
+  rewards.className = "rebirth-rewards";
+  rewards.innerHTML = `
+    <div class="card-stat">🎒 ${next.equipSlots} Ausrüstungsplätze</div>
+    <div class="card-stat">💹 Geld-Multiplikator: ×${next.moneyMultiplier}</div>
+  `;
+  card.appendChild(rewards);
+
+  const btn = document.createElement("button");
+  btn.className = "primary-btn";
+  btn.textContent = "Rebirth durchführen";
+  btn.disabled = !ownsPet || !canAfford;
+  btn.addEventListener("click", () => {
+    let result;
+    try {
+      result = performRebirth(state);
+    } catch (err) {
+      toast(err.message);
+      return;
+    }
+    savePlayer(state);
+    renderAll();
+    toast(`Rebirth ${result.level} erreicht! ×${result.moneyMultiplier} Geld, ${result.equipSlots} Plätze.`);
+  });
+  card.appendChild(btn);
+
+  if (!ownsPet || !canAfford) {
+    const missing = [];
+    if (!ownsPet) missing.push(`ein ${pet.name}`);
+    if (!canAfford) missing.push(`${formatNumber(next.price)} Münzen`);
+    const hint = document.createElement("div");
+    hint.className = "rebirth-missing";
+    hint.textContent = `Fehlt noch: ${missing.join(" und ")}`;
+    card.appendChild(hint);
+  }
+
+  content.appendChild(card);
 }
 
 $("#auto-equip-btn").addEventListener("click", () => {
