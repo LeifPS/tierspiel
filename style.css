@@ -12,25 +12,42 @@
   --danger: #ef5350;
   --radius-lg: 20px;
   --radius-md: 14px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
 }
 
-* { box-sizing: border-box; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html { overflow-x: hidden; }
 
 body {
   margin: 0;
   min-height: 100vh;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at 15% 10%, #241a44 0%, transparent 45%),
     radial-gradient(circle at 85% 90%, #1c2a4a 0%, transparent 50%),
     var(--bg-deep);
   color: var(--text-main);
   font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 .hidden { display: none !important; }
 
+button {
+  font-family: inherit;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+button:active { transform: scale(0.97); }
+
 .primary-btn {
   width: 100%;
+  min-height: 46px;
   padding: 12px;
   border: none;
   border-radius: var(--radius-md);
@@ -39,24 +56,30 @@ body {
   font-weight: 700;
   font-size: 1rem;
   cursor: pointer;
-  transition: transform 0.15s ease;
+  box-shadow: 0 4px 14px rgba(255, 143, 0, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 .primary-btn:hover { transform: translateY(-1px); }
-.primary-btn:disabled { opacity: 0.6; cursor: default; transform: none; }
+.primary-btn:disabled { opacity: 0.6; cursor: default; transform: none; box-shadow: none; }
 
 /* ---------- Game shell ---------- */
-#game-screen { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
+#game-screen {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: calc(16px + var(--safe-top)) calc(16px + var(--safe-right)) calc(60px + var(--safe-bottom)) calc(16px + var(--safe-left));
+}
 
 .topbar {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
   flex-wrap: wrap;
   background: var(--bg-panel);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-lg);
-  padding: 14px 20px;
-  margin-bottom: 18px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
 
 .topbar .logo {
@@ -72,10 +95,12 @@ body {
 
 .stat-pill {
   background: var(--bg-card);
+  border: 1px solid var(--border-soft);
   border-radius: 999px;
-  padding: 8px 16px;
-  font-size: 0.9rem;
+  padding: 8px 14px;
+  font-size: 0.85rem;
   font-weight: 600;
+  white-space: nowrap;
 }
 #coins-display { color: var(--accent); }
 #income-display { color: var(--success); }
@@ -92,16 +117,33 @@ body {
   border: 1px solid var(--border-soft);
   color: var(--text-dim);
   border-radius: 999px;
-  padding: 8px 14px;
+  padding: 9px 14px;
+  min-height: 38px;
   cursor: pointer;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+#reset-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+@media (max-width: 560px) {
+  .topbar {
+    justify-content: center;
+    padding: 12px 14px;
+  }
+  .topbar .logo { width: 100%; text-align: center; margin-right: 0; font-size: 1.15rem; }
+  .stat-pill { font-size: 0.78rem; padding: 7px 11px; }
 }
 
 /* ---------- Tabs ---------- */
 .tab-nav { display: flex; gap: 8px; margin-bottom: 16px; }
 .tab-btn {
   flex: 1;
-  padding: 12px;
-  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 8px;
+  border: 1px solid var(--border-soft);
   border-radius: var(--radius-md);
   background: var(--bg-panel);
   color: var(--text-dim);
@@ -109,24 +151,40 @@ body {
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
-  border: 1px solid var(--border-soft);
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 .tab-btn.active {
   background: linear-gradient(135deg, #2b2050, #3a2a5e);
   color: var(--text-main);
   border-color: var(--accent);
 }
+.tab-icon { font-size: 1.1rem; line-height: 1; }
+.tab-label { line-height: 1; }
 
 .tab-panel { display: none; }
-.tab-panel.active { display: block; }
+.tab-panel.active { display: block; animation: panel-fade-in 0.2s ease; }
+
+@keyframes panel-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 .panel-header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 14px;
   color: var(--text-dim);
   font-size: 0.9rem;
+}
+
+@media (max-width: 560px) {
+  .tab-nav { gap: 6px; }
+  .tab-btn { padding: 10px 4px; font-size: 0.9rem; }
+  .tab-label { display: none; }
+  .tab-icon { font-size: 1.3rem; }
 }
 
 /* ---------- Cards / grid ---------- */
@@ -145,9 +203,13 @@ body {
   flex-direction: column;
   gap: 8px;
   position: relative;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.card.equipped { box-shadow: 0 0 0 2px var(--accent) inset; }
+.card:not(.locked):not(.sold-out):active { transform: translateY(1px) scale(0.985); }
+
+.card.equipped { box-shadow: 0 0 0 2px var(--accent) inset, 0 4px 14px rgba(0, 0, 0, 0.18); }
 
 .art {
   width: 100%;
@@ -198,8 +260,10 @@ body {
 
 .index-section-title {
   font-family: 'Baloo 2', sans-serif;
-  color: var(--text-dim);
-  margin: 20px 0 12px;
+  color: var(--text-main);
+  margin: 24px 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-soft);
 }
 .index-section-title:first-of-type { margin-top: 0; }
 
@@ -208,7 +272,8 @@ body {
   display: inline-block;
   font-size: 0.7rem;
   font-weight: 700;
-  padding: 3px 8px;
+  letter-spacing: 0.02em;
+  padding: 3px 9px;
   border-radius: 999px;
   color: #0c0a16;
   width: fit-content;
@@ -217,6 +282,7 @@ body {
 
 .buy-btn {
   margin-top: auto;
+  min-height: 42px;
   padding: 9px;
   border: none;
   border-radius: var(--radius-md);
@@ -224,26 +290,39 @@ body {
   color: #221400;
   font-weight: 700;
   cursor: pointer;
+  box-shadow: 0 3px 10px rgba(255, 143, 0, 0.3);
+  transition: box-shadow 0.15s ease;
 }
-.buy-btn:disabled { opacity: 0.5; cursor: default; }
-.buy-btn.unequip { background: var(--bg-deep); color: var(--text-dim); border: 1px solid var(--border-soft); }
+.buy-btn:disabled { opacity: 0.5; cursor: default; box-shadow: none; }
+.buy-btn.unequip { background: var(--bg-deep); color: var(--text-dim); border: 1px solid var(--border-soft); box-shadow: none; }
 
 .progress-bar { height: 8px; background: var(--bg-deep); border-radius: 999px; overflow: hidden; }
 .progress-fill { height: 100%; background: linear-gradient(90deg, #ffb703, #4caf50); }
 
-.empty-hint { color: var(--text-dim); padding: 30px; text-align: center; grid-column: 1 / -1; }
+.empty-hint {
+  color: var(--text-dim);
+  padding: 32px 20px;
+  text-align: center;
+  grid-column: 1 / -1;
+  border: 1.5px dashed var(--border-soft);
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+}
 
 .action-btn {
   background: linear-gradient(135deg, #ff8f00, #ffb703);
   color: #221400;
   border: none;
   border-radius: 999px;
-  padding: 8px 16px;
+  padding: 10px 16px;
+  min-height: 40px;
   font-weight: 700;
   font-size: 0.85rem;
   cursor: pointer;
+  box-shadow: 0 3px 10px rgba(255, 143, 0, 0.3);
+  transition: box-shadow 0.15s ease;
 }
-.action-btn:disabled { opacity: 0.5; cursor: default; }
+.action-btn:disabled { opacity: 0.5; cursor: default; box-shadow: none; }
 
 /* ---------- Ei-Reveal-Cutscene ---------- */
 .reveal-overlay {
@@ -347,7 +426,7 @@ body {
 /* ---------- Toast ---------- */
 #toast {
   position: fixed;
-  bottom: 24px;
+  bottom: calc(24px + var(--safe-bottom));
   left: 50%;
   transform: translate(-50%, 20px);
   background: var(--bg-panel);
@@ -355,6 +434,7 @@ body {
   padding: 12px 20px;
   border-radius: var(--radius-md);
   opacity: 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   transition: all 0.25s ease;
   pointer-events: none;
   max-width: 90vw;
@@ -364,5 +444,7 @@ body {
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 @media (max-width: 500px) {
-  .grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 10px; }
+  .card { padding: 10px; }
+  #toast { font-size: 0.9rem; padding: 10px 16px; }
 }
