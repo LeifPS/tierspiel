@@ -3,7 +3,8 @@
 // Läuft komplett lokal: der Spielstand liegt im localStorage des Browsers.
 // ============================================================
 import {
-  EGGS, PETS, REBIRTHS, rollWeightFactor, moneyMultiplierFromWeightRatio, drawPetFromPool,
+  EGGS, PETS, REBIRTHS, MUTATION_BY_ID, rollWeightFactor, moneyMultiplierFromWeightRatio,
+  drawPetFromPool, rollMutation,
 } from "./data.js";
 
 const EGG_BY_ID = Object.fromEntries(EGGS.map((e) => [e.id, e]));
@@ -101,13 +102,16 @@ function hatchEgg(state, instanceId) {
   const rollFactor = rollWeightFactor();
   const weightKg = pet.baseWeightKg * rollFactor;
   const ratio = weightKg / pet.baseWeightKg; // Vielfaches des Basisgewichts
-  const moneyPerSec = pet.baseMoney * moneyMultiplierFromWeightRatio(ratio);
+  const mutation = rollMutation(); // z.B. "gold" mit 5% Chance, unabhängig vom Ei
+  const mutationMoneyMultiplier = mutation ? MUTATION_BY_ID[mutation].moneyMultiplier : 1;
+  const moneyPerSec = pet.baseMoney * moneyMultiplierFromWeightRatio(ratio) * mutationMoneyMultiplier;
   const petInstance = {
     instanceId: newInstanceId(),
     petId: pet.id,
     weightKg,
     ratio,
     moneyPerSec,
+    mutation,
     obtainedAtMs: now,
   };
   state.pets.push(petInstance);

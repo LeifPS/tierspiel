@@ -65,10 +65,12 @@
       <div class="index-switch">
         <button class="index-switch-btn active" data-index-view="eggs">🥚 Eier</button>
         <button class="index-switch-btn" data-index-view="pets">🐾 Tiere</button>
+        <button class="index-switch-btn" data-index-view="mutations">✨ Mutationen</button>
       </div>
     </div>
     <div id="index-eggs-grid" class="grid"></div>
     <div id="index-pets-grid" class="grid hidden"></div>
+    <div id="index-mutations-grid" class="grid hidden"></div>
   </div>
 
   <div id="panel-rebirth" class="tab-panel">
@@ -95,6 +97,23 @@
 </div>
 
 <div id="toast"></div>
+
+<!-- Globaler Filter für die Gold-Mutation (siehe .pet-gold-img in style.css) -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <filter id="goldDuotone" color-interpolation-filters="sRGB">
+      <feColorMatrix type="matrix" values="0.33 0.33 0.33 0 0
+                                            0.33 0.33 0.33 0 0
+                                            0.33 0.33 0.33 0 0
+                                            0    0    0    1 0"/>
+      <feComponentTransfer>
+        <feFuncR type="table" tableValues="0.30 0.55 0.85 1.0"/>
+        <feFuncG type="table" tableValues="0.14 0.34 0.66 0.90"/>
+        <feFuncB type="table" tableValues="0.00 0.02 0.20 0.45"/>
+      </feComponentTransfer>
+    </filter>
+  </defs>
+</svg>
 
 <script type="module" src="main.js"></script>
 </body>
