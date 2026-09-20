@@ -423,11 +423,34 @@ button:active { transform: scale(0.97); }
 }
 .reveal-overlay.hidden { display: none; }
 
+.reveal-flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95), transparent 65%);
+  opacity: 0;
+  pointer-events: none;
+}
+
 .reveal-rays {
   position: absolute;
   inset: -60%;
   opacity: 0;
   pointer-events: none;
+}
+
+.reveal-particles { position: absolute; inset: 0; pointer-events: none; }
+.reveal-particle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 50%;
+  background: var(--particle-color, #fff);
+  opacity: 0;
+  animation: reveal-particle-burst 1s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+  animation-delay: var(--particle-delay, 0s);
 }
 
 .reveal-card {
@@ -446,6 +469,12 @@ button:active { transform: scale(0.97); }
   from { transform: scale(0.5); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
+@keyframes reveal-pop-elastic {
+  0% { transform: scale(0.3); opacity: 0; }
+  60% { transform: scale(1.08); opacity: 1; }
+  80% { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
 @keyframes reveal-pulse {
   0%, 100% { box-shadow: 0 0 30px var(--glow-color, rgba(255,255,255,0.25)); }
   50% { box-shadow: 0 0 70px var(--glow-color, rgba(255,255,255,0.55)); }
@@ -460,11 +489,35 @@ button:active { transform: scale(0.97); }
 @keyframes reveal-spin {
   to { transform: rotate(360deg); }
 }
+@keyframes reveal-spin-reverse {
+  to { transform: rotate(-360deg); }
+}
+@keyframes reveal-flash-burst {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes reveal-particle-burst {
+  0% { transform: rotate(var(--angle, 0deg)) translateX(0) scale(1); opacity: 1; }
+  100% { transform: rotate(var(--angle, 0deg)) translateX(var(--distance, 130px)) scale(0.2); opacity: 0; }
+}
+@keyframes reveal-shine-sweep {
+  0%, 15% { transform: translateX(-130%) skewX(-20deg); }
+  60%, 100% { transform: translateX(230%) skewX(-20deg); }
+}
 
-.reveal-art {
+.reveal-art-wrap {
+  position: relative;
   width: 150px;
   height: 150px;
   margin: 0 auto 16px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.reveal-art {
+  width: 100%;
+  height: 100%;
+  margin: 0;
   border-radius: var(--radius-md);
   background: var(--bg-deep);
   display: flex;
@@ -473,6 +526,18 @@ button:active { transform: scale(0.97); }
   padding: 16px;
 }
 .reveal-art img { width: 100%; height: 100%; object-fit: contain; }
+
+.reveal-shine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+  transform: translateX(-130%) skewX(-20deg);
+  pointer-events: none;
+  opacity: 0;
+}
 
 .reveal-rarity {
   display: inline-block;
@@ -492,20 +557,51 @@ button:active { transform: scale(0.97); }
   border-color: #2196f3;
   animation: reveal-pop 0.4s ease, reveal-pulse 1.8s ease-in-out infinite;
 }
+.reveal-overlay.tier-rare .reveal-shine {
+  opacity: 1;
+  animation: reveal-shine-sweep 2.2s ease-in-out 0.3s infinite;
+}
+
 .reveal-overlay.tier-epic .reveal-card {
   --glow-color: rgba(156, 39, 176, 0.55);
   border-color: #9c27b0;
-  animation: reveal-pop 0.4s ease, reveal-pulse 1.3s ease-in-out infinite;
+  animation: reveal-pop-elastic 0.5s ease, reveal-pulse 1.3s ease-in-out infinite;
 }
+.reveal-overlay.tier-epic .reveal-flash {
+  background: radial-gradient(circle, rgba(156, 39, 176, 0.9), transparent 65%);
+  animation: reveal-flash-burst 0.5s ease-out;
+}
+.reveal-overlay.tier-epic .reveal-shine {
+  opacity: 1;
+  animation: reveal-shine-sweep 1.8s ease-in-out 0.3s infinite;
+}
+.reveal-overlay.tier-epic .reveal-rays {
+  opacity: 1;
+  background: conic-gradient(from 0deg, transparent, rgba(156, 39, 176, 0.3), transparent 30%);
+  animation: reveal-spin 4s linear infinite;
+}
+
 .reveal-overlay.tier-legendary .reveal-card {
   --glow-color: rgba(255, 183, 3, 0.65);
   border-color: #ffb703;
-  animation: reveal-pop 0.4s ease, reveal-shake 0.5s ease, reveal-pulse 0.9s ease-in-out infinite;
+  animation: reveal-pop-elastic 0.6s ease, reveal-shake 0.5s ease 0.5s, reveal-pulse 0.9s ease-in-out infinite;
+}
+.reveal-overlay.tier-legendary .reveal-flash {
+  animation: reveal-flash-burst 0.6s ease-out;
+}
+.reveal-overlay.tier-legendary .reveal-shine {
+  opacity: 1;
+  animation: reveal-shine-sweep 1.3s ease-in-out 0.3s infinite;
 }
 .reveal-overlay.tier-legendary .reveal-rays {
   opacity: 1;
-  background: conic-gradient(from 0deg, transparent, rgba(255, 183, 3, 0.3), transparent 30%);
+  background: conic-gradient(from 0deg, transparent, rgba(255, 183, 3, 0.35), transparent 30%);
   animation: reveal-spin 3s linear infinite;
+}
+.reveal-overlay.tier-legendary .reveal-rays-2 {
+  opacity: 1;
+  background: conic-gradient(from 90deg, transparent, rgba(255, 255, 255, 0.2), transparent 20%);
+  animation: reveal-spin-reverse 4.5s linear infinite;
 }
 
 /* ---------- Toast ---------- */

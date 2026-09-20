@@ -217,12 +217,39 @@ function revealTierClass(rarityId) {
   return "tier-legendary";
 }
 
+// Anzahl + Farben der Partikel für den Reveal-Effekt je Seltenheits-Stufe.
+const PARTICLE_CONFIG = {
+  "tier-common": { count: 0, colors: [] },
+  "tier-rare": { count: 0, colors: [] },
+  "tier-epic": { count: 16, colors: ["#e1bee7", "#ce93d8", "#ffffff"] },
+  "tier-legendary": { count: 26, colors: ["#ffe082", "#ffb703", "#ffffff"] },
+};
+
+function spawnRevealParticles(tierClass) {
+  const host = $("#reveal-particles");
+  host.innerHTML = "";
+  const config = PARTICLE_CONFIG[tierClass] || PARTICLE_CONFIG["tier-common"];
+  for (let i = 0; i < config.count; i++) {
+    const particle = document.createElement("div");
+    particle.className = "reveal-particle";
+    const angle = (360 / config.count) * i + (Math.random() * 12 - 6);
+    const distance = 90 + Math.random() * 70;
+    particle.style.setProperty("--angle", `${angle}deg`);
+    particle.style.setProperty("--distance", `${distance}px`);
+    particle.style.setProperty("--particle-delay", `${Math.random() * 0.15}s`);
+    particle.style.setProperty("--particle-color", config.colors[i % config.colors.length]);
+    host.appendChild(particle);
+  }
+}
+
 function playHatchReveal(result) {
   const { pet, instance } = result;
   const rarity = getRarity(pet.rarity);
   const overlay = $("#reveal-overlay");
+  const tierClass = revealTierClass(pet.rarity);
 
-  overlay.className = `reveal-overlay ${revealTierClass(pet.rarity)}`;
+  overlay.className = `reveal-overlay ${tierClass}`;
+  spawnRevealParticles(tierClass);
 
   const artHost = $("#reveal-art");
   artHost.innerHTML = "";
