@@ -290,9 +290,24 @@ function handleBuy(egg) {
   toast(`${egg.name} gekauft – es brütet jetzt!`);
 }
 
+async function hatchAndReveal(instanceId) {
+  let result;
+  try {
+    result = hatchEgg(state, instanceId);
+  } catch (err) {
+    toast(err.message);
+    return;
+  }
+  savePlayer(state);
+  renderAll();
+  await playHatchReveal(result);
+}
+
 function renderHatchery() {
   const grid = $("#hatchery-grid");
   grid.innerHTML = "";
+  const finishedCount = state.hatching.filter(isHatchingFinished).length;
+  $("#hatch-all-btn").disabled = finishedCount === 0;
   if (state.hatching.length === 0) {
     grid.innerHTML = `<div class="empty-hint">Keine Eier am Brüten. Kauf welche im Shop!</div>`;
     return;
@@ -324,18 +339,7 @@ function renderHatchery() {
       const btn = document.createElement("button");
       btn.className = "buy-btn";
       btn.textContent = "Ausbrüten";
-      btn.addEventListener("click", async () => {
-        let result;
-        try {
-          result = hatchEgg(state, h.instanceId);
-        } catch (err) {
-          toast(err.message);
-          return;
-        }
-        savePlayer(state);
-        renderAll();
-        await playHatchReveal(result);
-      });
+      btn.addEventListener("click", () => hatchAndReveal(h.instanceId));
       card.appendChild(btn);
     }
 
@@ -452,6 +456,13 @@ $("#auto-equip-btn").addEventListener("click", () => {
   savePlayer(state);
   renderAll();
   toast("Die stärksten Tiere sind jetzt ausgerüstet!");
+});
+
+$("#hatch-all-btn").addEventListener("click", async () => {
+  const instanceIds = state.hatching.filter(isHatchingFinished).map((h) => h.instanceId);
+  for (const instanceId of instanceIds) {
+    await hatchAndReveal(instanceId);
+  }
 });
 
 // Nav zwischen Tabs (Shop / Brüten / Tiere)
