@@ -275,18 +275,37 @@ button:active { transform: scale(0.97); }
 .diamond-badge { color: #062a3d; background: linear-gradient(135deg, #e8fbff, #4fc3f7); }
 
 /* ---------- Mutationen-Übersicht (Index) ---------- */
+/* Kleinere, mittig zentrierte Fläche statt der vollen Kartengröße - sowohl
+   optisch dezenter als auch weniger Pixel, die der (per Filter+Maske teure)
+   Glanz-Effekt jeden Frame neu einfärben muss. */
 .mutation-cycle-img {
   position: absolute;
-  inset: 0;
+  inset: 18%;
   opacity: 0;
-  animation: mutation-cycle-fade 6s infinite;
+  animation: mutation-cycle-fade 6s linear infinite;
+}
+/* Höhere Spezifität nötig, um die generelle ".art img { width/height:100% }"-
+   Regel zu überstimmen - sonst füllt das Bild trotz "inset" die volle
+   Kartenfläche, weil eine explizite Breite/Höhe Vorrang vor inset hat. */
+.mutation-card .art img.mutation-cycle-img {
+  width: 64%;
+  height: 64%;
 }
 .mutation-cycle-img.pet-mutation-shine {
-  animation: mutation-cycle-fade 6s infinite, shine-sweep 2.6s ease-in-out infinite alternate;
+  animation: mutation-cycle-fade 6s linear infinite, shine-sweep 2.6s ease-in-out infinite alternate;
 }
+/* 0% und 100% sind bewusst identisch (opacity 1), damit der Loop nahtlos
+   ist statt am Ende sichtbar zurückzuspringen. Die beiden Bilder laufen per
+   negativem animation-delay um exakt die halbe Laufzeit versetzt (siehe
+   main.js) - das Ausblend-Fenster [40%,50%] und das Einblend-Fenster
+   [90%,100%] liegen dadurch (mit linear-Timing) exakt gegenläufig
+   übereinander, sodass die Summe beider Opazitäten die ganze Zeit ~1
+   bleibt. Vorher gab es hier eine spürbare Verdunklungs-Delle mitten in
+   der Überblendung - das war das eigentliche "Stocken".) */
 @keyframes mutation-cycle-fade {
-  0%, 8%   { opacity: 1; }
-  42%, 100% { opacity: 0; }
+  0%, 40%  { opacity: 1; }
+  50%, 90% { opacity: 0; }
+  100%     { opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
   .mutation-cycle-img { animation: none; opacity: 1; }

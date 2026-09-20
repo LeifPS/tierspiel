@@ -728,7 +728,10 @@ function renderMutationsIndex() {
     MUTATION_DEMO_PET_IDS.forEach((petId, i) => {
       const pet = PET_BY_ID[petId];
       const src = assetSrc("pets", pet.id);
-      const delay = `${i * 3}s`;
+      // Negativer Delay statt positiv: die Animation läuft für jedes Bild
+      // von Anfang an "schon mittendrin" statt erst nach X Sekunden zu
+      // starten - so gibt es keinen Sprung, wenn das zweite Bild "einsetzt".
+      const delay = `-${i * 3}s`;
 
       const img = document.createElement("img");
       img.src = src;
