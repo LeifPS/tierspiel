@@ -234,6 +234,7 @@ button:active { transform: scale(0.97); }
 }
 .pet-card .art > *,
 .hatch-card .art > *,
+#shop-grid .art > *,
 #index-eggs-grid .art > *,
 #index-pets-grid .art > * {
   animation: pet-sway 3.2s ease-in-out infinite;
