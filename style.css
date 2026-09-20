@@ -409,6 +409,15 @@ button:active { transform: scale(0.97); }
   font-size: 0.9rem;
 }
 
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 16px;
+}
+.pagination-info { color: var(--text-dim); font-size: 0.85rem; white-space: nowrap; }
+
 .action-btn {
   background: linear-gradient(135deg, #ff8f00, #ffb703);
   color: #221400;

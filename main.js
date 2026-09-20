@@ -154,6 +154,11 @@ let shop = null;
 // Schwenk-Animation bei jedem Tick neu starten und ruckeln.
 let hatcheryCardRefs = new Map();
 let cachedLeaderboard = [];
+// Tiere/Eier werden bei vielen Einträgen seitenweise gerendert, damit die
+// Seite bei einer großen Sammlung nicht komplett zäh wird.
+const PAGE_SIZE = 50;
+let inventoryPage = 0;
+let hatcheryPage = 0;
 
 bootGame();
 
@@ -372,6 +377,33 @@ async function hatchAndReveal(instanceId) {
   await playHatchReveal(result);
 }
 
+// Rendert Zurück/Weiter-Buttons + Seitenanzeige; onChange(neueSeite) wird
+// beim Klick aufgerufen. Bei nur einer Seite wird nichts angezeigt.
+function renderPaginationControls(containerId, page, totalPages, onChange) {
+  const el = $("#" + containerId);
+  el.innerHTML = "";
+  if (totalPages <= 1) return;
+
+  const prev = document.createElement("button");
+  prev.className = "action-btn";
+  prev.textContent = "← Zurück";
+  prev.disabled = page <= 0;
+  prev.addEventListener("click", () => onChange(page - 1));
+  el.appendChild(prev);
+
+  const info = document.createElement("span");
+  info.className = "pagination-info";
+  info.textContent = `Seite ${page + 1} / ${totalPages}`;
+  el.appendChild(info);
+
+  const next = document.createElement("button");
+  next.className = "action-btn";
+  next.textContent = "Weiter →";
+  next.disabled = page >= totalPages - 1;
+  next.addEventListener("click", () => onChange(page + 1));
+  el.appendChild(next);
+}
+
 function renderHatchery() {
   const grid = $("#hatchery-grid");
   const finishedCount = state.hatching.filter(isHatchingFinished).length;
@@ -380,10 +412,15 @@ function renderHatchery() {
   if (state.hatching.length === 0) {
     grid.innerHTML = `<div class="empty-hint">Keine Eier am Brüten. Kauf welche im Shop!</div>`;
     hatcheryCardRefs = new Map();
+    renderPaginationControls("hatchery-pagination", 0, 0, () => {});
     return;
   }
 
-  const sorted = [...state.hatching].sort((a, b) => a.remainingMs - b.remainingMs);
+  const sortedAll = [...state.hatching].sort((a, b) => a.remainingMs - b.remainingMs);
+  const totalPages = Math.max(1, Math.ceil(sortedAll.length / PAGE_SIZE));
+  hatcheryPage = Math.min(hatcheryPage, totalPages - 1);
+  const sorted = sortedAll.slice(hatcheryPage * PAGE_SIZE, (hatcheryPage + 1) * PAGE_SIZE);
+
   const sameOrder = sorted.length === hatcheryCardRefs.size
     && sorted.every((h) => hatcheryCardRefs.has(h.instanceId))
     && [...hatcheryCardRefs.keys()].every((id, i) => sorted[i].instanceId === id);
@@ -440,6 +477,12 @@ function renderHatchery() {
       refs.btn = btn;
     }
   }
+
+  renderPaginationControls("hatchery-pagination", hatcheryPage, totalPages, (p) => {
+    hatcheryPage = p;
+    hatcheryCardRefs = new Map();
+    renderHatchery();
+  });
 }
 
 function renderInventory() {
@@ -447,9 +490,13 @@ function renderInventory() {
   grid.innerHTML = "";
   if (state.pets.length === 0) {
     grid.innerHTML = `<div class="empty-hint">Noch keine Tiere. Brüte dein erstes Ei aus!</div>`;
+    renderPaginationControls("inventory-pagination", 0, 0, () => {});
     return;
   }
-  const sorted = [...state.pets].sort((a, b) => b.moneyPerSec - a.moneyPerSec);
+  const sortedAll = [...state.pets].sort((a, b) => b.moneyPerSec - a.moneyPerSec);
+  const totalPages = Math.max(1, Math.ceil(sortedAll.length / PAGE_SIZE));
+  inventoryPage = Math.min(inventoryPage, totalPages - 1);
+  const sorted = sortedAll.slice(inventoryPage * PAGE_SIZE, (inventoryPage + 1) * PAGE_SIZE);
   for (const inst of sorted) {
     const pet = PET_BY_ID[inst.petId];
     const rarity = getRarity(pet.rarity);
@@ -484,6 +531,11 @@ function renderInventory() {
     card.appendChild(btn);
     grid.appendChild(card);
   }
+
+  renderPaginationControls("inventory-pagination", inventoryPage, totalPages, (p) => {
+    inventoryPage = p;
+    renderInventory();
+  });
 }
 
 let indexView = "eggs";
