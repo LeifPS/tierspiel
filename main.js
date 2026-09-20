@@ -203,9 +203,6 @@ function bootGame() {
 
   refreshShop();
   renderAll();
-  // Statischer Katalog (hängt nicht vom Spielstand ab) - einmalig rendern,
-  // damit die Cycle-/Glanz-Animationen nicht bei jedem renderAll() neu starten.
-  renderMutationsIndex();
 
   // Live-Ticker: alle 0.33s Brütefortschritt & Geld gutschreiben, Anzeige aktualisieren.
   // Solange aktiv gespielt wird, brüten Eier mit 3-facher Geschwindigkeit.
@@ -347,6 +344,7 @@ function renderAll() {
   renderHatchery();
   renderInventory();
   renderIndex();
+  renderMutationsIndex();
   renderRebirth();
   renderLeaderboard();
 }
@@ -718,10 +716,29 @@ function renderIndex() {
 
 function renderMutationsIndex() {
   const grid = $("#index-mutations-grid");
+  const discovered = new Set(state.pets.filter((p) => p.mutation).map((p) => p.mutation));
+  // Nur neu aufbauen, wenn sich der Entdeckt-Status wirklich geändert hat -
+  // sonst würden die Cycle-/Glanz-Animationen bei jedem renderAll() (z.B.
+  // nach jedem Kauf) neu starten und sichtbar ruckeln.
+  const signature = MUTATIONS.map((m) => (discovered.has(m.id) ? "1" : "0")).join("");
+  if (grid.dataset.signature === signature) return;
+  grid.dataset.signature = signature;
+
   grid.innerHTML = "";
   for (const mutation of MUTATIONS) {
     const card = document.createElement("div");
-    card.className = "card mutation-card";
+    const isDiscovered = discovered.has(mutation.id);
+    card.className = "card mutation-card" + (isDiscovered ? "" : " locked");
+
+    if (!isDiscovered) {
+      card.appendChild(createArtEl("pets", MUTATION_DEMO_PET_IDS[0], "???", "#000", true));
+      const lockedInfo = document.createElement("div");
+      lockedInfo.className = "card-info";
+      lockedInfo.innerHTML = `<div class="card-name">???</div>`;
+      card.appendChild(lockedInfo);
+      grid.appendChild(card);
+      continue;
+    }
 
     const artWrap = document.createElement("div");
     artWrap.className = "art";
