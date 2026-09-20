@@ -242,19 +242,21 @@ button:active { transform: scale(0.97); }
    Umfärbung (.pet-<id>-img) unterscheidet sich je Mutation. */
 .pet-gold-img { filter: url(#goldDuotone); }
 /* Regenbogen: statt einer festen Zwei-Farben-Umfärbung läuft der Farbton
-   des Bildes selbst dauerhaft einmal durchs Spektrum (hue-rotate 0-360°) -
-   saturate/contrast sorgen dafür, dass auch ursprünglich blasse Bilder
-   kräftig genug für den Effekt sind. */
+   des Bildes selbst dauerhaft einmal durchs Spektrum (hue-rotate 0-360°).
+   saturate bewusst nur leicht angehoben (1.3, war 2.4) - bei ohnehin schon
+   kräftigen Grundfarben (z.B. Biene, Dämon) kippte es sonst schnell in
+   grelles Neon; bei blasseren Bildern (z.B. Kitsune) ändert der niedrigere
+   Wert kaum etwas, da dort ohnehin wenig Sättigung zum Verstärken da ist. */
 .pet-rainbow-img {
-  filter: saturate(2.4) contrast(1.1) hue-rotate(0deg);
+  filter: saturate(1.3) contrast(1.1) hue-rotate(0deg);
   animation: rainbow-hue-cycle 4s linear infinite;
 }
 @keyframes rainbow-hue-cycle {
-  from { filter: saturate(2.4) contrast(1.1) hue-rotate(0deg); }
-  to   { filter: saturate(2.4) contrast(1.1) hue-rotate(360deg); }
+  from { filter: saturate(1.3) contrast(1.1) hue-rotate(0deg); }
+  to   { filter: saturate(1.3) contrast(1.1) hue-rotate(360deg); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .pet-rainbow-img { animation: none; filter: saturate(2.4) contrast(1.1) hue-rotate(120deg); }
+  .pet-rainbow-img { animation: none; filter: saturate(1.3) contrast(1.1) hue-rotate(120deg); }
 }
 .pet-mutation-shine {
   position: absolute;
