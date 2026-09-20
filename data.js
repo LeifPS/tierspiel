@@ -136,12 +136,12 @@ const EGGS = [
   { id: "verlies",   name: "Verlies-Ei",    rarity: "divine",       luckPercent: 400000,     hatchSeconds: 19800,  basePrice: 45000000,     appearChance: 0.12, stock: [1, 1] },
   { id: "hoellen",   name: "Höllen-Ei",     rarity: "divine",       luckPercent: 600000,     hatchSeconds: 21600,  basePrice: 70000000,     appearChance: 0.12, stock: [1, 1] },
   { id: "metall",    name: "Metall-Ei",     rarity: "prismatic",    luckPercent: 1500000,    hatchSeconds: 25200,  basePrice: 250000000,    appearChance: 0.05, stock: [1, 1] },
-  { id: "mosaik",    name: "Mosaik-Ei",     rarity: "transcendent", luckPercent: 4000000,    hatchSeconds: 28800,  basePrice: 900000000,    appearChance: 0.02, stock: [1, 1] },
-  { id: "runen",     name: "Runen-Ei",      rarity: "ethereal",     luckPercent: 12000000,   hatchSeconds: 32400,  basePrice: 3500000000,   appearChance: 0.008,stock: [1, 1] },
-  { id: "regenbogen",name: "Regenbogen-Ei", rarity: "secret",       luckPercent: 40000000,   hatchSeconds: 36000,  basePrice: 15000000000,  appearChance: 0.003,stock: [1, 1] },
-  { id: "schatten",  name: "Schatten-Ei",   rarity: "celestial",    luckPercent: 150000000,  hatchSeconds: 39600,  basePrice: 70000000000,  appearChance: 0.001,stock: [1, 1] },
-  { id: "empyreum",  name: "Empyreum-Ei",   rarity: "astral",       luckPercent: 600000000,  hatchSeconds: 43200,  basePrice: 350000000000, appearChance: 0.0003,stock: [1, 1] },
-  { id: "nebel",     name: "Engel-Ei",      rarity: "astral",       luckPercent: 20000000000,hatchSeconds: 86400,  basePrice: 5000000000000,appearChance: 0.0001,stock: [1, 1] },
+  { id: "mosaik",    name: "Mosaik-Ei",     rarity: "prismatic",    luckPercent: 4000000,    hatchSeconds: 28800,  basePrice: 900000000,    appearChance: 0.02, stock: [1, 1] },
+  { id: "runen",     name: "Runen-Ei",      rarity: "transcendent", luckPercent: 12000000,   hatchSeconds: 32400,  basePrice: 3500000000,   appearChance: 0.008,stock: [1, 1] },
+  { id: "regenbogen",name: "Regenbogen-Ei", rarity: "transcendent", luckPercent: 40000000,   hatchSeconds: 36000,  basePrice: 15000000000,  appearChance: 0.003,stock: [1, 1] },
+  { id: "schatten",  name: "Schatten-Ei",   rarity: "ethereal",     luckPercent: 150000000,  hatchSeconds: 39600,  basePrice: 70000000000,  appearChance: 0.001,stock: [1, 1] },
+  { id: "empyreum",  name: "Empyreum-Ei",   rarity: "secret",       luckPercent: 600000000,  hatchSeconds: 43200,  basePrice: 350000000000, appearChance: 0.0003,stock: [1, 1] },
+  { id: "nebel",     name: "Engel-Ei",      rarity: "celestial",    luckPercent: 20000000000,hatchSeconds: 86400,  basePrice: 5000000000000,appearChance: 0.0001,stock: [1, 1] },
 ];
 
 // ---- Rebirth-System ---------------------------------------------------------
