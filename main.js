@@ -370,6 +370,7 @@ function renderInventory() {
     const card = document.createElement("div");
     card.className = "card pet-card" + (equipped ? " equipped" : "");
     const art = createArtEl("pets", pet.id, pet.name, rarity.color);
+    art.style.setProperty("--sway-delay", `-${(Math.random() * 3.2).toFixed(2)}s`);
     card.appendChild(art);
     const info = document.createElement("div");
     info.className = "card-info";
