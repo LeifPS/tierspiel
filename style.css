@@ -257,14 +257,29 @@ button:active { transform: scale(0.97); }
 
 .card.locked { border-color: var(--border-soft) !important; opacity: 0.85; }
 
-.index-section-title {
-  font-family: 'Baloo 2', sans-serif;
-  color: var(--text-main);
-  margin: 24px 0 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border-soft);
+.index-switch {
+  display: flex;
+  background: var(--bg-deep);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 3px;
+  gap: 2px;
 }
-.index-section-title:first-of-type { margin-top: 0; }
+.index-switch-btn {
+  border: none;
+  background: none;
+  color: var(--text-dim);
+  font-family: 'Baloo 2', sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 7px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.index-switch-btn.active {
+  background: linear-gradient(135deg, #2b2050, #3a2a5e);
+  color: var(--text-main);
+}
 
 /* ---------- Rebirth ---------- */
 .rebirth-summary { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 16px; }

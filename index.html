@@ -53,11 +53,15 @@
   </div>
 
   <div id="panel-index" class="tab-panel">
-    <div class="panel-header"><span>Alle Eier und Tiere – Unbekanntes wird erst nach dem Finden aufgedeckt</span></div>
-    <h3 class="index-section-title">Eier</h3>
+    <div class="panel-header">
+      <span>Unbekanntes wird erst nach dem Finden aufgedeckt</span>
+      <div class="index-switch">
+        <button class="index-switch-btn active" data-index-view="eggs">🥚 Eier</button>
+        <button class="index-switch-btn" data-index-view="pets">🐾 Tiere</button>
+      </div>
+    </div>
     <div id="index-eggs-grid" class="grid"></div>
-    <h3 class="index-section-title">Tiere</h3>
-    <div id="index-pets-grid" class="grid"></div>
+    <div id="index-pets-grid" class="grid hidden"></div>
   </div>
 
   <div id="panel-rebirth" class="tab-panel">

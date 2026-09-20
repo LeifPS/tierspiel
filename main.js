@@ -486,6 +486,17 @@ function renderInventory() {
   }
 }
 
+let indexView = "eggs";
+
+$$(".index-switch-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    indexView = btn.dataset.indexView;
+    $$(".index-switch-btn").forEach((b) => b.classList.toggle("active", b === btn));
+    $("#index-eggs-grid").classList.toggle("hidden", indexView !== "eggs");
+    $("#index-pets-grid").classList.toggle("hidden", indexView !== "pets");
+  });
+});
+
 function renderIndex() {
   const knownPetIds = new Set(state.pets.map((p) => p.petId));
   const knownEggIds = new Set(state.seenEggs || []);
