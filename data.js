@@ -172,16 +172,25 @@ function minEligibleRarityIndex(luckPercent) {
   return floorIdx + 1;
 }
 
+// Verstärkt den Luck-Exponenten zusätzlich, klingt aber mit wachsendem
+// Glück ab (~1 bei sehr hohem Glück). Ohne das wäre der Unterschied
+// zwischen z.B. 100% und 800% Glück kaum spürbar, weil der Exponent für
+// niedrige/mittlere Stufen sonst sehr klein ist – bei den astronomisch
+// hohen Glückswerten der Top-Eier würde eine dauerhaft starke
+// Verstärkung dagegen die Verteilung invertieren (seltenstes Tier würde
+// am häufigsten gezogen). Der Abkling-Faktor verhindert das.
+const LUCK_BOOST_STRENGTH = 10;
 function drawPetFromPool(luckPercent) {
   const luckFactor = Math.max(luckPercent, 100) / 100; // 100% => 1.0
   const minTierIdx = minEligibleRarityIndex(luckPercent);
   const eligiblePets = PETS.filter((pet) => RARITY_INDEX[pet.rarity] >= minTierIdx);
   const pool = eligiblePets.length > 0 ? eligiblePets : PETS; // Sicherheitsnetz
 
+  const boost = 1 + LUCK_BOOST_STRENGTH / Math.sqrt(luckFactor);
   const weights = pool.map((pet) => {
     const tierIdx = RARITY_INDEX[pet.rarity];
     const raw = 1 / pet.baseChanceCache; // baseChanceCache wird unten gesetzt
-    const exponent = tierIdx / MAX_TIER_INDEX; // 0 (common) .. 1 (astral)
+    const exponent = boost * tierIdx / MAX_TIER_INDEX; // 0 (common) .. ~boost (astral)
     return raw * Math.pow(luckFactor, exponent);
   });
   const total = weights.reduce((a, b) => a + b, 0);
