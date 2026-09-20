@@ -181,6 +181,7 @@ function bootGame() {
     // jedem Tick, weil ihre DOM-Elemente ständig neu erzeugt würden.
     renderTopBar();
     renderHatchery();
+    updateShopRotationText();
   }, 333);
 
   // Alle 5s speichern, damit bei Tab schließen nicht zu viel Fortschritt fehlt
@@ -305,9 +306,13 @@ function renderShop() {
     grid.appendChild(card);
   }
 
-  const rotationEl = $("#shop-rotation");
+  updateShopRotationText();
+}
+
+function updateShopRotationText() {
+  if (!shop) return;
   const remaining = msUntilNextRotation(shop.rotatedAtMs);
-  rotationEl.textContent = `Nächste Rotation in ${formatDuration(remaining / 1000)}`;
+  $("#shop-rotation").textContent = `Nächste Rotation in ${formatDuration(remaining / 1000)}`;
 }
 
 function handleBuy(egg) {
