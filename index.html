@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tierspiel</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ===================== AUTH ===================== -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <h1>Tierspiel</h1>
+    <p class="tagline">Eier ausbrüten. Tiere sammeln. Münzen verdienen.</p>
+    <h2 id="auth-title">Anmelden</h2>
+    <form id="auth-form">
+      <input id="auth-email" type="email" placeholder="E-Mail" required autocomplete="email">
+      <input id="auth-password" type="password" placeholder="Passwort" required autocomplete="current-password">
+      <button id="auth-submit" class="primary-btn" type="submit">Anmelden</button>
+    </form>
+    <div id="auth-error"></div>
+    <button id="auth-toggle" class="link-btn">Noch kein Konto? Registrieren</button>
+  </div>
+</div>
+
+<!-- ===================== GAME ===================== -->
+<div id="game-screen" class="hidden">
+  <div class="topbar">
+    <div class="logo">Tierspiel</div>
+    <div class="stat-pill" id="coins-display">0 Münzen</div>
+    <div class="stat-pill" id="income-display">0/s</div>
+    <div class="stat-pill" id="slots-display">0/0 Plätze belegt</div>
+    <button id="logout-btn">Abmelden</button>
+  </div>
+
+  <div class="tab-nav">
+    <button class="tab-btn active" data-tab="shop">🛒 Shop</button>
+    <button class="tab-btn" data-tab="hatchery">🥚 Brüten</button>
+    <button class="tab-btn" data-tab="pets">🐾 Tiere</button>
+  </div>
+
+  <div id="panel-shop" class="tab-panel active">
+    <div class="panel-header">
+      <span>Eier zum Kaufen – für alle Spieler gleich</span>
+      <span id="shop-rotation"></span>
+    </div>
+    <div id="shop-grid" class="grid"></div>
+  </div>
+
+  <div id="panel-hatchery" class="tab-panel">
+    <div class="panel-header"><span>Deine brütenden Eier (läuft auch offline weiter)</span></div>
+    <div id="hatchery-grid" class="grid"></div>
+  </div>
+
+  <div id="panel-pets" class="tab-panel">
+    <div class="panel-header"><span>Deine Tiere – ausgerüstete verdienen Geld/Sekunde</span></div>
+    <div id="inventory-grid" class="grid"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module" src="main.js"></script>
+</body>
+</html>

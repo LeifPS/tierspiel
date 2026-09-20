@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Jeder eingeloggte Spieler darf NUR seinen eigenen Spielstand lesen/schreiben
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Der Shop ist EIN geteiltes Dokument für alle Spieler.
+    // Jeder eingeloggte Spieler darf es lesen und (per Transaktion) aktualisieren,
+    // z.B. beim Kauf eines Eis oder beim Auslösen einer Rotation.
+    match /shop/current {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+  }
+}
