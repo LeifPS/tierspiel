@@ -94,18 +94,14 @@ const PETS = [
   { id: "schattenhai",   name: "Schattenhai",   rarity: "celestial", baseWeightKg: 700, baseMoney: 32000000 },
   // Astral
   { id: "kosmosdrache", name: "Kosmischer Drache", rarity: "astral", baseWeightKg: 3000, baseMoney: 150000000 },
+  { id: "diamantkatze", name: "Diamantkatze",      rarity: "astral", baseWeightKg: 5,    baseMoney: 160000000 },
+  { id: "minenroboter", name: "Minenroboter",      rarity: "astral", baseWeightKg: 800,  baseMoney: 170000000 },
   // Nova
-  { id: "diamantkatze", name: "Diamantkatze",  rarity: "nova", baseWeightKg: 5,    baseMoney: 750000000 },
+  { id: "tiefseedelfin",name: "Abgrunddelfin", rarity: "nova", baseWeightKg: 250,  baseMoney: 750000000 },
+  { id: "reliktdrache", name: "Reliktdrache",  rarity: "nova", baseWeightKg: 2500, baseMoney: 800000000 },
+  { id: "sturmdrache",  name: "Sturmdrache",   rarity: "nova", baseWeightKg: 1800, baseMoney: 850000000 },
   // Solar
-  { id: "minenroboter", name: "Minenroboter", rarity: "solar", baseWeightKg: 800,  baseMoney: 4000000000 },
-  // Lunar
-  { id: "tiefseedelfin",name: "Abgrunddelfin", rarity: "lunar", baseWeightKg: 250, baseMoney: 20000000000 },
-  // Galaktisch
-  { id: "reliktdrache", name: "Reliktdrache", rarity: "galactic", baseWeightKg: 2500, baseMoney: 100000000000 },
-  // Stellar
-  { id: "sturmdrache",  name: "Sturmdrache", rarity: "stellar", baseWeightKg: 1800, baseMoney: 500000000000 },
-  // Nebula
-  { id: "runenqual",    name: "Runen-Qual",  rarity: "nebula", baseWeightKg: 400,  baseMoney: 2500000000000 },
+  { id: "runenqual",    name: "Runen-Qual",    rarity: "solar", baseWeightKg: 400, baseMoney: 4000000000 },
 ];
 
 // ---- Eier -----------------------------------------------------------------
@@ -145,7 +141,7 @@ const EGGS = [
   { id: "regenbogen",name: "Regenbogen-Ei", rarity: "secret",       luckPercent: 40000000,   hatchSeconds: 36000,  basePrice: 15000000000,  appearChance: 0.003,stock: [1, 1] },
   { id: "schatten",  name: "Schatten-Ei",   rarity: "celestial",    luckPercent: 150000000,  hatchSeconds: 39600,  basePrice: 70000000000,  appearChance: 0.001,stock: [1, 1] },
   { id: "empyreum",  name: "Empyreum-Ei",   rarity: "astral",       luckPercent: 600000000,  hatchSeconds: 43200,  basePrice: 350000000000, appearChance: 0.0003,stock: [1, 1] },
-  { id: "nebel",     name: "Engel-Ei",      rarity: "nebula",       luckPercent: 60000000000,hatchSeconds: 86400,  basePrice: 5000000000000,appearChance: 0.0001,stock: [1, 1] },
+  { id: "nebel",     name: "Engel-Ei",      rarity: "astral",       luckPercent: 20000000000,hatchSeconds: 86400,  basePrice: 5000000000000,appearChance: 0.0001,stock: [1, 1] },
 ];
 
 // ---- Gewichts-Ausreißer-Tabelle -------------------------------------------
@@ -186,7 +182,7 @@ function moneyMultiplierFromWeightRatio(ratio) {
 // machen. Innerhalb des verbliebenen Pools potenziert das Glück weiterhin
 // das Grundgewicht seltener Tiere stärker als das häufiger Tiere.
 // Bei Glück=100% (Faktor 1) ändert sich nichts an der Basisverteilung.
-const MAX_TIER_INDEX = RARITY_INDEX["nebula"]; // 18 – höchste im Pool vertretene Stufe
+const MAX_TIER_INDEX = RARITY_INDEX["solar"]; // 14 – höchste im Pool vertretene Stufe
 
 function minEligibleRarityIndex(luckPercent) {
   let floorIdx = -1;
@@ -221,7 +217,7 @@ function drawPetFromPool(luckPercent) {
   const weights = pool.map((pet) => {
     const tierIdx = RARITY_INDEX[pet.rarity];
     const raw = 1 / pet.baseChanceCache; // baseChanceCache wird unten gesetzt
-    const exponent = boost * tierIdx / MAX_TIER_INDEX; // 0 (common) .. ~boost (nebula)
+    const exponent = boost * tierIdx / MAX_TIER_INDEX; // 0 (common) .. ~boost (solar)
     return raw * Math.pow(luckFactor, exponent);
   });
   const total = weights.reduce((a, b) => a + b, 0);
