@@ -45,6 +45,8 @@ const ASSET_OVERRIDES = {
     biene: "https://static.wikia.nocookie.net/pets-go/images/5/56/Bee.png",
     katze: "https://static.wikia.nocookie.net/pets-go/images/0/05/Cat.png",
     kosmosdrache: "https://static.wikia.nocookie.net/pets-go/images/3/3e/Cosmic_Dragon.png",
+    loewe: "https://static.wikia.nocookie.net/pets-go/images/4/47/Lion.png",
+    delfin: "https://static.wikia.nocookie.net/pets-go/images/0/0b/Dolphin.png",
   },
 };
 
