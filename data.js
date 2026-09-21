@@ -87,11 +87,11 @@ const PETS = [
   { id: "phoenix",     name: "Phönix",      rarity: "divine", baseWeightKg: 15,   baseMoney: 10000 },
   { id: "pegasus",     name: "Pegasus",     rarity: "divine", baseWeightKg: 400,  baseMoney: 11000 },
   { id: "kometenpony", name: "Kometen-Pony",rarity: "divine", baseWeightKg: 350,  baseMoney: 10500 },
-  { id: "qual",        name: "Qual",        rarity: "divine", baseWeightKg: 200,  baseMoney: 10200 },
+  { id: "qual",        name: "Agony",        rarity: "divine", baseWeightKg: 200,  baseMoney: 10200 },
   // Prismatisch
   { id: "a36",         name: "A-36",        rarity: "prismatic", baseWeightKg: 900, baseMoney: 55000 },
   { id: "phantomwolf", name: "Phantomwolf", rarity: "prismatic", baseWeightKg: 45,  baseMoney: 58000 },
-  { id: "kometenqual", name: "Kometen-Qual",rarity: "prismatic", baseWeightKg: 300, baseMoney: 56000 },
+  { id: "kometenqual", name: "Kometen-Agony",rarity: "prismatic", baseWeightKg: 300, baseMoney: 56000 },
   // Transzendent
   { id: "tikidominus", name: "Tiki Dominus",rarity: "transcendent", baseWeightKg: 1400, baseMoney: 280000 },
   { id: "daemon",      name: "Dämon",       rarity: "transcendent", baseWeightKg: 150,  baseMoney: 300000 },
@@ -99,7 +99,7 @@ const PETS = [
   // Ätherisch
   { id: "wyvern",      name: "Wyvern der Unterwelt", rarity: "ethereal", baseWeightKg: 2200, baseMoney: 1300000 },
   { id: "eisigerphoenix", name: "Eisiger Phönix",    rarity: "ethereal", baseWeightKg: 18,   baseMoney: 1400000 },
-  { id: "nuklearqual", name: "Nuklear-Qual",         rarity: "ethereal", baseWeightKg: 500,  baseMoney: 1350000 },
+  { id: "nuklearqual", name: "Nuklear-Agony",         rarity: "ethereal", baseWeightKg: 500,  baseMoney: 1350000 },
   // Geheim
   { id: "schattendominus", name: "Schatten-Dominus", rarity: "secret", baseWeightKg: 1500, baseMoney: 6500000 },
   { id: "glitchdrache",    name: "Glitch-Drache",    rarity: "secret", baseWeightKg: 1300, baseMoney: 7000000 },
@@ -112,14 +112,14 @@ const PETS = [
   { id: "kosmosdrache", name: "Kosmischer Drache", rarity: "astral", baseWeightKg: 3000, baseMoney: 150000000 },
   { id: "zuckerstange", name: "Zuckerstange",      rarity: "astral", baseWeightKg: 5,    baseMoney: 160000000 },
   { id: "minenroboter", name: "Minenroboter",      rarity: "astral", baseWeightKg: 800,  baseMoney: 170000000 },
-  { id: "kosmischequal",name: "Kosmische Qual",    rarity: "astral", baseWeightKg: 2000, baseMoney: 165000000 },
+  { id: "kosmischequal",name: "Kosmische Agony",    rarity: "astral", baseWeightKg: 2000, baseMoney: 165000000 },
   // Nova
   { id: "tiefseedelfin",name: "Abgrunddelfin", rarity: "nova", baseWeightKg: 250,  baseMoney: 750000000 },
   { id: "reliktdrache", name: "Reliktdrache",  rarity: "nova", baseWeightKg: 2500, baseMoney: 800000000 },
   { id: "sturmdrache",  name: "Sturmdrache",   rarity: "nova", baseWeightKg: 1800, baseMoney: 850000000 },
   { id: "empyreumdominus", name: "Empyreum-Dominus", rarity: "nova", baseWeightKg: 1600, baseMoney: 820000000 },
   // Solar
-  { id: "runenqual",    name: "Runen-Qual",    rarity: "solar", baseWeightKg: 400, baseMoney: 4000000000 },
+  { id: "runenqual",    name: "Runen-Agony",    rarity: "solar", baseWeightKg: 400, baseMoney: 4000000000 },
   { id: "nuklearwolf",  name: "Nuklear-Wolf",  rarity: "solar", baseWeightKg: 600, baseMoney: 4200000000 },
   // Exklusiv (Huge Pets) - nur über das Huge-Ei erhältlich. Huge Pets haben
   // kein festes Geld/Sekunde: sie verdienen stattdessen einen Prozentsatz
