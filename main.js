@@ -324,6 +324,7 @@ function bootGame() {
     updateShopAffordability();
     // Huge-Pet-Fähigkeiten laufen genauso nur online (siehe tickHugeAbilities).
     const abilityTriggers = tickHugeAbilities(state, 333);
+    updateAbilityCountdowns();
     if (envGains.length > 0 || abilityTriggers.length > 0) {
       for (const { pet, envMutation } of envGains) {
         const visuals = ENV_MUTATION_VISUALS[envMutation.id];
@@ -716,6 +717,26 @@ $$("#inventory-sort-switch .index-switch-btn").forEach((btn) => {
   });
 });
 
+// Countdown-Text bis zum nächsten Auslösen einer Huge-Pet-Fähigkeit.
+function abilityCountdownText(pet, inst) {
+  const intervalMs = pet.ability.intervalSec * 1000;
+  const remainingMs = Math.max(0, intervalMs - (inst.abilityProgressMs || 0));
+  return `– nächste in ${formatDuration(remainingMs / 1000)}`;
+}
+
+// Aktualisiert nur die Countdown-Texte (jeden schnellen Tick), ohne die
+// Inventar-Karten komplett neu zu rendern - sonst würden Animationen dort
+// bei jedem Tick neu starten und ruckeln (siehe renderHatchery-Pattern).
+function updateAbilityCountdowns() {
+  const els = $$(".ability-countdown");
+  for (const el of els) {
+    const inst = state.pets.find((p) => p.instanceId === el.dataset.instanceId);
+    const pet = inst && PET_BY_ID[inst.petId];
+    if (!pet || !pet.ability) continue;
+    el.textContent = abilityCountdownText(pet, inst);
+  }
+}
+
 function renderInventory() {
   const grid = $("#inventory-grid");
   grid.innerHTML = "";
@@ -750,7 +771,9 @@ function renderInventory() {
       ${envMutation ? `<div class="${envMutationVisuals.badgeClass}">${envMutation.name} ×${envMutation.moneyMultiplier}</div>` : ""}
       <div class="card-stat">⚖️ ${inst.weightKg < 1 ? (inst.weightKg * 1000).toFixed(1) + "g" : formatNumber(inst.weightKg) + "kg"} (${inst.ratio.toFixed(2)}x)</div>
       <div class="card-stat">${coinIcon()} ${formatNumber(effectiveMoneyPerSec(state, inst))}/s</div>
-      ${pet.ability ? `<div class="card-stat ability-stat">🌀 ${pet.ability.description}</div>` : ""}
+      ${pet.ability ? `<div class="card-stat ability-stat">🌀 ${pet.ability.description}${equipped
+        ? ` <span class="ability-countdown" data-instance-id="${inst.instanceId}">${abilityCountdownText(pet, inst)}</span>`
+        : " (nur aktiv wenn ausgerüstet)"}</div>` : ""}
     `;
     card.appendChild(info);
     const btn = document.createElement("button");
