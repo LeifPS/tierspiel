@@ -4,7 +4,7 @@
 // ============================================================
 import {
   EGGS, PETS, REBIRTHS, MUTATION_BY_ID, ENV_MUTATIONS, ENV_MUTATION_BY_ID,
-  rollWeightFactor, moneyMultiplierFromWeightRatio, drawPetFromPool, rollMutation,
+  rollWeightFactor, moneyMultiplierFromWeightRatio, hugeWeightMultiplier, drawPetFromPool, rollMutation,
   rollHugePetOverride,
 } from "./data.js";
 
@@ -224,7 +224,9 @@ function effectiveMoneyPerSec(state, petInstance) {
   // draufmultipliziert werden - vorher wurden die hier komplett ignoriert.
   const originMult = petInstance.mutation ? MUTATION_BY_ID[petInstance.mutation].moneyMultiplier : 1;
   const envMult = petInstance.envMutation ? ENV_MUTATION_BY_ID[petInstance.envMutation].moneyMultiplier : 1;
-  return (def.moneyPercentOfBest / 100) * bestOther * originMult * envMult;
+  // Eigenes Gewicht wirkt sich leicht auf den Bonus aus (siehe hugeWeightMultiplier).
+  const weightMult = hugeWeightMultiplier(petInstance.ratio);
+  return (def.moneyPercentOfBest / 100) * bestOther * originMult * envMult * weightMult;
 }
 
 function totalMoneyPerSecond(state) {

@@ -242,6 +242,17 @@ function moneyMultiplierFromWeightRatio(ratio) {
   return Math.pow(ratio, 3);
 }
 
+// Huge Pets verdienen % vom besten anderen Pet statt fixem Basis-Geld (siehe
+// effectiveMoneyPerSec in game.js) - ihr eigenes Gewicht soll sich trotzdem
+// noch (leicht) auf den Bonus auswirken, nur mit einem viel kleineren
+// Exponenten als die normale ratio³-Formel oben, damit ein besonders
+// schwerer/leichter Roll spürbar, aber nicht dominant bleibt
+// (0.85x…10x Gewicht → ca. 0.96x…1.78x statt 0.6x…1000x).
+const HUGE_WEIGHT_INFLUENCE = 0.25;
+function hugeWeightMultiplier(ratio) {
+  return Math.pow(ratio, HUGE_WEIGHT_INFLUENCE);
+}
+
 // ---- Ziehungs-Formel (Ei-Glück → Pet aus dem Pool) -------------------------
 // Stufen, deren Basis-Chance im Vergleich zum Glück des Eis "trivial" wird,
 // fallen komplett aus dem Pool – seltenere Eier können so ab einem gewissen
@@ -449,7 +460,7 @@ const ENV_MUTATION_BY_ID = Object.fromEntries(ENV_MUTATIONS.map((m) => [m.id, m]
 export {
   RARITIES, RARITY_INDEX, PETS, EGGS, REBIRTHS, WEIGHT_ROLL_TABLE,
   MUTATIONS, MUTATION_BY_ID, ENV_MUTATIONS, ENV_MUTATION_BY_ID,
-  rollWeightFactor, moneyMultiplierFromWeightRatio, drawPetFromPool, rollMutation,
+  rollWeightFactor, moneyMultiplierFromWeightRatio, hugeWeightMultiplier, drawPetFromPool, rollMutation,
   rollHugePetOverride,
   formatNumber, formatDuration, getRarity,
 };
