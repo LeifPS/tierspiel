@@ -110,6 +110,7 @@ const ASSET_OVERRIDES = {
     nuklearwolf: "https://static.wikia.nocookie.net/pets-go/images/2/22/Nuclear_Wolf.png",
     krampushund: "https://static.wikia.nocookie.net/pets-go/images/e/e5/Krampus_Hound.png",
     hugeglitchedphoenix: "https://static.wikia.nocookie.net/pets-go/images/0/0c/Huge_Glitched_Phoenix.png",
+    hugeluckiagony: "https://static.wikia.nocookie.net/pets-go/images/c/c8/Huge_Lucki_Agony.png",
   },
 };
 
@@ -137,6 +138,7 @@ const MUTATION_VISUALS = {
 // keine Umfärbung, sondern ein Partikel-Effekt (siehe glitchParticleSpecs).
 const ENV_MUTATION_VISUALS = {
   glitched: { emoji: "🟪", badgeClass: "glitch-badge", glowColor: "#b026ff", placeholderGradient: "linear-gradient(135deg, #1a1a2e, #b026ff, #1a1a2e)" },
+  lucky: { emoji: "🍀", badgeClass: "lucky-badge", glowColor: "#4ade80", placeholderGradient: "linear-gradient(135deg, #123a1c, #4ade80, #123a1c)" },
 };
 const GLITCH_PARTICLE_COLORS = ["#39ff14", "#ff2079", "#00e5ff", "#b026ff"];
 
@@ -197,6 +199,48 @@ function createGlitchParticleLayer(id, locked = false) {
   return layer;
 }
 
+// Kleeblatt-Partikel für die Umgebungsmutation "Lucky" - sanft aufsteigend/
+// verblassend statt hart aufblitzend wie beim Glitch-Pixel-Effekt, damit sich
+// der "positive Segen" optisch klar vom chaotischen Glitch unterscheidet.
+function cloverParticleSpecs(id, count = 10) {
+  let seed = 0;
+  for (let i = 0; i < id.length; i++) seed = (seed * 31 + id.charCodeAt(i)) >>> 0;
+  const specs = [];
+  for (let i = 0; i < count; i++) {
+    seed = (seed * 1103515245 + 12345) >>> 0;
+    const x = seed % 100;
+    seed = (seed * 1103515245 + 12345) >>> 0;
+    const y = 40 + (seed % 60); // startet in der unteren Hälfte, steigt dann auf
+    seed = (seed * 1103515245 + 12345) >>> 0;
+    const delay = (seed % 300) / 100;
+    specs.push({ x, y, delay });
+  }
+  return specs;
+}
+
+function createCloverParticleLayer(id, locked = false) {
+  const layer = document.createElement("div");
+  layer.className = "clover-particle-layer";
+  for (const spec of cloverParticleSpecs(id)) {
+    const particle = document.createElement("div");
+    particle.className = "clover-particle" + (locked ? " locked" : "");
+    particle.textContent = "🍀";
+    particle.style.setProperty("--cx", spec.x + "%");
+    particle.style.setProperty("--cy", spec.y + "%");
+    particle.style.setProperty("--cdelay", `-${spec.delay}s`);
+    layer.appendChild(particle);
+  }
+  return layer;
+}
+
+// Ordnet jeder Umgebungsmutation ihren eigenen Optik-Effekt zu (Overlay-
+// Elemente, die createArtEl/createMutationCycleArt anhängen) - neue
+// Umgebungsmutationen müssen hier nur einen Eintrag ergänzen.
+const ENV_MUTATION_ART_EFFECTS = {
+  glitched: (src, id, locked) => [createGlitchRGBLayer(src, locked), createGlitchParticleLayer(id, locked)],
+  lucky: (src, id, locked) => [createCloverParticleLayer(id, locked)],
+};
+
 function renderPlaceholderIcon(container, label, rarityColor, locked = false, mutation = null) {
   container.innerHTML = "";
   const el = document.createElement("div");
@@ -239,8 +283,8 @@ function createArtEl(kind, id, label, rarityColor, locked = false, dimmed = fals
     wrap.appendChild(shine);
   }
   if (envMutation) {
-    wrap.appendChild(createGlitchRGBLayer(src, locked));
-    wrap.appendChild(createGlitchParticleLayer(id, locked));
+    const effect = ENV_MUTATION_ART_EFFECTS[envMutation];
+    if (effect) for (const layer of effect(src, id, locked)) wrap.appendChild(layer);
   }
   return wrap;
 }
@@ -331,11 +375,13 @@ function bootGame() {
         const petDef = PET_BY_ID[pet.petId];
         toast(`${visuals.emoji} ${petDef.name} hat die Umgebungsmutation "${envMutation.name}" bekommen!`);
       }
-      for (const { source, target } of abilityTriggers) {
-        if (!target) continue;
+      for (const { source, targets } of abilityTriggers) {
+        if (!targets || targets.length === 0) continue;
         const sourceDef = PET_BY_ID[source.petId];
-        const targetDef = PET_BY_ID[target.petId];
-        toast(`✨ ${sourceDef.name}s Fähigkeit hat ${targetDef.name} mutiert!`);
+        for (const target of targets) {
+          const targetDef = PET_BY_ID[target.petId];
+          toast(`✨ ${sourceDef.name}s Fähigkeit hat ${targetDef.name} mutiert!`);
+        }
       }
       savePlayer(state);
       renderInventory();
@@ -1048,23 +1094,27 @@ function renderEnvMutationsIndex() {
     }
 
     const artWrap = createMutationCycleArt(ownedPetIds, (img, petId, src, wrap) => {
-      const rgbLayer = createGlitchRGBLayer(src);
-      rgbLayer.classList.add("mutation-cycle-img");
-      wrap.appendChild(rgbLayer);
-      const particleLayer = createGlitchParticleLayer(petId);
-      particleLayer.classList.add("mutation-cycle-img");
-      wrap.appendChild(particleLayer);
-      return [rgbLayer, particleLayer];
+      const layers = (ENV_MUTATION_ART_EFFECTS[envMutation.id] || (() => []))(src, petId, false);
+      for (const layer of layers) {
+        layer.classList.add("mutation-cycle-img");
+        wrap.appendChild(layer);
+      }
+      return layers;
     });
     card.appendChild(artWrap);
 
     const visuals = ENV_MUTATION_VISUALS[envMutation.id];
+    // Disabled = kein passiver Roll (z.B. nur über eine Huge-Pet-Fähigkeit
+    // erhältlich) - die "Chance pro Sekunde" wäre hier irreführend.
+    const chanceLine = envMutation.disabled
+      ? `<div class="card-stat">🌀 Nur über bestimmte Huge-Pet-Fähigkeiten erhältlich</div>`
+      : `<div class="card-stat">🍀 ${formatNumber(envMutation.chancePerSecond * 100)}% Chance pro aktiv equippter Sekunde</div>`;
     const info = document.createElement("div");
     info.className = "card-info";
     info.innerHTML = `
       <div class="card-name">${visuals.emoji} ${envMutation.name}</div>
       <div class="${visuals.badgeClass}">×${envMutation.moneyMultiplier} Geld/Sekunde</div>
-      <div class="card-stat">🍀 ${formatNumber(envMutation.chancePerSecond * 100)}% Chance pro aktiv equippter Sekunde</div>
+      ${chanceLine}
     `;
     card.appendChild(info);
     grid.appendChild(card);

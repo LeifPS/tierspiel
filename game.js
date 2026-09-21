@@ -318,27 +318,51 @@ function tickHugeAbilities(state, elapsedMs) {
     const intervalMs = ability.intervalSec * 1000;
     while (pet.abilityProgressMs >= intervalMs) {
       pet.abilityProgressMs -= intervalMs;
-      const result = executeAbility(state, pet, ability);
-      if (result) triggered.push({ source: pet, ability, target: result });
+      const targets = executeAbility(state, pet, ability);
+      triggered.push({ source: pet, ability, targets });
     }
   }
   return triggered;
 }
 
+// Liefert immer ein Array betroffener Pet-Instanzen (leer, wenn keins
+// betroffen wurde) - unabhängig davon, ob die Fähigkeit nur ein einzelnes
+// Ziel hat (mutate_random_equipped) oder mehrere gleichzeitig treffen kann
+// (roll_mutation_all_equipped).
 function executeAbility(state, sourcePet, ability) {
   if (ability.type === "mutate_random_equipped") {
-    return mutateRandomEquipped(state, sourcePet.instanceId, ability.envMutationId);
+    const target = mutateRandomEquipped(state, sourcePet.instanceId, ability.envMutationId);
+    return target ? [target] : [];
   }
-  return null;
+  if (ability.type === "roll_mutation_all_equipped") {
+    return rollMutationForAllEquipped(state, sourcePet.instanceId, ability.envMutationId, ability.chancePerTarget);
+  }
+  return [];
+}
+
+// Setzt die genannte Umgebungsmutation auf ein Pet, respektiert dabei "die
+// bessere wird genommen" (siehe ENV_MUTATIONS-Stacking-Regel): wird nur
+// angewendet, wenn sie einen höheren Multiplikator hat als eine eventuell
+// schon vorhandene. Gibt zurück, ob tatsächlich etwas geändert wurde.
+function applyEnvMutationIfBetter(pet, envMutationId) {
+  const envMutation = ENV_MUTATION_BY_ID[envMutationId];
+  if (pet.envMutation === envMutationId) return false;
+  const current = pet.envMutation ? ENV_MUTATION_BY_ID[pet.envMutation] : null;
+  if (current && current.moneyMultiplier >= envMutation.moneyMultiplier) return false;
+  if (current) pet.moneyPerSec /= current.moneyMultiplier;
+  pet.moneyPerSec *= envMutation.moneyMultiplier;
+  pet.envMutation = envMutationId;
+  return true;
 }
 
 // Wählt zufällig ein anderes ausgerüstetes Pet (nie das Huge Pet selbst) und
 // gibt ihm die genannte Umgebungsmutation - unabhängig von deren "disabled"-
 // Flag (das blockiert nur den passiven Zufalls-Roll, nicht diese gezielte
-// Fähigkeit). Trägt eine eventuell schon vorhandene Kopie derselben Mutation
-// bei einem anderen equippten Pet ab, damit immer nur eine im Loadout ist.
+// Fähigkeit). Trägt eine eventuell schon vorhandene Kopie DESSELBEN Typs bei
+// einem anderen equippten Pet ab, damit davon immer nur eine im Loadout ist -
+// hat das zufällig gewählte Ziel aber schon eine BESSERE andere Mutation,
+// bleibt die einfach bestehen (die Fähigkeit "verpufft" dann für dieses Mal).
 function mutateRandomEquipped(state, sourceInstanceId, envMutationId) {
-  const envMutation = ENV_MUTATION_BY_ID[envMutationId];
   const equippedSet = new Set(state.equipped);
   const candidates = state.pets.filter((p) => equippedSet.has(p.instanceId) && p.instanceId !== sourceInstanceId);
   if (candidates.length === 0) return null;
@@ -346,19 +370,29 @@ function mutateRandomEquipped(state, sourceInstanceId, envMutationId) {
 
   for (const p of candidates) {
     if (p.instanceId !== target.instanceId && p.envMutation === envMutationId) {
+      const envMutation = ENV_MUTATION_BY_ID[envMutationId];
       p.moneyPerSec /= envMutation.moneyMultiplier;
       p.envMutation = null;
     }
   }
-  if (target.envMutation !== envMutationId) {
-    if (target.envMutation) {
-      const old = ENV_MUTATION_BY_ID[target.envMutation];
-      target.moneyPerSec /= old.moneyMultiplier;
-    }
-    target.moneyPerSec *= envMutation.moneyMultiplier;
-    target.envMutation = envMutationId;
-  }
+  applyEnvMutationIfBetter(target, envMutationId);
   return target;
+}
+
+// Würfelt für JEDES andere ausgerüstete Pet EINZELN, ob es die genannte
+// Umgebungsmutation bekommt - anders als mutateRandomEquipped kann das also
+// mehrere Pets gleichzeitig treffen (kein "nur eine Kopie pro Typ im
+// Loadout"-Limit, das gilt nur für den passiven Zufalls-Roll). Gibt alle
+// tatsächlich veränderten Pets zurück.
+function rollMutationForAllEquipped(state, sourceInstanceId, envMutationId, chancePerTarget) {
+  const equippedSet = new Set(state.equipped);
+  const affected = [];
+  for (const p of state.pets) {
+    if (!equippedSet.has(p.instanceId) || p.instanceId === sourceInstanceId) continue;
+    if (Math.random() >= chancePerTarget) continue;
+    if (applyEnvMutationIfBetter(p, envMutationId)) affected.push(p);
+  }
+  return affected;
 }
 
 // ---- Automatisch die Tiere mit dem höchsten Geld/Sekunde ausrüsten --------

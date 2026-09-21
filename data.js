@@ -121,12 +121,18 @@ const PETS = [
   // Solar
   { id: "runenqual",    name: "Runen-Agony",    rarity: "solar", baseWeightKg: 400, baseMoney: 4000000000 },
   { id: "nuklearwolf",  name: "Nuklear-Wolf",  rarity: "solar", baseWeightKg: 600, baseMoney: 4200000000 },
-  // Exklusiv (Huge Pets) - nur über das Huge-Ei erhältlich. Huge Pets haben
-  // kein festes Geld/Sekunde: sie verdienen stattdessen einen Prozentsatz
-  // (moneyPercentOfBest) von deinem besten ausgerüsteten "normalen" Pet -
-  // berechnet live in effectiveMoneyPerSec() (game.js), nicht beim Ausbrüten
-  // festgelegt. Zusätzlich hat jedes Huge Pet eine eigene Fähigkeit, die nur
-  // wirkt, solange es ausgerüstet ist (siehe tickHugeAbilities in game.js).
+  // Exklusiv (Huge Pets) - kommen aus jedem Ei (siehe rollHugePetOverride),
+  // nie über normales Glück. Bei mehreren Huge Pets entscheidet ein
+  // Gleichverteilungs-Los, welches konkret gezogen wird (siehe
+  // rollHugePetOverride) - die GESAMT-Chance auf irgendein Huge Pet aus
+  // einem Ei bleibt dabei unverändert, nur die individuelle Chance pro
+  // Huge Pet sinkt (bei 2 Huge Pets z.B. jeweils halbiert).
+  // Huge Pets haben kein festes Geld/Sekunde: sie verdienen stattdessen
+  // einen Prozentsatz (moneyPercentOfBest) von deinem besten ausgerüsteten
+  // "normalen" Pet - berechnet live in effectiveMoneyPerSec() (game.js),
+  // nicht beim Ausbrüten festgelegt. Zusätzlich hat jedes Huge Pet eine
+  // eigene Fähigkeit, die nur wirkt, solange es ausgerüstet ist (siehe
+  // tickHugeAbilities in game.js).
   {
     id: "hugeglitchedphoenix", name: "Riesiger Glitched-Phönix", rarity: "exklusiv",
     baseWeightKg: 5000, moneyPercentOfBest: 120,
@@ -135,6 +141,17 @@ const PETS = [
       intervalSec: 600,
       envMutationId: "glitched",
       description: "Alle 600s: mutiert ein zufälliges anderes ausgerüstetes Pet mit Glitched (×4,04)",
+    },
+  },
+  {
+    id: "hugeluckiagony", name: "Riesiger Lucki Agony", rarity: "exklusiv",
+    baseWeightKg: 5000, moneyPercentOfBest: 120,
+    ability: {
+      type: "roll_mutation_all_equipped",
+      intervalSec: 1800,
+      envMutationId: "lucky",
+      chancePerTarget: 0.2,
+      description: "Alle 1800s: 20% Chance für jedes andere ausgerüstete Pet einzeln, Lucky (×7) zu bekommen",
     },
   },
 ];
@@ -415,6 +432,15 @@ const ENV_MUTATIONS = [
     // Noch nicht erhältlich (Feature/Optik fertig, Drop aber bewusst
     // ausgeschaltet) - bleibt trotzdem im Index sichtbar, nur als "???"
     // (siehe tickEnvironmentalMutations in game.js).
+    disabled: true,
+  },
+  {
+    id: "lucky",
+    name: "Lucky",
+    // Kein passiver Roll (chancePerSecond 0 + disabled) - kommt ausschließlich
+    // über die Fähigkeit von "Riesiger Lucki Agony" (siehe PETS unten).
+    chancePerSecond: 0,
+    moneyMultiplier: 7,
     disabled: true,
   },
 ];

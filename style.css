@@ -319,6 +319,17 @@ button:active { transform: scale(0.97); }
   text-shadow: 0 1px 2px rgba(0,0,0,0.4);
   background: linear-gradient(135deg, #1a1a2e, #b026ff, #1a1a2e);
 }
+.lucky-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 3px 9px;
+  border-radius: 999px;
+  width: fit-content;
+  color: #0d2b12;
+  background: linear-gradient(135deg, #4ade80, #86efac);
+}
 
 /* ---------- Umgebungsmutation "Glitched": RGB-Split + Glitch-Pixel ----------
    Zwei kombinierte Effekte statt einer Umfärbung: (1) kurze, gestaffelte
@@ -400,6 +411,36 @@ button:active { transform: scale(0.97); }
 }
 @media (prefers-reduced-motion: reduce) {
   .glitch-particle { animation: none; opacity: 0.85; transform: translate(-50%, -50%); }
+}
+
+/* ---------- Umgebungsmutation "Lucky": Kleeblatt-Partikel ----------------
+   Sanft aufsteigend/verblassend statt hart aufblitzend wie beim Glitch-
+   Pixel-Effekt - visuell klar als "positiver Segen" statt Chaos erkennbar. */
+.clover-particle-layer {
+  position: absolute;
+  inset: var(--art-padding, 18px);
+  pointer-events: none;
+  overflow: hidden;
+}
+.clover-particle {
+  position: absolute;
+  left: var(--cx, 50%);
+  top: var(--cy, 50%);
+  font-size: 14px;
+  line-height: 1;
+  transform: translate(-50%, -50%);
+  animation: clover-float 3s ease-in-out infinite;
+  animation-delay: var(--cdelay, 0s);
+}
+.clover-particle.locked { filter: brightness(0); }
+@keyframes clover-float {
+  0%   { opacity: 0; transform: translate(-50%, -30%) scale(0.6); }
+  20%  { opacity: 1; transform: translate(-50%, -60%) scale(1); }
+  80%  { opacity: 1; transform: translate(-50%, -90%) scale(1.1); }
+  100% { opacity: 0; transform: translate(-50%, -110%) scale(0.8); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .clover-particle { animation: none; opacity: 0.85; transform: translate(-50%, -70%); }
 }
 
 /* ---------- Mutationen-Übersicht (Index) ---------- */
