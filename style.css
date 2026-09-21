@@ -664,6 +664,17 @@ button:active { transform: scale(0.97); }
 }
 .action-btn:disabled { opacity: 0.5; cursor: default; box-shadow: none; }
 
+.admin-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.admin-egg-btn {
+  width: 100%;
+  margin-top: 8px;
+}
+
 /* ---------- Ei-Öffnen: bis zu 10 Eier gleichzeitig in einem 5x2-Raster ---------- */
 .reveal-overlay {
   position: fixed;

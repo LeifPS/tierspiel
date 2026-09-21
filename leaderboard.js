@@ -67,6 +67,16 @@ async function fetchLeaderboard(max = 50) {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
+// Entfernt den eigenen Eintrag komplett (z.B. beim Aktivieren des
+// Admin-/Testmodus - der zählt nie für die Rangliste, ein vorher schon
+// eingetragener echter Score soll dann auch verschwinden statt nur
+// "einzufrieren").
+async function deleteScore() {
+  const { db, doc, deleteDoc } = await loadFirebase();
+  const id = getOrCreatePlayerId();
+  await deleteDoc(doc(db, LEADERBOARD_COLLECTION, id));
+}
+
 export {
-  getOrCreatePlayerId, getPlayerName, setPlayerName, submitScore, fetchLeaderboard,
+  getOrCreatePlayerId, getPlayerName, setPlayerName, submitScore, fetchLeaderboard, deleteScore,
 };

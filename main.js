@@ -5,8 +5,9 @@ import {
   tickHatching, isHatchingFinished, hatchEgg, accrueMoney, totalMoneyPerSecond, getMoneyMultiplier,
   performRebirth, equipPet, unequipPet, autoEquipBest, timeRemainingMs, tickEnvironmentalMutations,
   tickHugeAbilities, effectiveMoneyPerSec,
+  enableAdminMode, adminInstantHatch, adminGrantRandomHugePet, adminAddCoins,
 } from "./game.js";
-import { getOrCreatePlayerId, getPlayerName, setPlayerName, submitScore, fetchLeaderboard } from "./leaderboard.js";
+import { getOrCreatePlayerId, getPlayerName, setPlayerName, submitScore, fetchLeaderboard, deleteScore } from "./leaderboard.js";
 
 // ---------------------------------------------------------------------------
 // Kleine DOM-Helfer
@@ -286,6 +287,8 @@ const INVENTORY_SORTERS = {
 const MUTATION_DEMO_PET_IDS = ["hund", "katze"];
 const PREFERS_REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const MS_PER_CYCLE_SLOT = 3000; // jedes Pet ist ca. 3s "dran", Gesamtdauer wächst mit der Anzahl
+// Geheimer URL-Parameter für den Admin-/Testmodus (siehe setupAdminMode weiter unten).
+const ADMIN_SECRET = "leif-7f3a9c21";
 
 bootGame();
 
@@ -300,6 +303,7 @@ function bootGame() {
     toast(`Willkommen zurück! +${formatNumber(earned)} Münzen verdient, während du weg warst.`);
   }
 
+  setupAdminMode();
   refreshShop();
   renderAll();
 
@@ -1171,7 +1175,9 @@ function renderLeaderboard() {
 
 async function refreshLeaderboard() {
   try {
-    await submitScore(totalMoneyPerSecond(state));
+    // Admin-/Testmodus zählt nie für die Rangliste - eigener Score wird
+    // weder aktualisiert noch (neu) angelegt, siehe enableAdminMode.
+    if (!state.adminMode) await submitScore(totalMoneyPerSecond(state));
     cachedLeaderboard = await fetchLeaderboard();
     $("#leaderboard-updated").textContent = `Aktualisiert: ${new Date().toLocaleTimeString()}`;
     renderLeaderboard();
@@ -1207,6 +1213,81 @@ $("#hatch-all-btn").addEventListener("click", async () => {
   const instanceIds = finished.map((h) => h.instanceId);
   for (let i = 0; i < instanceIds.length; i += MAX_REVEAL_SLOTS) {
     await hatchAndRevealBatch(instanceIds.slice(i, i + MAX_REVEAL_SLOTS));
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Admin-/Testmodus - nur erreichbar über einen geheimen URL-Parameter
+// (?admin=...), niemals über die normale UI. Einmal aktiviert, bleibt es im
+// Spielstand (state.adminMode) gespeichert und der Admin-Tab sichtbar.
+// WICHTIG: Das ist reine Obscurity, kein echter Schutz - der Code liegt
+// öffentlich im Repo, wer die Secret-Zeichenkette dort findet, kommt auch
+// so rein. Für ein rein lokales Test-Feature reicht das aber aus.
+// ---------------------------------------------------------------------------
+function setupAdminMode() {
+  const params = new URLSearchParams(location.search);
+  if (params.get("admin") === ADMIN_SECRET && !state.adminMode) {
+    enableAdminMode(state);
+    savePlayer(state);
+    deleteScore().catch(() => {}); // vorherigen echten Rangliste-Eintrag entfernen, falls vorhanden
+    toast("🛠️ Admin-Modus aktiviert – zählt ab jetzt nicht mehr für die Rangliste.");
+  }
+  // Secret aus der URL entfernen, sobald es einmal gelesen wurde - soll nicht
+  // in der Adressleiste/im Verlauf hängen bleiben.
+  if (params.has("admin")) {
+    params.delete("admin");
+    const rest = params.toString();
+    history.replaceState(null, "", location.pathname + (rest ? "?" + rest : "") + location.hash);
+  }
+  $("#admin-tab-btn").classList.toggle("hidden", !state.adminMode);
+  if (state.adminMode) renderAdminPanel();
+}
+
+function renderAdminPanel() {
+  const grid = $("#admin-eggs-grid");
+  grid.innerHTML = "";
+  for (const egg of EGGS) {
+    const rarity = getRarity(egg.rarity);
+    const card = document.createElement("div");
+    card.className = "card egg-card";
+    card.style.setProperty("--rarity-color", rarity.color.startsWith("linear") ? "#888" : rarity.color);
+    card.appendChild(createArtEl("eggs", egg.id, egg.name, rarity.color));
+
+    const info = document.createElement("div");
+    info.className = "card-info";
+    info.innerHTML = `<div class="card-name">${egg.name}</div>${rarityBadgeHTML(rarity)}`;
+    card.appendChild(info);
+
+    const btn = document.createElement("button");
+    btn.className = "buy-btn admin-egg-btn";
+    btn.textContent = "🧪 Sofort ausbrüten";
+    btn.addEventListener("click", async () => {
+      const result = adminInstantHatch(state, egg.id);
+      savePlayer(state);
+      renderAll();
+      await playHatchRevealBatch([result]);
+    });
+    card.appendChild(btn);
+
+    grid.appendChild(card);
+  }
+}
+
+$("#admin-add-coins-btn").addEventListener("click", () => {
+  adminAddCoins(state, 1000000000000);
+  savePlayer(state);
+  renderAll();
+  toast("💰 +1 Billion Münzen (Admin)");
+});
+
+$("#admin-huge-btn").addEventListener("click", () => {
+  try {
+    const { pet } = adminGrantRandomHugePet(state);
+    savePlayer(state);
+    renderAll();
+    toast(`🎉 ${pet.name} erhalten (Admin)`);
+  } catch (err) {
+    toast(err.message, "error");
   }
 });
 

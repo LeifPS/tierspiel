@@ -37,6 +37,7 @@ function defaultPlayerState() {
     seenEggs: [],        // eggIds, die der Spieler schonmal gekauft hat (für den Index)
     rebirth: 0,          // erreichte Rebirth-Stufe (0 = noch keine)
     lastActiveMs: Date.now(),
+    adminMode: false,    // Testmodus (siehe enableAdminMode) - zählt nie für die Rangliste
   };
 }
 
@@ -103,18 +104,11 @@ function getFinishedHatching(state) {
   return state.hatching.filter(isHatchingFinished);
 }
 
-// ---- Ein fertiges Ei manuell ausbrüten -------------------------------------
-function hatchEgg(state, instanceId) {
-  const entry = state.hatching.find((h) => h.instanceId === instanceId);
-  if (!entry) throw new Error("Dieses Ei brütet nicht (mehr).");
-  if (!isHatchingFinished(entry)) throw new Error("Das Ei ist noch nicht fertig.");
-
-  const now = Date.now();
-  const egg = EGG_BY_ID[entry.eggId];
-  // Jedes Ei hat eine eigene, unabhängige Chance auf ein Huge Pet (5x
-  // seltener als astral-oder-besser aus demselben Ei) - kein eigenes Ei nötig.
-  const hugeJackpot = rollHugePetOverride(egg.luckPercent, egg.rarity);
-  const pet = hugeJackpot || drawPetFromPool(egg.luckPercent, egg.rarity);
+// Erzeugt eine fertige Pet-Instanz aus einem gezogenen Pet (Gewichts-Rollfaktor
+// + Ursprungsmutation werden hier gewürfelt) - gemeinsam genutzt von hatchEgg
+// und dem Admin-Testmodus (adminInstantHatch), damit beide exakt dieselbe
+// Geld-Formel verwenden.
+function createPetInstance(pet) {
   const rollFactor = rollWeightFactor();
   const weightKg = pet.baseWeightKg * rollFactor;
   const ratio = weightKg / pet.baseWeightKg; // Vielfaches des Basisgewichts
@@ -126,7 +120,7 @@ function hatchEgg(state, instanceId) {
   const moneyPerSec = pet.moneyPercentOfBest !== undefined
     ? 0
     : pet.baseMoney * moneyMultiplierFromWeightRatio(ratio) * mutationMoneyMultiplier;
-  const petInstance = {
+  return {
     instanceId: newInstanceId(),
     petId: pet.id,
     weightKg,
@@ -135,11 +129,60 @@ function hatchEgg(state, instanceId) {
     mutation,
     envMutation: null,
     abilityProgressMs: 0,
-    obtainedAtMs: now,
+    obtainedAtMs: Date.now(),
   };
+}
+
+// ---- Ein fertiges Ei manuell ausbrüten -------------------------------------
+function hatchEgg(state, instanceId) {
+  const entry = state.hatching.find((h) => h.instanceId === instanceId);
+  if (!entry) throw new Error("Dieses Ei brütet nicht (mehr).");
+  if (!isHatchingFinished(entry)) throw new Error("Das Ei ist noch nicht fertig.");
+
+  const egg = EGG_BY_ID[entry.eggId];
+  // Jedes Ei hat eine eigene, unabhängige Chance auf ein Huge Pet (5x
+  // seltener als astral-oder-besser aus demselben Ei) - kein eigenes Ei nötig.
+  const hugeJackpot = rollHugePetOverride(egg.luckPercent, egg.rarity);
+  const pet = hugeJackpot || drawPetFromPool(egg.luckPercent, egg.rarity);
+  const petInstance = createPetInstance(pet);
   state.pets.push(petInstance);
   state.hatching = state.hatching.filter((h) => h.instanceId !== instanceId);
   return { pet, instance: petInstance, egg };
+}
+
+// ---- Admin-/Testmodus -------------------------------------------------------
+// Nur erreichbar über einen geheimen URL-Parameter (siehe main.js) - einmal
+// aktiviert, bleibt es im Spielstand gespeichert. Erlaubt, jedes Ei sofort
+// und kostenlos "echt" zu ziehen (dieselbe Verteilung wie im echten Spiel,
+// nur ohne Preis/Wartezeit) sowie ein garantiertes Huge Pet, um neue Inhalte
+// schnell zu testen. Zählt absichtlich nie für die Online-Rangliste.
+function enableAdminMode(state) {
+  state.adminMode = true;
+}
+
+function adminInstantHatch(state, eggId) {
+  const egg = EGG_BY_ID[eggId];
+  if (!egg) throw new Error("Unbekanntes Ei.");
+  const hugeJackpot = rollHugePetOverride(egg.luckPercent, egg.rarity);
+  const pet = hugeJackpot || drawPetFromPool(egg.luckPercent, egg.rarity);
+  const petInstance = createPetInstance(pet);
+  state.pets.push(petInstance);
+  if (!state.seenEggs) state.seenEggs = [];
+  if (!state.seenEggs.includes(eggId)) state.seenEggs.push(eggId);
+  return { pet, instance: petInstance, egg };
+}
+
+function adminGrantRandomHugePet(state) {
+  const hugePets = PETS.filter((p) => p.rarity === "exklusiv");
+  if (hugePets.length === 0) throw new Error("Es gibt noch kein Huge Pet.");
+  const pet = hugePets[Math.floor(Math.random() * hugePets.length)];
+  const petInstance = createPetInstance(pet);
+  state.pets.push(petInstance);
+  return { pet, instance: petInstance };
+}
+
+function adminAddCoins(state, amount) {
+  state.coins += amount;
 }
 
 // ---- Geld aus equippten Pets (auch für die Offline-Zeit) ------------------
@@ -337,4 +380,5 @@ export {
   accrueMoney, totalMoneyPerSecond, getMoneyMultiplier, performRebirth,
   equipPet, unequipPet, autoEquipBest, timeRemainingMs, tickEnvironmentalMutations,
   tickHugeAbilities, effectiveMoneyPerSec,
+  enableAdminMode, adminInstantHatch, adminGrantRandomHugePet, adminAddCoins,
 };

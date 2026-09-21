@@ -4,7 +4,7 @@
 // ============================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import {
-  getFirestore, doc, setDoc, collection, getDocs, query, orderBy, limit,
+  getFirestore, doc, setDoc, deleteDoc, collection, getDocs, query, orderBy, limit,
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -20,4 +20,4 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-export { db, doc, setDoc, collection, getDocs, query, orderBy, limit };
+export { db, doc, setDoc, deleteDoc, collection, getDocs, query, orderBy, limit };

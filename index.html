@@ -26,6 +26,7 @@
     <button class="tab-btn" data-tab="index"><span class="tab-icon">📖</span><span class="tab-label">Index</span></button>
     <button class="tab-btn" data-tab="rebirth"><span class="tab-icon">🔁</span><span class="tab-label">Rebirth</span></button>
     <button class="tab-btn" data-tab="leaderboard"><span class="tab-icon">🏆</span><span class="tab-label">Rangliste</span></button>
+    <button id="admin-tab-btn" class="tab-btn hidden" data-tab="admin"><span class="tab-icon">🛠️</span><span class="tab-label">Admin</span></button>
   </div>
 
   <div id="panel-shop" class="tab-panel active">
@@ -93,6 +94,18 @@
       <button id="leaderboard-name-save" class="action-btn">Speichern</button>
     </div>
     <div id="leaderboard-list"></div>
+  </div>
+
+  <div id="panel-admin" class="tab-panel">
+    <div class="panel-header">
+      <span>Testmodus – zählt nicht für die Rangliste</span>
+    </div>
+    <div class="admin-row">
+      <button id="admin-add-coins-btn" class="action-btn">💰 +1 Billion Münzen</button>
+      <button id="admin-huge-btn" class="action-btn">🎉 Zufälliges Huge Pet geben</button>
+    </div>
+    <div class="panel-header"><span>Jedes Ei sofort testweise ausbrüten (kostenlos, ohne Wartezeit)</span></div>
+    <div id="admin-eggs-grid" class="grid"></div>
   </div>
 </div>
 
