@@ -120,7 +120,12 @@ function hatchEgg(state, instanceId) {
   const ratio = weightKg / pet.baseWeightKg; // Vielfaches des Basisgewichts
   const mutation = rollMutation(); // z.B. "gold" mit 5% Chance, unabhängig vom Ei
   const mutationMoneyMultiplier = mutation ? MUTATION_BY_ID[mutation].moneyMultiplier : 1;
-  const moneyPerSec = pet.baseMoney * moneyMultiplierFromWeightRatio(ratio) * mutationMoneyMultiplier;
+  // Pets mit moneyPercentOfBest (Huge Pets) haben kein festes baseMoney -
+  // ihr Geld/Sekunde wird live in effectiveMoneyPerSec() berechnet, hier
+  // bleibt der gespeicherte Wert ungenutzt bei 0.
+  const moneyPerSec = pet.moneyPercentOfBest !== undefined
+    ? 0
+    : pet.baseMoney * moneyMultiplierFromWeightRatio(ratio) * mutationMoneyMultiplier;
   const petInstance = {
     instanceId: newInstanceId(),
     petId: pet.id,
@@ -157,11 +162,29 @@ function getMoneyMultiplier(state) {
   return state.rebirth > 0 ? REBIRTHS[state.rebirth - 1].moneyMultiplier : 1;
 }
 
+// Für die meisten Pets einfach das gespeicherte moneyPerSec. Huge Pets
+// (PET_BY_ID[petId].moneyPercentOfBest gesetzt) verdienen stattdessen live
+// einen Prozentsatz vom besten anderen AUSGERÜSTETEN "normalen" Pet - dabei
+// zählen andere Huge Pets nie als Basis, sonst könnten sich zwei equippte
+// Huge Pets gegenseitig referenzieren (Kettenreaktion/Zirkelbezug).
+function effectiveMoneyPerSec(state, petInstance) {
+  const def = PET_BY_ID[petInstance.petId];
+  if (!def || def.moneyPercentOfBest === undefined) return petInstance.moneyPerSec;
+  const equippedSet = new Set(state.equipped);
+  const bestOther = state.pets.reduce((best, p) => {
+    if (!equippedSet.has(p.instanceId) || p.instanceId === petInstance.instanceId) return best;
+    const otherDef = PET_BY_ID[p.petId];
+    if (otherDef && otherDef.moneyPercentOfBest !== undefined) return best;
+    return Math.max(best, p.moneyPerSec);
+  }, 0);
+  return (def.moneyPercentOfBest / 100) * bestOther;
+}
+
 function totalMoneyPerSecond(state) {
   const equippedSet = new Set(state.equipped);
   const base = state.pets
     .filter((p) => equippedSet.has(p.instanceId))
-    .reduce((sum, p) => sum + p.moneyPerSec, 0);
+    .reduce((sum, p) => sum + effectiveMoneyPerSec(state, p), 0);
   return base * getMoneyMultiplier(state);
 }
 
@@ -313,5 +336,5 @@ export {
   startHatching, tickHatching, isHatchingFinished, getFinishedHatching, hatchEgg,
   accrueMoney, totalMoneyPerSecond, getMoneyMultiplier, performRebirth,
   equipPet, unequipPet, autoEquipBest, timeRemainingMs, tickEnvironmentalMutations,
-  tickHugeAbilities,
+  tickHugeAbilities, effectiveMoneyPerSec,
 };

@@ -4,7 +4,7 @@ import {
   EGG_BY_ID, PET_BY_ID, loadPlayer, savePlayer, resetPlayer, startHatching,
   tickHatching, isHatchingFinished, hatchEgg, accrueMoney, totalMoneyPerSecond, getMoneyMultiplier,
   performRebirth, equipPet, unequipPet, autoEquipBest, timeRemainingMs, tickEnvironmentalMutations,
-  tickHugeAbilities,
+  tickHugeAbilities, effectiveMoneyPerSec,
 } from "./game.js";
 import { getOrCreatePlayerId, getPlayerName, setPlayerName, submitScore, fetchLeaderboard } from "./leaderboard.js";
 
@@ -273,7 +273,7 @@ let inventoryPage = 0;
 let hatcheryPage = 0;
 let inventorySort = "money";
 const INVENTORY_SORTERS = {
-  money: (a, b) => b.moneyPerSec - a.moneyPerSec,
+  money: (a, b) => effectiveMoneyPerSec(state, b) - effectiveMoneyPerSec(state, a),
   rarity: (a, b) => RARITY_INDEX[PET_BY_ID[b.petId].rarity] - RARITY_INDEX[PET_BY_ID[a.petId].rarity],
   weight: (a, b) => b.weightKg - a.weightKg,
 };
@@ -727,7 +727,7 @@ function renderInventory() {
       ${mutation ? `<div class="${mutationVisuals.badgeClass}">${mutation.name} ×${mutation.moneyMultiplier}</div>` : ""}
       ${envMutation ? `<div class="${envMutationVisuals.badgeClass}">${envMutation.name} ×${envMutation.moneyMultiplier}</div>` : ""}
       <div class="card-stat">⚖️ ${inst.weightKg < 1 ? (inst.weightKg * 1000).toFixed(1) + "g" : formatNumber(inst.weightKg) + "kg"} (${inst.ratio.toFixed(2)}x)</div>
-      <div class="card-stat">${coinIcon()} ${formatNumber(inst.moneyPerSec)}/s</div>
+      <div class="card-stat">${coinIcon()} ${formatNumber(effectiveMoneyPerSec(state, inst))}/s</div>
       ${pet.ability ? `<div class="card-stat ability-stat">🌀 ${pet.ability.description}</div>` : ""}
     `;
     card.appendChild(info);
@@ -824,12 +824,17 @@ function renderIndex() {
       const chanceOrSourceLine = pet.rarity === "exklusiv"
         ? `<div class="card-stat">🥚 Nur über das Huge-Ei erhältlich</div>`
         : `<div class="card-stat">🍀 Chance: 1 in ${formatNumber(pet.baseChanceCache)}</div>`;
+      // Huge Pets haben kein festes Basis-Geld - sie verdienen einen
+      // Prozentsatz vom besten equippten Pet (siehe effectiveMoneyPerSec).
+      const moneyLine = pet.moneyPercentOfBest !== undefined
+        ? `<div class="card-stat">${coinIcon()} ${pet.moneyPercentOfBest}% deines besten ausgerüsteten Pets</div>`
+        : `<div class="card-stat">${coinIcon()} Basis: ${formatNumber(pet.baseMoney)}/s</div>`;
       info.innerHTML = `
         <div class="card-name">${pet.name}</div>
         ${rarityBadgeHTML(rarity)}
         ${chanceOrSourceLine}
         <div class="card-stat">⚖️ Basis: ${pet.baseWeightKg < 1 ? (pet.baseWeightKg * 1000).toFixed(1) + "g" : formatNumber(pet.baseWeightKg) + "kg"}</div>
-        <div class="card-stat">${coinIcon()} Basis: ${formatNumber(pet.baseMoney)}/s</div>
+        ${moneyLine}
         ${pet.ability ? `<div class="card-stat ability-stat">🌀 ${pet.ability.description}</div>` : ""}
       `;
     } else {

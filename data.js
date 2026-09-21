@@ -121,12 +121,15 @@ const PETS = [
   // Solar
   { id: "runenqual",    name: "Runen-Qual",    rarity: "solar", baseWeightKg: 400, baseMoney: 4000000000 },
   { id: "nuklearwolf",  name: "Nuklear-Wolf",  rarity: "solar", baseWeightKg: 600, baseMoney: 4200000000 },
-  // Exklusiv (Huge Pets) - nur über das Huge-Ei erhältlich. Jedes Huge Pet
-  // hat zusätzlich zum normalen Geld/Sekunde eine eigene Fähigkeit, die
-  // nur wirkt, solange es ausgerüstet ist (siehe tickHugeAbilities in game.js).
+  // Exklusiv (Huge Pets) - nur über das Huge-Ei erhältlich. Huge Pets haben
+  // kein festes Geld/Sekunde: sie verdienen stattdessen einen Prozentsatz
+  // (moneyPercentOfBest) von deinem besten ausgerüsteten "normalen" Pet -
+  // berechnet live in effectiveMoneyPerSec() (game.js), nicht beim Ausbrüten
+  // festgelegt. Zusätzlich hat jedes Huge Pet eine eigene Fähigkeit, die nur
+  // wirkt, solange es ausgerüstet ist (siehe tickHugeAbilities in game.js).
   {
     id: "hugeglitchedphoenix", name: "Huge Glitched Phoenix", rarity: "exklusiv",
-    baseWeightKg: 5000, baseMoney: 20000000000,
+    baseWeightKg: 5000, moneyPercentOfBest: 120,
     ability: {
       type: "mutate_random_equipped",
       intervalSec: 600,
