@@ -322,7 +322,10 @@ button:active { transform: scale(0.97); }
    Overlays - das Basisbild selbst bleibt unverändert sichtbar. */
 .glitch-rgb-layer {
   position: absolute;
-  inset: 0;
+  /* inset ist relativ zur Padding-Box von .art (position:relative), nicht zur
+     Content-Box - mit inset:0 wäre die Ebene größer als das eigentliche Bild,
+     das durch .art's padding (18px) kleiner ausfällt. 18px gleicht das aus. */
+  inset: 18px;
   pointer-events: none;
 }
 .glitch-layer {
@@ -365,7 +368,10 @@ button:active { transform: scale(0.97); }
    gleich bleiben statt zu "springen". */
 .glitch-particle-layer {
   position: absolute;
-  inset: 0;
+  /* Wie bei .glitch-rgb-layer: 18px statt 0, damit die Partikel auf demselben
+     Bereich verteilt werden, den das Pet-Bild innerhalb von .art tatsächlich
+     einnimmt (dessen padding sonst ignoriert würde). */
+  inset: 18px;
   pointer-events: none;
   overflow: hidden;
 }
