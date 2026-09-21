@@ -113,7 +113,7 @@ function hatchEgg(state, instanceId) {
   const egg = EGG_BY_ID[entry.eggId];
   // Jedes Ei (außer dem Huge-Ei selbst, das sowieso garantiert eins liefert)
   // hat zusätzlich eine winzige, unabhängige Chance auf ein Huge Pet.
-  const hugeJackpot = egg.rarity !== "exklusiv" ? rollHugePetOverride() : null;
+  const hugeJackpot = egg.rarity !== "exklusiv" ? rollHugePetOverride(egg.luckPercent) : null;
   const pet = hugeJackpot || drawPetFromPool(egg.luckPercent, egg.rarity);
   const rollFactor = rollWeightFactor();
   const weightKg = pet.baseWeightKg * rollFactor;

@@ -294,14 +294,21 @@ function drawPetFromPool(luckPercent, eggRarity) {
   return pool[pool.length - 1];
 }
 
-// Zusätzlich zum garantierten Huge-Ei gibt es eine winzige, komplett
-// unabhängige Chance, dass JEDES beliebige Ei stattdessen ein zufälliges
-// Huge Pet liefert - ein "Jackpot"-Pfad, unfassbar selten (1 in 100
-// Millionen pro Ausbrüten, unabhängig vom Ei-Glück).
-const HUGE_PET_CHANCE_FROM_NORMAL_EGG = 1 / 100000000;
+// Zusätzlich zum garantierten Huge-Ei gibt es eine winzige, unabhängige
+// Chance, dass JEDES beliebige Ei stattdessen ein zufälliges Huge Pet
+// liefert - ein "Jackpot"-Pfad. Skaliert mit dem Glück des Eis (wie beim
+// normalen Ziehen), aber mit Wurzel statt linear gedämpft und gedeckelt,
+// damit sie realistisch bleibt: das Standard-Ei liegt bei 1 in 1 Milliarde,
+// selbst das glücklichste Ei im Spiel bleibt unter 1 in 5 Millionen -
+// "unfassbar selten" bleibt unfassbar selten, auch mit viel Glück.
+const HUGE_JACKPOT_BASE_CHANCE = 1 / 1000000000; // bei neutralem Glück (100%)
+const HUGE_JACKPOT_MAX_LUCK_MULTIPLIER = 200; // Deckel für den Glücks-Bonus
 
-function rollHugePetOverride() {
-  if (Math.random() >= HUGE_PET_CHANCE_FROM_NORMAL_EGG) return null;
+function rollHugePetOverride(luckPercent) {
+  const luckFactor = Math.max(luckPercent, 100) / 100;
+  const luckMultiplier = Math.min(Math.sqrt(luckFactor), HUGE_JACKPOT_MAX_LUCK_MULTIPLIER);
+  const chance = HUGE_JACKPOT_BASE_CHANCE * luckMultiplier;
+  if (Math.random() >= chance) return null;
   const hugePets = PETS.filter((p) => p.rarity === "exklusiv");
   if (hugePets.length === 0) return null;
   return hugePets[Math.floor(Math.random() * hugePets.length)];
