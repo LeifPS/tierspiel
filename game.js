@@ -14,6 +14,14 @@ const START_COINS = 500;
 const START_EQUIP_SLOTS = 3;
 const SAVE_KEY = "tierspiel_save_v1";
 
+// Wenn ein Pet umbenannt/ausgetauscht wird (alte id -> neue id), landet die
+// Zuordnung hier, damit schon gespeicherte Pet-Instanzen beim Laden auf die
+// neue id migriert werden, statt auf ein nicht mehr existierendes Pet zu
+// zeigen (PET_BY_ID[alte id] wäre sonst undefined).
+const PET_ID_MIGRATIONS = {
+  diamantkatze: "zuckerstange", // Diamond Cat -> Candycane (Astral)
+};
+
 function newInstanceId() {
   return (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)) ;
 }
@@ -45,6 +53,10 @@ function loadPlayer() {
     h.remainingMs !== undefined
       ? h
       : { instanceId: h.instanceId, eggId: h.eggId, durationMs: h.durationMs, remainingMs: h.durationMs - (Date.now() - h.startMs) }
+  ));
+  // Umbenannte/ausgetauschte Pets (siehe PET_ID_MIGRATIONS) auf die neue id ummappen.
+  state.pets = state.pets.map((p) => (
+    PET_ID_MIGRATIONS[p.petId] ? { ...p, petId: PET_ID_MIGRATIONS[p.petId] } : p
   ));
   return state;
 }
@@ -113,6 +125,7 @@ function hatchEgg(state, instanceId) {
     moneyPerSec,
     mutation,
     envMutation: null,
+    abilityProgressMs: 0,
     obtainedAtMs: now,
   };
   state.pets.push(petInstance);
@@ -217,6 +230,67 @@ function tickEnvironmentalMutations(state, elapsedMs) {
   return gained;
 }
 
+// ---- Huge-Pet-Fähigkeiten: eigener Effekt pro equipptem Huge Pet ----------
+// Wie bei Umgebungsmutationen NUR während aktivem Spielen aufgerufen, nie
+// für Offline-Zeit. Jedes Pet mit PET_BY_ID[petId].ability sammelt pro Tick
+// Fortschritt; sobald das konfigurierte Intervall erreicht ist, löst die
+// Fähigkeit aus (mehrfach hintereinander, falls elapsedMs > Intervall).
+function tickHugeAbilities(state, elapsedMs) {
+  const triggered = [];
+  const equippedSet = new Set(state.equipped);
+  for (const pet of state.pets) {
+    if (!equippedSet.has(pet.instanceId)) continue;
+    const def = PET_BY_ID[pet.petId];
+    const ability = def && def.ability;
+    if (!ability) continue;
+
+    pet.abilityProgressMs = (pet.abilityProgressMs || 0) + elapsedMs;
+    const intervalMs = ability.intervalSec * 1000;
+    while (pet.abilityProgressMs >= intervalMs) {
+      pet.abilityProgressMs -= intervalMs;
+      const result = executeAbility(state, pet, ability);
+      if (result) triggered.push({ source: pet, ability, target: result });
+    }
+  }
+  return triggered;
+}
+
+function executeAbility(state, sourcePet, ability) {
+  if (ability.type === "mutate_random_equipped") {
+    return mutateRandomEquipped(state, sourcePet.instanceId, ability.envMutationId);
+  }
+  return null;
+}
+
+// Wählt zufällig ein anderes ausgerüstetes Pet (nie das Huge Pet selbst) und
+// gibt ihm die genannte Umgebungsmutation - unabhängig von deren "disabled"-
+// Flag (das blockiert nur den passiven Zufalls-Roll, nicht diese gezielte
+// Fähigkeit). Trägt eine eventuell schon vorhandene Kopie derselben Mutation
+// bei einem anderen equippten Pet ab, damit immer nur eine im Loadout ist.
+function mutateRandomEquipped(state, sourceInstanceId, envMutationId) {
+  const envMutation = ENV_MUTATION_BY_ID[envMutationId];
+  const equippedSet = new Set(state.equipped);
+  const candidates = state.pets.filter((p) => equippedSet.has(p.instanceId) && p.instanceId !== sourceInstanceId);
+  if (candidates.length === 0) return null;
+  const target = candidates[Math.floor(Math.random() * candidates.length)];
+
+  for (const p of candidates) {
+    if (p.instanceId !== target.instanceId && p.envMutation === envMutationId) {
+      p.moneyPerSec /= envMutation.moneyMultiplier;
+      p.envMutation = null;
+    }
+  }
+  if (target.envMutation !== envMutationId) {
+    if (target.envMutation) {
+      const old = ENV_MUTATION_BY_ID[target.envMutation];
+      target.moneyPerSec /= old.moneyMultiplier;
+    }
+    target.moneyPerSec *= envMutation.moneyMultiplier;
+    target.envMutation = envMutationId;
+  }
+  return target;
+}
+
 // ---- Automatisch die Tiere mit dem höchsten Geld/Sekunde ausrüsten --------
 function autoEquipBest(state) {
   const best = [...state.pets]
@@ -235,4 +309,5 @@ export {
   startHatching, tickHatching, isHatchingFinished, getFinishedHatching, hatchEgg,
   accrueMoney, totalMoneyPerSecond, getMoneyMultiplier, performRebirth,
   equipPet, unequipPet, autoEquipBest, timeRemainingMs, tickEnvironmentalMutations,
+  tickHugeAbilities,
 };

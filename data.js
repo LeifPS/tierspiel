@@ -31,6 +31,10 @@ const RARITIES = [
   { id: "galactic",     name: "Galaktisch", color: "linear-gradient(135deg,#1565c0,#64b5f6,#1565c0)", petChance: 250000000000 },
   { id: "stellar",      name: "Stellar",    color: "linear-gradient(135deg,#2e7d32,#a5d6a7,#2e7d32)", petChance: 1000000000000 },
   { id: "nebula",       name: "Nebula",     color: "linear-gradient(135deg,#b71c1c,#ff8a80,#b71c1c)", petChance: 5000000000000 },
+  // Exklusiv: eigener Zweig für Huge Pets, nicht Teil der normalen
+  // Seltenheits-Leiter - man bekommt sie NUR über das Huge-Ei (siehe unten),
+  // nie über normales Glück bei anderen Eiern (siehe drawPetFromPool).
+  { id: "exklusiv",     name: "Exklusiv",   color: "linear-gradient(90deg,#ff3b3b,#ff9f1c,#ffe135,#4ade80,#38bdf8,#a78bfa,#ff6ec7)", petChance: 1000000000000000 },
 ];
 const RARITY_INDEX = Object.fromEntries(RARITIES.map((r, i) => [r.id, i]));
 
@@ -106,7 +110,7 @@ const PETS = [
   { id: "krampushund",   name: "Krampushund",   rarity: "celestial", baseWeightKg: 500, baseMoney: 31000000 },
   // Astral
   { id: "kosmosdrache", name: "Kosmischer Drache", rarity: "astral", baseWeightKg: 3000, baseMoney: 150000000 },
-  { id: "diamantkatze", name: "Diamantkatze",      rarity: "astral", baseWeightKg: 5,    baseMoney: 160000000 },
+  { id: "zuckerstange", name: "Zuckerstange",      rarity: "astral", baseWeightKg: 5,    baseMoney: 160000000 },
   { id: "minenroboter", name: "Minenroboter",      rarity: "astral", baseWeightKg: 800,  baseMoney: 170000000 },
   { id: "kosmischequal",name: "Kosmische Qual",    rarity: "astral", baseWeightKg: 2000, baseMoney: 165000000 },
   // Nova
@@ -117,6 +121,19 @@ const PETS = [
   // Solar
   { id: "runenqual",    name: "Runen-Qual",    rarity: "solar", baseWeightKg: 400, baseMoney: 4000000000 },
   { id: "nuklearwolf",  name: "Nuklear-Wolf",  rarity: "solar", baseWeightKg: 600, baseMoney: 4200000000 },
+  // Exklusiv (Huge Pets) - nur über das Huge-Ei erhältlich. Jedes Huge Pet
+  // hat zusätzlich zum normalen Geld/Sekunde eine eigene Fähigkeit, die
+  // nur wirkt, solange es ausgerüstet ist (siehe tickHugeAbilities in game.js).
+  {
+    id: "hugeglitchedphoenix", name: "Huge Glitched Phoenix", rarity: "exklusiv",
+    baseWeightKg: 5000, baseMoney: 20000000000,
+    ability: {
+      type: "mutate_random_equipped",
+      intervalSec: 600,
+      envMutationId: "glitched",
+      description: "Alle 600s: mutiert ein zufälliges anderes ausgerüstetes Pet mit Glitched (×4,04)",
+    },
+  },
 ];
 
 // ---- Eier -----------------------------------------------------------------
@@ -157,6 +174,10 @@ const EGGS = [
   { id: "schatten",  name: "Schatten-Ei",   rarity: "ethereal",     luckPercent: 150000000,  hatchSeconds: 39600,  basePrice: 70000000000,  appearChance: 0.001,stock: [1, 1] },
   { id: "empyreum",  name: "Empyreum-Ei",   rarity: "secret",       luckPercent: 600000000,  hatchSeconds: 43200,  basePrice: 350000000000, appearChance: 0.0003,stock: [1, 1] },
   { id: "nebel",     name: "Engel-Ei",      rarity: "celestial",    luckPercent: 20000000000,hatchSeconds: 86400,  basePrice: 5000000000000,appearChance: 0.0001,stock: [1, 1] },
+  // Huge-Ei: einziger Weg, an Huge Pets (Seltenheit "exklusiv") zu kommen -
+  // drawPetFromPool() lässt die exklusiv-Stufe für jedes andere Ei aus,
+  // egal wie hoch dessen Glück ist.
+  { id: "huge",      name: "Huge-Ei",       rarity: "exklusiv",     luckPercent: 100000000000,hatchSeconds: 172800, basePrice: 50000000000000,appearChance: 0.00003,stock: [1, 1] },
 ];
 
 // ---- Rebirth-System ---------------------------------------------------------
@@ -246,7 +267,14 @@ function drawPetFromPool(luckPercent, eggRarity) {
   if (eggRarity !== undefined) {
     minTierIdx = Math.max(minTierIdx, RARITY_INDEX[eggRarity]);
   }
-  const eligiblePets = PETS.filter((pet) => RARITY_INDEX[pet.rarity] >= minTierIdx);
+  // "exklusiv" (Huge Pets) ist kein normaler Teil der Glücks-Leiter - der
+  // Pool darf sie nur enthalten, wenn das Ei selbst exklusiv ist (Huge-Ei).
+  // Sonst könnte ein extrem glückliches normales Ei theoretisch trotzdem
+  // ein Huge Pet ziehen, was nur über das Huge-Ei gehen soll.
+  const eligiblePets = PETS.filter((pet) => (
+    RARITY_INDEX[pet.rarity] >= minTierIdx
+    && (eggRarity === "exklusiv" || pet.rarity !== "exklusiv")
+  ));
   const pool = eligiblePets.length > 0 ? eligiblePets : PETS; // Sicherheitsnetz
 
   const boost = 1 + LUCK_BOOST_STRENGTH / Math.sqrt(luckFactor);

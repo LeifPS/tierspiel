@@ -4,6 +4,7 @@ import {
   EGG_BY_ID, PET_BY_ID, loadPlayer, savePlayer, resetPlayer, startHatching,
   tickHatching, isHatchingFinished, hatchEgg, accrueMoney, totalMoneyPerSecond, getMoneyMultiplier,
   performRebirth, equipPet, unequipPet, autoEquipBest, timeRemainingMs, tickEnvironmentalMutations,
+  tickHugeAbilities,
 } from "./game.js";
 import { getOrCreatePlayerId, getPlayerName, setPlayerName, submitScore, fetchLeaderboard } from "./leaderboard.js";
 
@@ -86,7 +87,7 @@ const ASSET_OVERRIDES = {
     glitchdrache: "https://static.wikia.nocookie.net/pets-go/images/f/f6/Glitched_Dragon.png",
     schattenhai: "https://static.wikia.nocookie.net/pets-go/images/7/77/Shadow_Shark.png",
     gepard: "https://static.wikia.nocookie.net/pets-go/images/9/9e/Cheetah.png",
-    diamantkatze: "https://static.wikia.nocookie.net/pets-go/images/a/a5/Diamond_Cat.png",
+    zuckerstange: "https://static.wikia.nocookie.net/pets-go/images/d/d3/Candycane.png",
     minenroboter: "https://static.wikia.nocookie.net/pets-go/images/4/4f/Mining_Robot.png",
     tiefseedelfin: "https://static.wikia.nocookie.net/pets-go/images/9/99/Abyssal_Dolphin.png",
     reliktdrache: "https://static.wikia.nocookie.net/pets-go/images/b/b0/Relic_Dragon.png",
@@ -107,6 +108,7 @@ const ASSET_OVERRIDES = {
     empyreumdominus: "https://static.wikia.nocookie.net/pets-go/images/7/7a/Empyrean_Dominus.png",
     nuklearwolf: "https://static.wikia.nocookie.net/pets-go/images/2/22/Nuclear_Wolf.png",
     krampushund: "https://static.wikia.nocookie.net/pets-go/images/e/e5/Krampus_Hound.png",
+    hugeglitchedphoenix: "https://static.wikia.nocookie.net/pets-go/images/0/0c/Huge_Glitched_Phoenix.png",
   },
 };
 
@@ -312,11 +314,19 @@ function bootGame() {
     renderHatchery();
     updateShopRotationText();
     updateShopAffordability();
-    if (envGains.length > 0) {
+    // Huge-Pet-Fähigkeiten laufen genauso nur online (siehe tickHugeAbilities).
+    const abilityTriggers = tickHugeAbilities(state, 333);
+    if (envGains.length > 0 || abilityTriggers.length > 0) {
       for (const { pet, envMutation } of envGains) {
         const visuals = ENV_MUTATION_VISUALS[envMutation.id];
         const petDef = PET_BY_ID[pet.petId];
         toast(`${visuals.emoji} ${petDef.name} hat die Umgebungsmutation "${envMutation.name}" bekommen!`);
+      }
+      for (const { source, target } of abilityTriggers) {
+        if (!target) continue;
+        const sourceDef = PET_BY_ID[source.petId];
+        const targetDef = PET_BY_ID[target.petId];
+        toast(`✨ ${sourceDef.name}s Fähigkeit hat ${targetDef.name} mutiert!`);
       }
       savePlayer(state);
       renderInventory();
@@ -717,6 +727,7 @@ function renderInventory() {
       ${envMutation ? `<div class="${envMutationVisuals.badgeClass}">${envMutation.name} ×${envMutation.moneyMultiplier}</div>` : ""}
       <div class="card-stat">⚖️ ${inst.weightKg < 1 ? (inst.weightKg * 1000).toFixed(1) + "g" : formatNumber(inst.weightKg) + "kg"} (${inst.ratio.toFixed(2)}x)</div>
       <div class="card-stat">${coinIcon()} ${formatNumber(inst.moneyPerSec)}/s</div>
+      ${pet.ability ? `<div class="card-stat ability-stat">🌀 ${pet.ability.description}</div>` : ""}
     `;
     card.appendChild(info);
     const btn = document.createElement("button");
@@ -806,12 +817,19 @@ function renderIndex() {
     const info = document.createElement("div");
     info.className = "card-info";
     if (discovered) {
+      // Huge Pets (Seltenheit "exklusiv") kommen nie über normales Ei-Glück -
+      // die "1 in X"-Chance wäre hier irreführend, stattdessen ein Hinweis
+      // auf das Huge-Ei plus die eigene Fähigkeit.
+      const chanceOrSourceLine = pet.rarity === "exklusiv"
+        ? `<div class="card-stat">🥚 Nur über das Huge-Ei erhältlich</div>`
+        : `<div class="card-stat">🍀 Chance: 1 in ${formatNumber(pet.baseChanceCache)}</div>`;
       info.innerHTML = `
         <div class="card-name">${pet.name}</div>
         ${rarityBadgeHTML(rarity)}
-        <div class="card-stat">🍀 Chance: 1 in ${formatNumber(pet.baseChanceCache)}</div>
+        ${chanceOrSourceLine}
         <div class="card-stat">⚖️ Basis: ${pet.baseWeightKg < 1 ? (pet.baseWeightKg * 1000).toFixed(1) + "g" : formatNumber(pet.baseWeightKg) + "kg"}</div>
         <div class="card-stat">${coinIcon()} Basis: ${formatNumber(pet.baseMoney)}/s</div>
+        ${pet.ability ? `<div class="card-stat ability-stat">🌀 ${pet.ability.description}</div>` : ""}
       `;
     } else {
       info.innerHTML = `

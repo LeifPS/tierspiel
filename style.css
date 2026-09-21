@@ -603,6 +603,7 @@ button:active { transform: scale(0.97); }
   .rarity-gradient-anim { animation: none; background-position: 50% 50%; }
 }
 .card-stat { font-size: 0.8rem; color: var(--text-dim); }
+.card-stat.ability-stat { color: #b026ff; font-weight: 600; }
 
 .buy-btn {
   margin-top: auto;
