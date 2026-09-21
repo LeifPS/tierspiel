@@ -128,7 +128,7 @@ const PETS = [
   // festgelegt. Zusätzlich hat jedes Huge Pet eine eigene Fähigkeit, die nur
   // wirkt, solange es ausgerüstet ist (siehe tickHugeAbilities in game.js).
   {
-    id: "hugeglitchedphoenix", name: "Huge Glitched Phoenix", rarity: "exklusiv",
+    id: "hugeglitchedphoenix", name: "Riesiger Glitched-Phönix", rarity: "exklusiv",
     baseWeightKg: 5000, moneyPercentOfBest: 120,
     ability: {
       type: "mutate_random_equipped",

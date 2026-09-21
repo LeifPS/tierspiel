@@ -416,7 +416,7 @@ function playHatchRevealBatch(results) {
 
     const label = document.createElement("div");
     label.className = "slot-label";
-    label.textContent = (isHuge ? "🎉 HUGE! " : mutationVisuals ? mutationVisuals.emoji + " " : "") + pet.name;
+    label.textContent = (isHuge ? "🎉 RIESIG! " : mutationVisuals ? mutationVisuals.emoji + " " : "") + pet.name;
     slot.appendChild(label);
 
     grid.appendChild(slot);

@@ -174,7 +174,7 @@ function adminInstantHatch(state, eggId) {
 
 function adminGrantRandomHugePet(state) {
   const hugePets = PETS.filter((p) => p.rarity === "exklusiv");
-  if (hugePets.length === 0) throw new Error("Es gibt noch kein Huge Pet.");
+  if (hugePets.length === 0) throw new Error("Es gibt noch kein Riesen-Pet.");
   const pet = hugePets[Math.floor(Math.random() * hugePets.length)];
   const petInstance = createPetInstance(pet);
   state.pets.push(petInstance);
