@@ -148,9 +148,12 @@ function glitchParticleSpecs(id, count = 24) {
 // per mix-blend-mode:screen kombiniert. Die CSS-Animation lässt sie
 // versetzt kurz "auseinanderspringen" (RGB-Split-Geister) statt dauerhaft
 // sichtbar zu sein - siehe glitch-rgb-pop in style.css.
-function createGlitchRGBLayer(src) {
+// locked=true (z.B. noch unentdeckte Umgebungsmutation im Index): der Effekt
+// läuft schon sichtbar mit, aber komplett schwarz - als Silhouette wie das
+// gesperrte Pet-Bild selbst, statt die echten Farben zu verraten.
+function createGlitchRGBLayer(src, locked = false) {
   const layer = document.createElement("div");
-  layer.className = "glitch-rgb-layer";
+  layer.className = "glitch-rgb-layer" + (locked ? " locked-glitch" : "");
   for (const channel of ["r", "g", "b"]) {
     const img = document.createElement("img");
     img.src = src;
@@ -161,7 +164,7 @@ function createGlitchRGBLayer(src) {
   return layer;
 }
 
-function createGlitchParticleLayer(id) {
+function createGlitchParticleLayer(id, locked = false) {
   const layer = document.createElement("div");
   layer.className = "glitch-particle-layer";
   for (const spec of glitchParticleSpecs(id)) {
@@ -170,7 +173,7 @@ function createGlitchParticleLayer(id) {
     particle.style.setProperty("--gx", spec.x + "%");
     particle.style.setProperty("--gy", spec.y + "%");
     particle.style.setProperty("--gdelay", `-${spec.delay}s`);
-    particle.style.setProperty("--gcolor", spec.color);
+    particle.style.setProperty("--gcolor", locked ? "#000" : spec.color);
     layer.appendChild(particle);
   }
   return layer;
@@ -213,9 +216,9 @@ function createArtEl(kind, id, label, rarityColor, locked = false, dimmed = fals
     shine.style.setProperty("-webkit-mask-image", `url('${src}')`);
     wrap.appendChild(shine);
   }
-  if (envMutation && !locked) {
-    wrap.appendChild(createGlitchRGBLayer(src));
-    wrap.appendChild(createGlitchParticleLayer(id));
+  if (envMutation) {
+    wrap.appendChild(createGlitchRGBLayer(src, locked));
+    wrap.appendChild(createGlitchParticleLayer(id, locked));
   }
   return wrap;
 }
@@ -950,7 +953,8 @@ function renderEnvMutationsIndex() {
     card.className = "card mutation-card" + (isDiscovered ? "" : " locked");
 
     if (!isDiscovered) {
-      card.appendChild(createArtEl("pets", MUTATION_DEMO_PET_IDS[0], "???", "#000", true));
+      // Effekt läuft schon (schwarz) mit, nur die Mutation selbst bleibt "???".
+      card.appendChild(createArtEl("pets", MUTATION_DEMO_PET_IDS[0], "???", "#000", true, false, null, envMutation.id));
       const lockedInfo = document.createElement("div");
       lockedInfo.className = "card-info";
       lockedInfo.innerHTML = `<div class="card-name">???</div>`;
