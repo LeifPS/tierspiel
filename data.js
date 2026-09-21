@@ -320,9 +320,26 @@ function rollMutation() {
   return null;
 }
 
+// ---- Umgebungsmutationen -------------------------------------------------
+// Anders als Ursprungsmutationen (oben) werden diese NICHT beim Ausbrüten
+// gewürfelt, sondern nachträglich, während ein Pet equippt und das Spiel
+// aktiv geöffnet ist: pro vergangener Sekunde eine Chance von
+// "chancePerSecond". Sie erzeugen keine Farb-/Pattern-Änderung, sondern
+// einen Partikel-Effekt, und stacken multiplikativ mit einer eventuell
+// vorhandenen Ursprungsmutation (z.B. Gold x3 + Glitched x4,04 = x12,12).
+const ENV_MUTATIONS = [
+  {
+    id: "glitched",
+    name: "Glitched",
+    chancePerSecond: 1 / 5000, // pro Sekunde, nur während aktiv equippt & Tab offen
+    moneyMultiplier: 4.04,
+  },
+];
+const ENV_MUTATION_BY_ID = Object.fromEntries(ENV_MUTATIONS.map((m) => [m.id, m]));
+
 export {
   RARITIES, RARITY_INDEX, PETS, EGGS, REBIRTHS, WEIGHT_ROLL_TABLE,
-  MUTATIONS, MUTATION_BY_ID,
+  MUTATIONS, MUTATION_BY_ID, ENV_MUTATIONS, ENV_MUTATION_BY_ID,
   rollWeightFactor, moneyMultiplierFromWeightRatio, drawPetFromPool, rollMutation,
   formatNumber, formatDuration, getRarity,
 };

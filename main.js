@@ -1,9 +1,9 @@
-import { EGGS, PETS, REBIRTHS, RARITY_INDEX, MUTATIONS, MUTATION_BY_ID, getRarity, formatNumber, formatDuration } from "./data.js";
+import { EGGS, PETS, REBIRTHS, RARITY_INDEX, MUTATIONS, MUTATION_BY_ID, ENV_MUTATIONS, ENV_MUTATION_BY_ID, getRarity, formatNumber, formatDuration } from "./data.js";
 import { getOrRotateShop, buyEgg, msUntilNextRotation, currentRotationIndex, ROTATION_MS } from "./shop.js";
 import {
   EGG_BY_ID, PET_BY_ID, loadPlayer, savePlayer, resetPlayer, startHatching,
   tickHatching, isHatchingFinished, hatchEgg, accrueMoney, totalMoneyPerSecond, getMoneyMultiplier,
-  performRebirth, equipPet, unequipPet, autoEquipBest, timeRemainingMs,
+  performRebirth, equipPet, unequipPet, autoEquipBest, timeRemainingMs, tickEnvironmentalMutations,
 } from "./game.js";
 import { getOrCreatePlayerId, getPlayerName, setPlayerName, submitScore, fetchLeaderboard } from "./leaderboard.js";
 
@@ -115,6 +115,49 @@ const MUTATION_VISUALS = {
   rainbow: { emoji: "🌈", badgeClass: "rainbow-badge", glowColor: "#ff6ec7", placeholderGradient: "linear-gradient(90deg, #ff3b3b, #ff9f1c, #ffe135, #4ade80, #38bdf8, #a78bfa)" },
 };
 
+// Zusatz-Optik je Umgebungsmutation - anders als Ursprungsmutationen (oben)
+// keine Umfärbung, sondern ein Partikel-Effekt (siehe glitchParticleSpecs).
+const ENV_MUTATION_VISUALS = {
+  glitched: { emoji: "🟪", badgeClass: "glitch-badge", glowColor: "#b026ff", placeholderGradient: "linear-gradient(135deg, #1a1a2e, #b026ff, #1a1a2e)" },
+};
+const GLITCH_PARTICLE_COLORS = ["#39ff14", "#ff2079", "#00e5ff", "#b026ff"];
+
+// Deterministisch (nicht neu gewürfelt bei jedem Rendern) verteilte
+// Partikel-Positionen für den Glitch-Effekt, abgeleitet aus einem Hash der
+// Instanz-ID - dieselbe Idee wie swayDelayFor() für die Schwenk-Animation.
+function glitchParticleSpecs(id, count = 6) {
+  let seed = 0;
+  for (let i = 0; i < id.length; i++) seed = (seed * 31 + id.charCodeAt(i)) >>> 0;
+  const specs = [];
+  for (let i = 0; i < count; i++) {
+    seed = (seed * 1103515245 + 12345) >>> 0;
+    const x = seed % 100;
+    seed = (seed * 1103515245 + 12345) >>> 0;
+    const y = seed % 100;
+    seed = (seed * 1103515245 + 12345) >>> 0;
+    const delay = (seed % 180) / 100;
+    seed = (seed * 1103515245 + 12345) >>> 0;
+    const color = GLITCH_PARTICLE_COLORS[seed % GLITCH_PARTICLE_COLORS.length];
+    specs.push({ x, y, delay, color });
+  }
+  return specs;
+}
+
+function createGlitchParticleLayer(id) {
+  const layer = document.createElement("div");
+  layer.className = "glitch-particle-layer";
+  for (const spec of glitchParticleSpecs(id)) {
+    const particle = document.createElement("div");
+    particle.className = "glitch-particle";
+    particle.style.setProperty("--gx", spec.x + "%");
+    particle.style.setProperty("--gy", spec.y + "%");
+    particle.style.setProperty("--gdelay", `-${spec.delay}s`);
+    particle.style.setProperty("--gcolor", spec.color);
+    layer.appendChild(particle);
+  }
+  return layer;
+}
+
 function renderPlaceholderIcon(container, label, rarityColor, locked = false, mutation = null) {
   container.innerHTML = "";
   const el = document.createElement("div");
@@ -134,7 +177,7 @@ function swayDelayFor(id) {
   return `-${((hash % 320) / 100).toFixed(2)}s`;
 }
 
-function createArtEl(kind, id, label, rarityColor, locked = false, dimmed = false, mutation = null) {
+function createArtEl(kind, id, label, rarityColor, locked = false, dimmed = false, mutation = null, envMutation = null) {
   const wrap = document.createElement("div");
   wrap.className = "art" + (locked ? " locked" : "") + (dimmed ? " dimmed" : "");
   wrap.style.setProperty("--sway-delay", swayDelayFor(id));
@@ -151,6 +194,9 @@ function createArtEl(kind, id, label, rarityColor, locked = false, dimmed = fals
     shine.style.setProperty("mask-image", `url('${src}')`);
     shine.style.setProperty("-webkit-mask-image", `url('${src}')`);
     wrap.appendChild(shine);
+  }
+  if (envMutation && !locked) {
+    wrap.appendChild(createGlitchParticleLayer(id));
   }
   return wrap;
 }
@@ -219,6 +265,9 @@ function bootGame() {
   setInterval(() => {
     tickHatching(state, 333, 3);
     accrueMoney(state);
+    // Umgebungsmutationen (z.B. Glitched) rollen NUR während aktiv gespielt
+    // wird, nie für Offline-Zeit - siehe tickEnvironmentalMutations.
+    const envGains = tickEnvironmentalMutations(state, 333);
     // Nur die zeitabhängigen Anzeigen aktualisieren (Münzen, Brüt-Fortschritt).
     // Tiere/Index nicht neu rendern, sonst rucken CSS-Animationen dort bei
     // jedem Tick, weil ihre DOM-Elemente ständig neu erzeugt würden.
@@ -226,6 +275,16 @@ function bootGame() {
     renderHatchery();
     updateShopRotationText();
     updateShopAffordability();
+    if (envGains.length > 0) {
+      for (const { pet, envMutation } of envGains) {
+        const visuals = ENV_MUTATION_VISUALS[envMutation.id];
+        const petDef = PET_BY_ID[pet.petId];
+        toast(`${visuals.emoji} ${petDef.name} hat die Umgebungsmutation "${envMutation.name}" bekommen!`);
+      }
+      savePlayer(state);
+      renderInventory();
+      renderEnvMutationsIndex();
+    }
   }, 333);
 
   // Alle 5s speichern, damit bei Tab schließen nicht zu viel Fortschritt fehlt
@@ -354,7 +413,8 @@ function renderAll() {
   renderHatchery();
   renderInventory();
   renderIndex();
-  renderMutationsIndex();
+  renderOriginMutationsIndex();
+  renderEnvMutationsIndex();
   renderRebirth();
   renderLeaderboard();
 }
@@ -603,18 +663,21 @@ function renderInventory() {
     const rarity = getRarity(pet.rarity);
     const mutation = inst.mutation ? MUTATION_BY_ID[inst.mutation] : null;
     const mutationVisuals = inst.mutation ? MUTATION_VISUALS[inst.mutation] : null;
+    const envMutation = inst.envMutation ? ENV_MUTATION_BY_ID[inst.envMutation] : null;
+    const envMutationVisuals = inst.envMutation ? ENV_MUTATION_VISUALS[inst.envMutation] : null;
     const equipped = state.equipped.includes(inst.instanceId);
     const card = document.createElement("div");
     card.className = "card pet-card" + (equipped ? " equipped" : "");
-    const art = createArtEl("pets", pet.id, pet.name, rarity.color, false, false, inst.mutation);
+    const art = createArtEl("pets", pet.id, pet.name, rarity.color, false, false, inst.mutation, inst.envMutation);
     art.style.setProperty("--sway-delay", swayDelayFor(inst.instanceId));
     card.appendChild(art);
     const info = document.createElement("div");
     info.className = "card-info";
     info.innerHTML = `
-      <div class="card-name">${mutationVisuals ? mutationVisuals.emoji + " " : ""}${pet.name}</div>
+      <div class="card-name">${mutationVisuals ? mutationVisuals.emoji + " " : ""}${envMutationVisuals ? envMutationVisuals.emoji + " " : ""}${pet.name}</div>
       ${rarityBadgeHTML(rarity)}
       ${mutation ? `<div class="${mutationVisuals.badgeClass}">${mutation.name} ×${mutation.moneyMultiplier}</div>` : ""}
+      ${envMutation ? `<div class="${envMutationVisuals.badgeClass}">${envMutation.name} ×${envMutation.moneyMultiplier}</div>` : ""}
       <div class="card-stat">⚖️ ${inst.weightKg < 1 ? (inst.weightKg * 1000).toFixed(1) + "g" : formatNumber(inst.weightKg) + "kg"} (${inst.ratio.toFixed(2)}x)</div>
       <div class="card-stat">${coinIcon()} ${formatNumber(inst.moneyPerSec)}/s</div>
     `;
@@ -652,7 +715,7 @@ $$("#panel-index .index-switch-btn").forEach((btn) => {
     $$("#panel-index .index-switch-btn").forEach((b) => b.classList.toggle("active", b === btn));
     $("#index-eggs-grid").classList.toggle("hidden", indexView !== "eggs");
     $("#index-pets-grid").classList.toggle("hidden", indexView !== "pets");
-    $("#index-mutations-grid").classList.toggle("hidden", indexView !== "mutations");
+    $("#index-mutations-view").classList.toggle("hidden", indexView !== "mutations");
   });
 });
 
@@ -743,8 +806,51 @@ function buildCrossfadeKeyframes(n) {
   ];
 }
 
-function renderMutationsIndex() {
-  const grid = $("#index-mutations-grid");
+// Erzeugt die durchcycelnde Karten-Grafik für eine Mutations-Katalogkarte:
+// ein Bild pro Pet-Art, die der Spieler mit dieser Mutation tatsächlich
+// besitzt, überblendet per Web-Animations-API (siehe buildCrossfadeKeyframes).
+// decorateFn(petId, src, artWrap) hängt die mutations-spezifische Optik an
+// (Umfärbung+Glanz bei Ursprungsmutationen, Partikel bei Umgebungsmutationen)
+// und muss die zusätzlich zu animierenden Elemente zurückgeben.
+function createMutationCycleArt(ownedPetIds, decorateFn) {
+  const artWrap = document.createElement("div");
+  artWrap.className = "art";
+  const n = ownedPetIds.length;
+  const keyframes = n > 1 ? buildCrossfadeKeyframes(n) : null;
+  const totalMs = n * MS_PER_CYCLE_SLOT;
+
+  ownedPetIds.forEach((petId, i) => {
+    const pet = PET_BY_ID[petId];
+    const src = assetSrc("pets", pet.id);
+
+    const img = document.createElement("img");
+    img.src = src;
+    img.alt = pet.name;
+    img.className = "mutation-cycle-img";
+    img.onerror = () => { img.style.visibility = "hidden"; };
+    artWrap.appendChild(img);
+
+    const extraEls = decorateFn(img, petId, src, artWrap) || [];
+    const animTargets = [img, ...extraEls];
+
+    if (n === 1 || PREFERS_REDUCED_MOTION) {
+      // Nur ein Pet (oder reduzierte Bewegung gewünscht) -> einfach das
+      // erste/einzige dauerhaft zeigen, kein Über-/Ausblenden nötig.
+      if (i === 0) animTargets.forEach((el) => { el.style.opacity = "1"; });
+      return;
+    }
+    // Negativer Delay: die Animation läuft für jedes Bild von Anfang an
+    // "schon mittendrin" statt erst später zu starten - kein Sprung.
+    const timing = { duration: totalMs, iterations: Infinity, easing: "linear", delay: -(i * MS_PER_CYCLE_SLOT) };
+    animTargets.forEach((el) => el.animate(keyframes, timing));
+  });
+  return artWrap;
+}
+
+// Ursprungsmutationen: einmalig beim Ausbrüten gewürfelt, verändern Farbe/
+// Pattern des Pets (Umfärbungs-Filter + Glanz-Overlay).
+function renderOriginMutationsIndex() {
+  const grid = $("#index-origin-mutations-grid");
   // Für jede Mutation: welche Pet-Arten hat der Spieler damit tatsächlich
   // schon bekommen? Nur die werden durchgecycelt (keine Demo-Pets mehr).
   const ownedByMutation = {};
@@ -778,40 +884,14 @@ function renderMutationsIndex() {
       continue;
     }
 
-    const artWrap = document.createElement("div");
-    artWrap.className = "art";
-    const n = ownedPetIds.length;
-    const keyframes = n > 1 ? buildCrossfadeKeyframes(n) : null;
-    const totalMs = n * MS_PER_CYCLE_SLOT;
-
-    ownedPetIds.forEach((petId, i) => {
-      const pet = PET_BY_ID[petId];
-      const src = assetSrc("pets", pet.id);
-
-      const img = document.createElement("img");
-      img.src = src;
-      img.alt = pet.name;
-      img.className = `mutation-cycle-img pet-${mutation.id}-img`;
-      img.onerror = () => { img.style.visibility = "hidden"; };
-      artWrap.appendChild(img);
-
+    const artWrap = createMutationCycleArt(ownedPetIds, (img, petId, src, wrap) => {
+      img.classList.add(`pet-${mutation.id}-img`);
       const shine = document.createElement("div");
       shine.className = "mutation-cycle-img pet-mutation-shine";
       shine.style.setProperty("mask-image", `url('${src}')`);
       shine.style.setProperty("-webkit-mask-image", `url('${src}')`);
-      artWrap.appendChild(shine);
-
-      if (n === 1 || PREFERS_REDUCED_MOTION) {
-        // Nur ein Pet (oder reduzierte Bewegung gewünscht) -> einfach das
-        // erste/einzige dauerhaft zeigen, kein Über-/Ausblenden nötig.
-        if (i === 0) { img.style.opacity = "1"; shine.style.opacity = "1"; }
-        return;
-      }
-      // Negativer Delay: die Animation läuft für jedes Bild von Anfang an
-      // "schon mittendrin" statt erst später zu starten - kein Sprung.
-      const timing = { duration: totalMs, iterations: Infinity, easing: "linear", delay: -(i * MS_PER_CYCLE_SLOT) };
-      img.animate(keyframes, timing);
-      shine.animate(keyframes, timing);
+      wrap.appendChild(shine);
+      return [shine];
     });
     card.appendChild(artWrap);
 
@@ -822,6 +902,59 @@ function renderMutationsIndex() {
       <div class="card-name">${visuals.emoji} ${mutation.name}</div>
       <div class="${visuals.badgeClass}">×${mutation.moneyMultiplier} Geld/Sekunde</div>
       <div class="card-stat">🍀 ${formatNumber(mutation.chance * 100)}% Chance bei jedem Ausbrüten</div>
+    `;
+    card.appendChild(info);
+    grid.appendChild(card);
+  }
+}
+
+// Umgebungsmutationen: werden nachträglich während aktiv equippt gewürfelt,
+// erzeugen statt Umfärbung einen Partikel-Effekt (z.B. Glitch-Pixel).
+function renderEnvMutationsIndex() {
+  const grid = $("#index-env-mutations-grid");
+  const ownedByEnvMutation = {};
+  for (const p of state.pets) {
+    if (!p.envMutation) continue;
+    (ownedByEnvMutation[p.envMutation] ??= new Set()).add(p.petId);
+  }
+  const signature = ENV_MUTATIONS
+    .map((m) => m.id + ":" + [...(ownedByEnvMutation[m.id] || [])].sort().join(","))
+    .join("|");
+  if (grid.dataset.signature === signature) return;
+  grid.dataset.signature = signature;
+
+  grid.innerHTML = "";
+  for (const envMutation of ENV_MUTATIONS) {
+    const ownedPetIds = [...(ownedByEnvMutation[envMutation.id] || [])];
+    const card = document.createElement("div");
+    const isDiscovered = ownedPetIds.length > 0;
+    card.className = "card mutation-card" + (isDiscovered ? "" : " locked");
+
+    if (!isDiscovered) {
+      card.appendChild(createArtEl("pets", MUTATION_DEMO_PET_IDS[0], "???", "#000", true));
+      const lockedInfo = document.createElement("div");
+      lockedInfo.className = "card-info";
+      lockedInfo.innerHTML = `<div class="card-name">???</div>`;
+      card.appendChild(lockedInfo);
+      grid.appendChild(card);
+      continue;
+    }
+
+    const artWrap = createMutationCycleArt(ownedPetIds, (img, petId, src, wrap) => {
+      const layer = createGlitchParticleLayer(petId);
+      layer.classList.add("mutation-cycle-img");
+      wrap.appendChild(layer);
+      return [layer];
+    });
+    card.appendChild(artWrap);
+
+    const visuals = ENV_MUTATION_VISUALS[envMutation.id];
+    const info = document.createElement("div");
+    info.className = "card-info";
+    info.innerHTML = `
+      <div class="card-name">${visuals.emoji} ${envMutation.name}</div>
+      <div class="${visuals.badgeClass}">×${envMutation.moneyMultiplier} Geld/Sekunde</div>
+      <div class="card-stat">🍀 ${formatNumber(envMutation.chancePerSecond * 100)}% Chance pro aktiv equippter Sekunde</div>
     `;
     card.appendChild(info);
     grid.appendChild(card);

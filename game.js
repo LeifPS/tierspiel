@@ -3,8 +3,8 @@
 // Läuft komplett lokal: der Spielstand liegt im localStorage des Browsers.
 // ============================================================
 import {
-  EGGS, PETS, REBIRTHS, MUTATION_BY_ID, rollWeightFactor, moneyMultiplierFromWeightRatio,
-  drawPetFromPool, rollMutation,
+  EGGS, PETS, REBIRTHS, MUTATION_BY_ID, ENV_MUTATIONS, ENV_MUTATION_BY_ID,
+  rollWeightFactor, moneyMultiplierFromWeightRatio, drawPetFromPool, rollMutation,
 } from "./data.js";
 
 const EGG_BY_ID = Object.fromEntries(EGGS.map((e) => [e.id, e]));
@@ -112,6 +112,7 @@ function hatchEgg(state, instanceId) {
     ratio,
     moneyPerSec,
     mutation,
+    envMutation: null,
     obtainedAtMs: now,
   };
   state.pets.push(petInstance);
@@ -181,6 +182,40 @@ function unequipPet(state, instanceId) {
   state.equipped = state.equipped.filter((id) => id !== instanceId);
 }
 
+// ---- Umgebungsmutationen: laufende Chance während aktiv equippt -----------
+// Wird NUR während aktivem Spielen (Tab offen) aufgerufen, nie für Offline-
+// Zeit. Pro equipptem Pet und Umgebungsmutations-Typ wird pro vergangener
+// Sekunde gewürfelt; gibt es diesen Typ schon bei einem anderen equippten
+// Pet, ist die Chance für diesen Typ 0% (nur eine Kopie pro Typ im aktiven
+// Loadout). Würfelt ein Pet, das schon eine (schlechtere) Umgebungsmutation
+// hat, eine bessere, wird diese ersetzt ("die bessere wird genommen").
+function tickEnvironmentalMutations(state, elapsedMs) {
+  const elapsedSec = elapsedMs / 1000;
+  if (elapsedSec <= 0) return [];
+  const equippedSet = new Set(state.equipped);
+  const equippedPets = state.pets.filter((p) => equippedSet.has(p.instanceId));
+  const gained = [];
+
+  for (const envMutation of ENV_MUTATIONS) {
+    const alreadyPresent = equippedPets.some((p) => p.envMutation === envMutation.id);
+    if (alreadyPresent) continue;
+
+    for (const pet of equippedPets) {
+      const current = pet.envMutation ? ENV_MUTATION_BY_ID[pet.envMutation] : null;
+      if (current && current.moneyMultiplier >= envMutation.moneyMultiplier) continue;
+      if (Math.random() >= envMutation.chancePerSecond * elapsedSec) continue;
+
+      // Alten Umgebungsmultiplikator herausrechnen, bevor der neue angewendet wird.
+      if (current) pet.moneyPerSec /= current.moneyMultiplier;
+      pet.moneyPerSec *= envMutation.moneyMultiplier;
+      pet.envMutation = envMutation.id;
+      gained.push({ pet, envMutation });
+      break; // dieser Typ ist jetzt im Loadout vergeben, nächster Typ
+    }
+  }
+  return gained;
+}
+
 // ---- Automatisch die Tiere mit dem höchsten Geld/Sekunde ausrüsten --------
 function autoEquipBest(state) {
   const best = [...state.pets]
@@ -198,5 +233,5 @@ export {
   defaultPlayerState, loadPlayer, savePlayer, resetPlayer,
   startHatching, tickHatching, isHatchingFinished, getFinishedHatching, hatchEgg,
   accrueMoney, totalMoneyPerSecond, getMoneyMultiplier, performRebirth,
-  equipPet, unequipPet, autoEquipBest, timeRemainingMs,
+  equipPet, unequipPet, autoEquipBest, timeRemainingMs, tickEnvironmentalMutations,
 };
