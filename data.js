@@ -47,48 +47,59 @@ const PETS = [
   { id: "elefant",     name: "Elefant",     rarity: "common", baseWeightKg: 4000, baseMoney: 1.6 },
   { id: "kuh",         name: "Kuh",         rarity: "common", baseWeightKg: 600,  baseMoney: 1.5 },
   { id: "pferd",       name: "Pferd",       rarity: "common", baseWeightKg: 500,  baseMoney: 1.3 },
+  { id: "ente",        name: "Ente",        rarity: "common", baseWeightKg: 1.5,  baseMoney: 1.1 },
   // Ungewöhnlich
   { id: "fuchs",       name: "Fuchs",       rarity: "uncommon", baseWeightKg: 6,    baseMoney: 4 },
   { id: "biene",       name: "Biene",       rarity: "uncommon", baseWeightKg: 0.0002, baseMoney: 5 },
   { id: "loewe",       name: "Löwe",        rarity: "uncommon", baseWeightKg: 190,  baseMoney: 6 },
   { id: "delfin",      name: "Delfin",      rarity: "uncommon", baseWeightKg: 200,  baseMoney: 6.5 },
   { id: "giraffe",     name: "Giraffe",     rarity: "uncommon", baseWeightKg: 800,  baseMoney: 5.5 },
+  { id: "eule",        name: "Eule",        rarity: "uncommon", baseWeightKg: 1,    baseMoney: 5 },
   // Selten
   { id: "tiger",       name: "Tiger",       rarity: "rare", baseWeightKg: 220,  baseMoney: 20 },
   { id: "hai",         name: "Hai",         rarity: "rare", baseWeightKg: 900,  baseMoney: 24 },
   { id: "greif",       name: "Greif",       rarity: "rare", baseWeightKg: 260,  baseMoney: 28 },
   { id: "gepard",      name: "Gepard",      rarity: "rare", baseWeightKg: 50,   baseMoney: 26 },
+  { id: "husky",       name: "Husky",       rarity: "rare", baseWeightKg: 25,   baseMoney: 22 },
   // Episch
   { id: "drache",      name: "Drache",      rarity: "epic", baseWeightKg: 1200, baseMoney: 90 },
   { id: "einhorn",     name: "Einhorn",     rarity: "epic", baseWeightKg: 450,  baseMoney: 100 },
   { id: "kraken",      name: "Kraken",      rarity: "epic", baseWeightKg: 2000, baseMoney: 110 },
   { id: "fee",         name: "Fee",         rarity: "epic", baseWeightKg: 0.01, baseMoney: 105 },
+  { id: "skorpion",    name: "Skorpion",    rarity: "epic", baseWeightKg: 0.1,  baseMoney: 95 },
   // Legendär
   { id: "engelhund",   name: "Engel-Hund",  rarity: "legendary", baseWeightKg: 20,   baseMoney: 400 },
   { id: "hydra",       name: "Hydra",       rarity: "legendary", baseWeightKg: 1800, baseMoney: 460 },
   { id: "diamanthase", name: "Diamant-Hase",rarity: "legendary", baseWeightKg: 5,    baseMoney: 500 },
   { id: "hoellenhund", name: "Höllenhund",  rarity: "legendary", baseWeightKg: 80,   baseMoney: 480 },
+  { id: "schwarzewitwe", name: "Schwarze Witwe", rarity: "legendary", baseWeightKg: 0.001, baseMoney: 420 },
   // Mythisch
   { id: "kitsune",     name: "Kitsune-Fuchs", rarity: "mythic", baseWeightKg: 8,    baseMoney: 2000 },
   { id: "narwal",      name: "Narwal",        rarity: "mythic", baseWeightKg: 1600, baseMoney: 2300 },
   { id: "sphinx",      name: "Sphinx",        rarity: "mythic", baseWeightKg: 300,  baseMoney: 2500 },
   { id: "kristallhirsch", name: "Kristallhirsch", rarity: "mythic", baseWeightKg: 200, baseMoney: 2400 },
+  { id: "sensenmann",  name: "Sensenmann",    rarity: "mythic", baseWeightKg: 70,   baseMoney: 2200 },
   // Göttlich
   { id: "phoenix",     name: "Phönix",      rarity: "divine", baseWeightKg: 15,   baseMoney: 10000 },
   { id: "pegasus",     name: "Pegasus",     rarity: "divine", baseWeightKg: 400,  baseMoney: 11000 },
   { id: "kometenpony", name: "Kometen-Pony",rarity: "divine", baseWeightKg: 350,  baseMoney: 10500 },
+  { id: "qual",        name: "Qual",        rarity: "divine", baseWeightKg: 200,  baseMoney: 10200 },
   // Prismatisch
   { id: "a36",         name: "A-36",        rarity: "prismatic", baseWeightKg: 900, baseMoney: 55000 },
   { id: "phantomwolf", name: "Phantomwolf", rarity: "prismatic", baseWeightKg: 45,  baseMoney: 58000 },
+  { id: "kometenqual", name: "Kometen-Qual",rarity: "prismatic", baseWeightKg: 300, baseMoney: 56000 },
   // Transzendent
   { id: "tikidominus", name: "Tiki Dominus",rarity: "transcendent", baseWeightKg: 1400, baseMoney: 280000 },
   { id: "daemon",      name: "Dämon",       rarity: "transcendent", baseWeightKg: 150,  baseMoney: 300000 },
+  { id: "pixeldrache", name: "Pixel-Drache",rarity: "transcendent", baseWeightKg: 600,  baseMoney: 290000 },
   // Ätherisch
   { id: "wyvern",      name: "Wyvern der Unterwelt", rarity: "ethereal", baseWeightKg: 2200, baseMoney: 1300000 },
   { id: "eisigerphoenix", name: "Eisiger Phönix",    rarity: "ethereal", baseWeightKg: 18,   baseMoney: 1400000 },
+  { id: "nuklearqual", name: "Nuklear-Qual",         rarity: "ethereal", baseWeightKg: 500,  baseMoney: 1350000 },
   // Geheim
   { id: "schattendominus", name: "Schatten-Dominus", rarity: "secret", baseWeightKg: 1500, baseMoney: 6500000 },
   { id: "glitchdrache",    name: "Glitch-Drache",    rarity: "secret", baseWeightKg: 1300, baseMoney: 7000000 },
+  { id: "boesercomputer",  name: "Böser Computer",   rarity: "secret", baseWeightKg: 50,   baseMoney: 6800000 },
   // Himmlisch
   { id: "empyreumloewe", name: "Empyreum-Löwe", rarity: "celestial", baseWeightKg: 350, baseMoney: 30000000 },
   { id: "schattenhai",   name: "Schattenhai",   rarity: "celestial", baseWeightKg: 700, baseMoney: 32000000 },
@@ -96,12 +107,15 @@ const PETS = [
   { id: "kosmosdrache", name: "Kosmischer Drache", rarity: "astral", baseWeightKg: 3000, baseMoney: 150000000 },
   { id: "diamantkatze", name: "Diamantkatze",      rarity: "astral", baseWeightKg: 5,    baseMoney: 160000000 },
   { id: "minenroboter", name: "Minenroboter",      rarity: "astral", baseWeightKg: 800,  baseMoney: 170000000 },
+  { id: "kosmischequal",name: "Kosmische Qual",    rarity: "astral", baseWeightKg: 2000, baseMoney: 165000000 },
   // Nova
   { id: "tiefseedelfin",name: "Abgrunddelfin", rarity: "nova", baseWeightKg: 250,  baseMoney: 750000000 },
   { id: "reliktdrache", name: "Reliktdrache",  rarity: "nova", baseWeightKg: 2500, baseMoney: 800000000 },
   { id: "sturmdrache",  name: "Sturmdrache",   rarity: "nova", baseWeightKg: 1800, baseMoney: 850000000 },
+  { id: "empyreumdominus", name: "Empyreum-Dominus", rarity: "nova", baseWeightKg: 1600, baseMoney: 820000000 },
   // Solar
   { id: "runenqual",    name: "Runen-Qual",    rarity: "solar", baseWeightKg: 400, baseMoney: 4000000000 },
+  { id: "nuklearwolf",  name: "Nuklear-Wolf",  rarity: "solar", baseWeightKg: 600, baseMoney: 4200000000 },
 ];
 
 // ---- Eier -----------------------------------------------------------------
