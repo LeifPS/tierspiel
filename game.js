@@ -155,7 +155,10 @@ function performRebirth(state) {
   const petInstance = state.pets.find((p) => p.petId === next.petId);
   if (!petInstance) throw new Error(`Du brauchst ein ${PET_BY_ID[next.petId].name} für diese Rebirth-Stufe.`);
 
-  state.coins -= next.price;
+  // Rebirth ist ein "Alles-Einsatz": next.price ist nur die Mindestanforderung,
+  // um es überhaupt auszulösen - abgezogen wird der gesamte Münzstand, nicht
+  // nur der Preis.
+  state.coins = 0;
   state.pets = state.pets.filter((p) => p.instanceId !== petInstance.instanceId);
   state.equipped = state.equipped.filter((id) => id !== petInstance.instanceId);
   state.rebirth = next.level;
