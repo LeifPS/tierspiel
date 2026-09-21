@@ -197,6 +197,7 @@ function tickEnvironmentalMutations(state, elapsedMs) {
   const gained = [];
 
   for (const envMutation of ENV_MUTATIONS) {
+    if (envMutation.disabled) continue;
     const alreadyPresent = equippedPets.some((p) => p.envMutation === envMutation.id);
     if (alreadyPresent) continue;
 

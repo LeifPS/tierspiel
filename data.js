@@ -333,6 +333,10 @@ const ENV_MUTATIONS = [
     name: "Glitched",
     chancePerSecond: 1 / 5000, // pro Sekunde, nur während aktiv equippt & Tab offen
     moneyMultiplier: 4.04,
+    // Noch nicht erhältlich (Feature/Optik fertig, Drop aber bewusst
+    // ausgeschaltet) - bleibt trotzdem im Index sichtbar, nur als "???"
+    // (siehe tickEnvironmentalMutations in game.js).
+    disabled: true,
   },
 ];
 const ENV_MUTATION_BY_ID = Object.fromEntries(ENV_MUTATIONS.map((m) => [m.id, m]));
