@@ -231,6 +231,7 @@ button:active { transform: scale(0.97); }
 .card.sold-out .art img { filter: grayscale(0.6); }
 
 .art {
+  --art-padding: 18px;
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
@@ -240,9 +241,13 @@ button:active { transform: scale(0.97); }
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 18px;
+  padding: var(--art-padding);
 }
 .art img { width: 100%; height: 100%; object-fit: contain; }
+/* Huge Pets (Seltenheit "exklusiv") werden überall etwas größer dargestellt -
+   weniger Padding im selben Kartenrahmen statt eine eigene Kartengröße,
+   damit das Grid-Layout unverändert bleibt. */
+.art.huge-pet-art { --art-padding: 6px; }
 .art.locked img { filter: brightness(0); }
 
 /* ---------- Mutationen: Duotone-Umfärbung + laufender Glanzstreifen ----------
@@ -324,8 +329,9 @@ button:active { transform: scale(0.97); }
   position: absolute;
   /* inset ist relativ zur Padding-Box von .art (position:relative), nicht zur
      Content-Box - mit inset:0 wäre die Ebene größer als das eigentliche Bild,
-     das durch .art's padding (18px) kleiner ausfällt. 18px gleicht das aus. */
-  inset: 18px;
+     das durch .art's padding kleiner ausfällt. --art-padding gleicht das aus
+     (auch für Huge Pets mit kleinerem Padding, siehe .huge-pet-art). */
+  inset: var(--art-padding, 18px);
   pointer-events: none;
 }
 .glitch-layer {
@@ -368,10 +374,10 @@ button:active { transform: scale(0.97); }
    gleich bleiben statt zu "springen". */
 .glitch-particle-layer {
   position: absolute;
-  /* Wie bei .glitch-rgb-layer: 18px statt 0, damit die Partikel auf demselben
-     Bereich verteilt werden, den das Pet-Bild innerhalb von .art tatsächlich
-     einnimmt (dessen padding sonst ignoriert würde). */
-  inset: 18px;
+  /* Wie bei .glitch-rgb-layer: --art-padding statt 0, damit die Partikel auf
+     demselben Bereich verteilt werden, den das Pet-Bild innerhalb von .art
+     tatsächlich einnimmt (dessen padding sonst ignoriert würde). */
+  inset: var(--art-padding, 18px);
   pointer-events: none;
   overflow: hidden;
 }
@@ -768,6 +774,44 @@ button:active { transform: scale(0.97); }
   0% { transform: scale(0.3); opacity: 0; }
   60% { transform: scale(1.15); opacity: 1; }
   100% { transform: scale(1); opacity: 1; }
+}
+
+/* Huge-Pet-Reveal: statt sich direkt zu öffnen, wächst das Ei erst immer
+   weiter ("wächst und wächst und wächst"), bevor es sich mit extra Schwung
+   öffnet ("tadaaa") - siehe playHatchRevealBatch in main.js für die Timing-
+   Logik dahinter. .reveal-slot hat bereits overflow:visible, das Ei darf
+   also über die eigentliche Kachel hinauswachsen. */
+.reveal-slot .slot-egg-art.growing {
+  animation: egg-grow 1.8s cubic-bezier(0.34, 0, 0.66, 1) forwards;
+  z-index: 2;
+}
+@keyframes egg-grow {
+  0%   { transform: scale(1); }
+  70%  { transform: scale(2.1); }
+  85%  { transform: scale(1.9); }
+  100% { transform: scale(2.4); }
+}
+@keyframes huge-pop-in {
+  0%   { transform: scale(0.4) rotate(-8deg); opacity: 0; }
+  50%  { transform: scale(1.5) rotate(6deg); opacity: 1; }
+  75%  { transform: scale(0.9) rotate(-3deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.reveal-slot.huge-reveal .slot-pet-art {
+  animation: huge-pop-in 0.7s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+@keyframes huge-glow-burst {
+  0%   { opacity: 0; transform: scale(0.5); }
+  40%  { opacity: 1; transform: scale(1.8); }
+  100% { opacity: 0.85; transform: scale(1); }
+}
+.reveal-slot.huge-reveal .slot-glow {
+  animation: huge-glow-burst 0.7s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal-slot .slot-egg-art.growing { animation: none; transform: scale(2.4); }
+  .reveal-slot.huge-reveal .slot-pet-art { animation: none; }
+  .reveal-slot.huge-reveal .slot-glow { animation: none; }
 }
 
 .reveal-skip {

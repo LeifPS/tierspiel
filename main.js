@@ -216,8 +216,12 @@ function swayDelayFor(id) {
 }
 
 function createArtEl(kind, id, label, rarityColor, locked = false, dimmed = false, mutation = null, envMutation = null) {
+  // Huge Pets (Seltenheit "exklusiv") werden überall etwas größer dargestellt
+  // als normale Pets - automatisch erkannt, kein extra Parameter an jedem
+  // Aufrufort nötig.
+  const isHuge = kind === "pets" && !locked && PET_BY_ID[id]?.rarity === "exklusiv";
   const wrap = document.createElement("div");
-  wrap.className = "art" + (locked ? " locked" : "") + (dimmed ? " dimmed" : "");
+  wrap.className = "art" + (locked ? " locked" : "") + (dimmed ? " dimmed" : "") + (isHuge ? " huge-pet-art" : "");
   wrap.style.setProperty("--sway-delay", swayDelayFor(id));
   const src = assetSrc(kind, id);
   const img = document.createElement("img");
@@ -385,6 +389,7 @@ function playHatchRevealBatch(results) {
   const slots = results.map((result) => {
     const { pet, egg, instance } = result;
     const rarity = getRarity(pet.rarity);
+    const isHuge = pet.rarity === "exklusiv";
     const mutationVisuals = instance.mutation && MUTATION_VISUALS[instance.mutation];
     const glowColor = mutationVisuals ? mutationVisuals.glowColor
       : rarity.color.startsWith("linear") ? "#ffffff" : rarity.color;
@@ -407,11 +412,11 @@ function playHatchRevealBatch(results) {
 
     const label = document.createElement("div");
     label.className = "slot-label";
-    label.textContent = (mutationVisuals ? mutationVisuals.emoji + " " : "") + pet.name;
+    label.textContent = (isHuge ? "🎉 HUGE! " : mutationVisuals ? mutationVisuals.emoji + " " : "") + pet.name;
     slot.appendChild(label);
 
     grid.appendChild(slot);
-    return { slot, eggArt };
+    return { slot, eggArt, isHuge };
   });
 
   return new Promise((resolve) => {
@@ -429,6 +434,7 @@ function playHatchRevealBatch(results) {
 
     (async () => {
       const stagger = 60;
+      const HUGE_GROW_MS = 1800; // so lange wächst das Ei, bevor es sich öffnet
 
       // Phase 1: Eier schütteln, leicht zeitversetzt für einen "Popcorn"-Effekt.
       slots.forEach((s, i) => setTimeout(() => {
@@ -437,11 +443,24 @@ function playHatchRevealBatch(results) {
       await sleep(stagger * slots.length + 550);
       if (done) return;
 
-      // Phase 2: Ei öffnet sich, Pet erscheint mit Glow.
+      // Phase 2: normale Eier öffnen sich direkt. Ein Huge Pet öffnet sich
+      // NICHT sofort - das Ei wächst erst immer weiter, bevor es sich mit
+      // extra Tusch öffnet ("huge-reveal").
       slots.forEach((s, i) => setTimeout(() => {
-        if (!done) s.slot.classList.add("opened");
+        if (done) return;
+        if (s.isHuge) {
+          s.eggArt.classList.add("growing");
+          setTimeout(() => {
+            if (done) return;
+            s.eggArt.classList.remove("growing");
+            s.slot.classList.add("opened", "huge-reveal");
+          }, HUGE_GROW_MS);
+        } else {
+          s.slot.classList.add("opened");
+        }
       }, i * stagger));
-      await sleep(stagger * slots.length + 1400);
+      const extraGrowWait = slots.some((s) => s.isHuge) ? HUGE_GROW_MS : 0;
+      await sleep(stagger * slots.length + 1400 + extraGrowWait);
       if (done) return;
 
       // Phase 3: alles ausblenden.
