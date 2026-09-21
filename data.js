@@ -177,12 +177,10 @@ const EGGS = [
   { id: "schatten",  name: "Schatten-Ei",   rarity: "ethereal",     luckPercent: 150000000,  hatchSeconds: 39600,  basePrice: 70000000000,  appearChance: 0.001,stock: [1, 1] },
   { id: "empyreum",  name: "Empyreum-Ei",   rarity: "secret",       luckPercent: 600000000,  hatchSeconds: 43200,  basePrice: 350000000000, appearChance: 0.0003,stock: [1, 1] },
   { id: "nebel",     name: "Engel-Ei",      rarity: "celestial",    luckPercent: 20000000000,hatchSeconds: 86400,  basePrice: 5000000000000,appearChance: 0.0001,stock: [1, 1] },
-  // Huge-Ei: garantierter Weg an Huge Pets (Seltenheit "exklusiv") zu kommen -
-  // genauso oft im Shop wie das zweitseltenste Ei (Empyreum-Ei). Zusätzlich
-  // gibt es eine winzige, unabhängige Chance, auch aus JEDEM anderen Ei ein
-  // Huge Pet zu bekommen (siehe HUGE_PET_CHANCE_FROM_NORMAL_EGG unten).
-  { id: "huge",      name: "Huge-Ei",       rarity: "exklusiv",     luckPercent: 100000000000,hatchSeconds: 172800, basePrice: 50000000000000,appearChance: 0.0015,stock: [1, 1] },
 ];
+// Kein eigenes Huge-Ei mehr - Huge Pets (Seltenheit "exklusiv") kommen
+// stattdessen aus JEDEM Ei, mit einer Chance, die sich am jeweiligen Ei
+// selbst orientiert (siehe rollHugePetOverride/astralOrBetterChance unten).
 
 // ---- Rebirth-System ---------------------------------------------------------
 // Für Münzen UND ein bestimmtes Pet (wird dabei verbraucht, der Rest der
@@ -262,7 +260,13 @@ function minEligibleRarityIndex(luckPercent) {
 // gesenkt; jetzt wieder etwas angehoben, da der Ausgleich insgesamt zu hart war.
 const LUCK_BOOST_STRENGTH = 9;
 
-function drawPetFromPool(luckPercent, eggRarity) {
+// Gemeinsame Gewichtungs-Logik für einen Ei-Glückswert: liefert den Pool
+// (ohne "exklusiv" - Huge Pets sind nie Teil der normalen Glücks-Leiter,
+// siehe rollHugePetOverride weiter unten) sowie das Gewicht jedes Pets
+// darin. Wird sowohl vom eigentlichen Ziehen (drawPetFromPool) als auch
+// von der Huge-Pet-Chance (die sich an der Astral-Chance orientiert)
+// genutzt, damit beide exakt dieselbe Verteilung zugrunde legen.
+function computeWeightedPool(luckPercent, eggRarity) {
   const luckFactor = Math.max(luckPercent, 100) / 100; // 100% => 1.0
   let minTierIdx = minEligibleRarityIndex(luckPercent);
   // Zusätzlich zum Glücks-Mechanismus gibt es immer die feste Garantie auf
@@ -271,15 +275,10 @@ function drawPetFromPool(luckPercent, eggRarity) {
   if (eggRarity !== undefined) {
     minTierIdx = Math.max(minTierIdx, RARITY_INDEX[eggRarity]);
   }
-  // "exklusiv" (Huge Pets) ist kein normaler Teil der Glücks-Leiter - der
-  // Pool darf sie nur enthalten, wenn das Ei selbst exklusiv ist (Huge-Ei).
-  // Sonst könnte ein extrem glückliches normales Ei theoretisch trotzdem
-  // ein Huge Pet ziehen, was nur über das Huge-Ei gehen soll.
   const eligiblePets = PETS.filter((pet) => (
-    RARITY_INDEX[pet.rarity] >= minTierIdx
-    && (eggRarity === "exklusiv" || pet.rarity !== "exklusiv")
+    RARITY_INDEX[pet.rarity] >= minTierIdx && pet.rarity !== "exklusiv"
   ));
-  const pool = eligiblePets.length > 0 ? eligiblePets : PETS; // Sicherheitsnetz
+  const pool = eligiblePets.length > 0 ? eligiblePets : PETS.filter((p) => p.rarity !== "exklusiv");
 
   const boost = 1 + LUCK_BOOST_STRENGTH / Math.sqrt(luckFactor);
   const weights = pool.map((pet) => {
@@ -288,7 +287,11 @@ function drawPetFromPool(luckPercent, eggRarity) {
     const exponent = boost * tierIdx / MAX_TIER_INDEX; // 0 (common) .. ~boost (solar)
     return raw * Math.pow(luckFactor, exponent);
   });
-  const total = weights.reduce((a, b) => a + b, 0);
+  return { pool, weights, total: weights.reduce((a, b) => a + b, 0) };
+}
+
+function drawPetFromPool(luckPercent, eggRarity) {
+  const { pool, weights, total } = computeWeightedPool(luckPercent, eggRarity);
   let r = Math.random() * total;
   for (let i = 0; i < pool.length; i++) {
     r -= weights[i];
@@ -297,20 +300,28 @@ function drawPetFromPool(luckPercent, eggRarity) {
   return pool[pool.length - 1];
 }
 
-// Zusätzlich zum garantierten Huge-Ei gibt es eine winzige, unabhängige
-// Chance, dass JEDES beliebige Ei stattdessen ein zufälliges Huge Pet
-// liefert - ein "Jackpot"-Pfad. Skaliert mit dem Glück des Eis (wie beim
-// normalen Ziehen), aber mit Wurzel statt linear gedämpft und gedeckelt,
-// damit sie realistisch bleibt: das Standard-Ei liegt bei 1 in 1 Milliarde,
-// selbst das glücklichste Ei im Spiel bleibt unter 1 in 5 Millionen -
-// "unfassbar selten" bleibt unfassbar selten, auch mit viel Glück.
-const HUGE_JACKPOT_BASE_CHANCE = 5 / 1000000000; // bei neutralem Glück (100%) - x5 gegenüber vorher
-const HUGE_JACKPOT_MAX_LUCK_MULTIPLIER = 1000; // Deckel für den Glücks-Bonus - x5 gegenüber vorher
+// Chance, aus einem Ei mit diesem Glück/dieser Seltenheit ein Pet der Stufe
+// "astral" oder besser zu ziehen - exakt dieselbe Formel wie drawPetFromPool,
+// nur aufsummiert statt ausgewürfelt.
+function astralOrBetterChance(luckPercent, eggRarity) {
+  const { pool, weights, total } = computeWeightedPool(luckPercent, eggRarity);
+  if (total <= 0) return 0;
+  const astralIdx = RARITY_INDEX["astral"];
+  let astralWeight = 0;
+  for (let i = 0; i < pool.length; i++) {
+    if (RARITY_INDEX[pool[i].rarity] >= astralIdx) astralWeight += weights[i];
+  }
+  return astralWeight / total;
+}
 
-function rollHugePetOverride(luckPercent) {
-  const luckFactor = Math.max(luckPercent, 100) / 100;
-  const luckMultiplier = Math.min(Math.sqrt(luckFactor), HUGE_JACKPOT_MAX_LUCK_MULTIPLIER);
-  const chance = HUGE_JACKPOT_BASE_CHANCE * luckMultiplier;
+// Huge Pets (Seltenheit "exklusiv") sind nie Teil der normalen Glücks-Leiter
+// (siehe computeWeightedPool) - stattdessen hat JEDES Ei eine eigene,
+// unabhängige Chance darauf, die sich direkt an dessen eigener Astral-Chance
+// orientiert: 5x seltener als astral-oder-besser aus demselben Ei.
+const HUGE_PET_RARITY_FACTOR = 5;
+
+function rollHugePetOverride(luckPercent, eggRarity) {
+  const chance = astralOrBetterChance(luckPercent, eggRarity) / HUGE_PET_RARITY_FACTOR;
   if (Math.random() >= chance) return null;
   const hugePets = PETS.filter((p) => p.rarity === "exklusiv");
   if (hugePets.length === 0) return null;

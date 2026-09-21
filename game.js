@@ -111,9 +111,9 @@ function hatchEgg(state, instanceId) {
 
   const now = Date.now();
   const egg = EGG_BY_ID[entry.eggId];
-  // Jedes Ei (außer dem Huge-Ei selbst, das sowieso garantiert eins liefert)
-  // hat zusätzlich eine winzige, unabhängige Chance auf ein Huge Pet.
-  const hugeJackpot = egg.rarity !== "exklusiv" ? rollHugePetOverride(egg.luckPercent) : null;
+  // Jedes Ei hat eine eigene, unabhängige Chance auf ein Huge Pet (5x
+  // seltener als astral-oder-besser aus demselben Ei) - kein eigenes Ei nötig.
+  const hugeJackpot = rollHugePetOverride(egg.luckPercent, egg.rarity);
   const pet = hugeJackpot || drawPetFromPool(egg.luckPercent, egg.rarity);
   const rollFactor = rollWeightFactor();
   const weightKg = pet.baseWeightKg * rollFactor;

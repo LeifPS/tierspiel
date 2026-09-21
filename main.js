@@ -43,7 +43,6 @@ const ASSET_OVERRIDES = {
     verlies: "https://static.wikia.nocookie.net/pet-simulator/images/e/e9/PS99_Dungeon_Egg.png",
     koeniglich: "https://static.wikia.nocookie.net/pet-simulator/images/2/2c/PS99_Royal_Egg.png",
     nebel: "https://static.wikia.nocookie.net/pet-simulator/images/8/83/PS99_Angel_Egg.png",
-    huge: "https://static.wikia.nocookie.net/pet-simulator/images/0/04/PS99_Original_Egg.png",
   },
   pets: {
     fuchs: "https://static.wikia.nocookie.net/pets-go/images/7/73/Fox.png",
@@ -818,11 +817,11 @@ function renderIndex() {
     const info = document.createElement("div");
     info.className = "card-info";
     if (discovered) {
-      // Huge Pets (Seltenheit "exklusiv") kommen nie über normales Ei-Glück -
-      // die "1 in X"-Chance wäre hier irreführend, stattdessen ein Hinweis
-      // auf das Huge-Ei plus die eigene Fähigkeit.
+      // Huge Pets (Seltenheit "exklusiv") kommen nie über die normale
+      // Glücks-Leiter - die "1 in X"-Chance wäre hier irreführend, da sie
+      // stattdessen aus jedem Ei mit eigener Chance kommen können.
       const chanceOrSourceLine = pet.rarity === "exklusiv"
-        ? `<div class="card-stat">🥚 Nur über das Huge-Ei erhältlich</div>`
+        ? `<div class="card-stat">🥚 Aus jedem Ei möglich (sehr selten)</div>`
         : `<div class="card-stat">🍀 Chance: 1 in ${formatNumber(pet.baseChanceCache)}</div>`;
       // Huge Pets haben kein festes Basis-Geld - sie verdienen einen
       // Prozentsatz vom besten equippten Pet (siehe effectiveMoneyPerSec).
