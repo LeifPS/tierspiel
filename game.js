@@ -5,6 +5,7 @@
 import {
   EGGS, PETS, REBIRTHS, MUTATION_BY_ID, ENV_MUTATIONS, ENV_MUTATION_BY_ID,
   rollWeightFactor, moneyMultiplierFromWeightRatio, drawPetFromPool, rollMutation,
+  rollHugePetOverride,
 } from "./data.js";
 
 const EGG_BY_ID = Object.fromEntries(EGGS.map((e) => [e.id, e]));
@@ -110,7 +111,10 @@ function hatchEgg(state, instanceId) {
 
   const now = Date.now();
   const egg = EGG_BY_ID[entry.eggId];
-  const pet = drawPetFromPool(egg.luckPercent, egg.rarity);
+  // Jedes Ei (außer dem Huge-Ei selbst, das sowieso garantiert eins liefert)
+  // hat zusätzlich eine winzige, unabhängige Chance auf ein Huge Pet.
+  const hugeJackpot = egg.rarity !== "exklusiv" ? rollHugePetOverride() : null;
+  const pet = hugeJackpot || drawPetFromPool(egg.luckPercent, egg.rarity);
   const rollFactor = rollWeightFactor();
   const weightKg = pet.baseWeightKg * rollFactor;
   const ratio = weightKg / pet.baseWeightKg; // Vielfaches des Basisgewichts

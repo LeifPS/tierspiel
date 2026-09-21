@@ -174,10 +174,11 @@ const EGGS = [
   { id: "schatten",  name: "Schatten-Ei",   rarity: "ethereal",     luckPercent: 150000000,  hatchSeconds: 39600,  basePrice: 70000000000,  appearChance: 0.001,stock: [1, 1] },
   { id: "empyreum",  name: "Empyreum-Ei",   rarity: "secret",       luckPercent: 600000000,  hatchSeconds: 43200,  basePrice: 350000000000, appearChance: 0.0003,stock: [1, 1] },
   { id: "nebel",     name: "Engel-Ei",      rarity: "celestial",    luckPercent: 20000000000,hatchSeconds: 86400,  basePrice: 5000000000000,appearChance: 0.0001,stock: [1, 1] },
-  // Huge-Ei: einziger Weg, an Huge Pets (Seltenheit "exklusiv") zu kommen -
-  // drawPetFromPool() lässt die exklusiv-Stufe für jedes andere Ei aus,
-  // egal wie hoch dessen Glück ist.
-  { id: "huge",      name: "Huge-Ei",       rarity: "exklusiv",     luckPercent: 100000000000,hatchSeconds: 172800, basePrice: 50000000000000,appearChance: 0.00003,stock: [1, 1] },
+  // Huge-Ei: garantierter Weg an Huge Pets (Seltenheit "exklusiv") zu kommen -
+  // genauso oft im Shop wie das zweitseltenste Ei (Empyreum-Ei). Zusätzlich
+  // gibt es eine winzige, unabhängige Chance, auch aus JEDEM anderen Ei ein
+  // Huge Pet zu bekommen (siehe HUGE_PET_CHANCE_FROM_NORMAL_EGG unten).
+  { id: "huge",      name: "Huge-Ei",       rarity: "exklusiv",     luckPercent: 100000000000,hatchSeconds: 172800, basePrice: 50000000000000,appearChance: 0.0003,stock: [1, 1] },
 ];
 
 // ---- Rebirth-System ---------------------------------------------------------
@@ -292,6 +293,20 @@ function drawPetFromPool(luckPercent, eggRarity) {
   }
   return pool[pool.length - 1];
 }
+
+// Zusätzlich zum garantierten Huge-Ei gibt es eine winzige, komplett
+// unabhängige Chance, dass JEDES beliebige Ei stattdessen ein zufälliges
+// Huge Pet liefert - ein "Jackpot"-Pfad, unfassbar selten (1 in 100
+// Millionen pro Ausbrüten, unabhängig vom Ei-Glück).
+const HUGE_PET_CHANCE_FROM_NORMAL_EGG = 1 / 100000000;
+
+function rollHugePetOverride() {
+  if (Math.random() >= HUGE_PET_CHANCE_FROM_NORMAL_EGG) return null;
+  const hugePets = PETS.filter((p) => p.rarity === "exklusiv");
+  if (hugePets.length === 0) return null;
+  return hugePets[Math.floor(Math.random() * hugePets.length)];
+}
+
 // Basis-Chance pro Pet aus der Rarity-Tabelle cachen
 // Zweiter Teil des Ausgleichs: die Basis-Chance ab Legendär wird zusätzlich
 // seltener gemacht (die RARITIES-Tabelle selbst bleibt als "Referenzwert"
@@ -388,5 +403,6 @@ export {
   RARITIES, RARITY_INDEX, PETS, EGGS, REBIRTHS, WEIGHT_ROLL_TABLE,
   MUTATIONS, MUTATION_BY_ID, ENV_MUTATIONS, ENV_MUTATION_BY_ID,
   rollWeightFactor, moneyMultiplierFromWeightRatio, drawPetFromPool, rollMutation,
+  rollHugePetOverride,
   formatNumber, formatDuration, getRarity,
 };
