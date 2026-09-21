@@ -324,26 +324,56 @@ function tickHugeAbilities(state, elapsedMs) {
     const intervalMs = ability.intervalSec * 1000;
     while (pet.abilityProgressMs >= intervalMs) {
       pet.abilityProgressMs -= intervalMs;
-      const targets = executeAbility(state, pet, ability);
-      triggered.push({ source: pet, ability, targets });
+      const { targets, coinsGranted } = executeAbility(state, pet, ability);
+      triggered.push({ source: pet, ability, targets, coinsGranted });
     }
   }
   return triggered;
 }
 
-// Liefert immer ein Array betroffener Pet-Instanzen (leer, wenn keins
-// betroffen wurde) - unabhängig davon, ob die Fähigkeit nur ein einzelnes
-// Ziel hat (mutate_random_equipped) oder mehrere gleichzeitig treffen kann
-// (roll_mutation_all_equipped).
+// Liefert immer { targets, coinsGranted } - targets ein Array betroffener
+// Pet-Instanzen (leer, wenn keins betroffen wurde; ob die Fähigkeit nur ein
+// einzelnes Ziel hat oder mehrere gleichzeitig treffen kann, hängt vom Typ
+// ab), coinsGranted die Anzahl direkt gutgeschriebener Münzen (0, wenn die
+// Fähigkeit keine Münzen schenkt).
 function executeAbility(state, sourcePet, ability) {
   if (ability.type === "mutate_random_equipped") {
     const target = mutateRandomEquipped(state, sourcePet.instanceId, ability.envMutationId);
-    return target ? [target] : [];
+    return { targets: target ? [target] : [], coinsGranted: 0 };
   }
   if (ability.type === "roll_mutation_all_equipped") {
-    return rollMutationForAllEquipped(state, sourcePet.instanceId, ability.envMutationId, ability.chancePerTarget);
+    const targets = rollMutationForAllEquipped(state, sourcePet.instanceId, ability.envMutationId, ability.chancePerTarget);
+    return { targets, coinsGranted: 0 };
   }
-  return [];
+  if (ability.type === "upgrade_origin_mutation") {
+    const target = upgradeOriginMutation(state, sourcePet.instanceId, ability.fromMutationId, ability.toMutationId);
+    return { targets: target ? [target] : [], coinsGranted: 0 };
+  }
+  if (ability.type === "grant_income_bonus") {
+    const coinsGranted = totalMoneyPerSecond(state) * ability.equivalentSeconds;
+    state.coins += coinsGranted;
+    return { targets: [], coinsGranted };
+  }
+  return { targets: [], coinsGranted: 0 };
+}
+
+// Wählt zufällig ein anderes ausgerüstetes Pet mit der Ursprungsmutation
+// "fromMutationId" (z.B. Gold) und wandelt sie in "toMutationId" (z.B.
+// Diamant) um - anders als Umgebungsmutationen ist eine Ursprungsmutation
+// direkt ins gespeicherte moneyPerSec eingerechnet, daher wird hier der
+// alte Multiplikator herausgerechnet und der neue reinmultipliziert.
+function upgradeOriginMutation(state, sourceInstanceId, fromMutationId, toMutationId) {
+  const equippedSet = new Set(state.equipped);
+  const candidates = state.pets.filter((p) => (
+    equippedSet.has(p.instanceId) && p.instanceId !== sourceInstanceId && p.mutation === fromMutationId
+  ));
+  if (candidates.length === 0) return null;
+  const target = candidates[Math.floor(Math.random() * candidates.length)];
+  const fromMult = MUTATION_BY_ID[fromMutationId].moneyMultiplier;
+  const toMult = MUTATION_BY_ID[toMutationId].moneyMultiplier;
+  target.moneyPerSec = (target.moneyPerSec / fromMult) * toMult;
+  target.mutation = toMutationId;
+  return target;
 }
 
 // Setzt die genannte Umgebungsmutation auf ein Pet, respektiert dabei "die

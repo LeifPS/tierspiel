@@ -111,6 +111,8 @@ const ASSET_OVERRIDES = {
     krampushund: "https://static.wikia.nocookie.net/pets-go/images/e/e5/Krampus_Hound.png",
     hugeglitchedphoenix: "https://static.wikia.nocookie.net/pets-go/images/0/0c/Huge_Glitched_Phoenix.png",
     hugeluckiagony: "https://static.wikia.nocookie.net/pets-go/images/c/c8/Huge_Lucki_Agony.png",
+    hugemysticcorgi: "https://static.wikia.nocookie.net/pets-go/images/b/bf/Huge_Mystic_Corgi.png",
+    hugealienoctopus: "https://static.wikia.nocookie.net/pets-go/images/5/52/Huge_Alien_Octopus.png",
   },
 };
 
@@ -375,12 +377,21 @@ function bootGame() {
         const petDef = PET_BY_ID[pet.petId];
         toast(`${visuals.emoji} ${petDef.name} hat die Umgebungsmutation "${envMutation.name}" bekommen!`);
       }
-      for (const { source, targets } of abilityTriggers) {
-        if (!targets || targets.length === 0) continue;
+      for (const { source, ability, targets, coinsGranted } of abilityTriggers) {
         const sourceDef = PET_BY_ID[source.petId];
-        for (const target of targets) {
-          const targetDef = PET_BY_ID[target.petId];
-          toast(`✨ ${sourceDef.name}s Fähigkeit hat ${targetDef.name} mutiert!`);
+        if (ability.type === "upgrade_origin_mutation") {
+          for (const target of targets) {
+            const targetDef = PET_BY_ID[target.petId];
+            toast(`💎 ${sourceDef.name}s Fähigkeit hat ${targetDef.name} zu ${MUTATION_BY_ID[ability.toMutationId].name} aufgewertet!`);
+          }
+        } else if (targets && targets.length > 0) {
+          for (const target of targets) {
+            const targetDef = PET_BY_ID[target.petId];
+            toast(`✨ ${sourceDef.name}s Fähigkeit hat ${targetDef.name} mutiert!`);
+          }
+        }
+        if (coinsGranted > 0) {
+          toast(`💰 ${sourceDef.name} hat dir ${formatNumber(coinsGranted)} Münzen geschenkt!`);
         }
       }
       savePlayer(state);

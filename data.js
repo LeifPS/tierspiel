@@ -154,6 +154,27 @@ const PETS = [
       description: "Alle 1800s: 20% Chance für jedes andere ausgerüstete Pet einzeln, Lucky (×7) zu bekommen",
     },
   },
+  {
+    id: "hugemysticcorgi", name: "Riesiger Mystic Corgi", rarity: "exklusiv",
+    baseWeightKg: 5000, moneyPercentOfBest: 110,
+    ability: {
+      type: "upgrade_origin_mutation",
+      intervalSec: 3600,
+      fromMutationId: "gold",
+      toMutationId: "rainbow",
+      description: "Alle 3600s: upgradet ein zufälliges anderes ausgerüstetes Gold-Pet zu Regenbogen (×7)",
+    },
+  },
+  {
+    id: "hugealienoctopus", name: "Riesiger Alien-Octopus", rarity: "exklusiv",
+    baseWeightKg: 5000, moneyPercentOfBest: 250,
+    ability: {
+      type: "grant_income_bonus",
+      intervalSec: 300,
+      equivalentSeconds: 60,
+      description: "Alle 300s: schenkt dir so viel Geld, wie du in 60s verdient hättest",
+    },
+  },
 ];
 
 // ---- Eier -----------------------------------------------------------------
