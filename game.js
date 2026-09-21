@@ -220,7 +220,11 @@ function effectiveMoneyPerSec(state, petInstance) {
     if (otherDef && otherDef.moneyPercentOfBest !== undefined) return best;
     return Math.max(best, p.moneyPerSec);
   }, 0);
-  return (def.moneyPercentOfBest / 100) * bestOther;
+  // Eigene Ursprungs-/Umgebungsmutation des Huge Pets muss weiterhin
+  // draufmultipliziert werden - vorher wurden die hier komplett ignoriert.
+  const originMult = petInstance.mutation ? MUTATION_BY_ID[petInstance.mutation].moneyMultiplier : 1;
+  const envMult = petInstance.envMutation ? ENV_MUTATION_BY_ID[petInstance.envMutation].moneyMultiplier : 1;
+  return (def.moneyPercentOfBest / 100) * bestOther * originMult * envMult;
 }
 
 function totalMoneyPerSecond(state) {
@@ -396,11 +400,40 @@ function rollMutationForAllEquipped(state, sourceInstanceId, envMutationId, chan
 }
 
 // ---- Automatisch die Tiere mit dem höchsten Geld/Sekunde ausrüsten --------
+// Huge Pets haben kein festes moneyPerSec (immer 0 gespeichert) - ein
+// einfaches Sortieren nach dem gespeicherten Wert würde sie nie auswählen,
+// obwohl sie equippt oft die stärksten Verdiener sind. Stattdessen: das
+// stärkste normale Pet lohnt sich immer auszurüsten (zählt selbst voll UND
+// ist die Basis, von der jedes equippte Huge Pet seinen Prozentsatz
+// verdient), danach werden alle übrigen Slots mit den wertvollsten
+// restlichen Pets (normal oder Huge, mit ihrem tatsächlichen Ertrag
+// inkl. eigener Mutationen) aufgefüllt.
 function autoEquipBest(state) {
-  const best = [...state.pets]
-    .sort((a, b) => b.moneyPerSec - a.moneyPerSec)
-    .slice(0, state.equipSlots);
-  state.equipped = best.map((p) => p.instanceId);
+  const isHugePet = (p) => PET_BY_ID[p.petId]?.moneyPercentOfBest !== undefined;
+  const normalPets = state.pets.filter((p) => !isHugePet(p));
+  const hugePets = state.pets.filter(isHugePet);
+
+  if (normalPets.length === 0) {
+    // Keine normalen Pets vorhanden - Huge Pets hätten keine Basis und
+    // würden nichts verdienen, also einfach nach moneyPerSec sortieren.
+    const best = [...state.pets].sort((a, b) => b.moneyPerSec - a.moneyPerSec).slice(0, state.equipSlots);
+    state.equipped = best.map((p) => p.instanceId);
+    return;
+  }
+
+  const sortedNormal = [...normalPets].sort((a, b) => b.moneyPerSec - a.moneyPerSec);
+  const bestNormal = sortedNormal[0];
+  const candidates = [
+    ...sortedNormal.slice(1).map((p) => ({ pet: p, value: p.moneyPerSec })),
+    ...hugePets.map((p) => ({
+      pet: p,
+      value: effectiveMoneyPerSec({ ...state, equipped: [p.instanceId, bestNormal.instanceId] }, p),
+    })),
+  ];
+  candidates.sort((a, b) => b.value - a.value);
+
+  const chosen = [bestNormal, ...candidates.slice(0, Math.max(0, state.equipSlots - 1)).map((c) => c.pet)];
+  state.equipped = chosen.slice(0, state.equipSlots).map((p) => p.instanceId);
 }
 
 function timeRemainingMs(hatchEntry) {

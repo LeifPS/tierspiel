@@ -145,7 +145,7 @@ const PETS = [
   },
   {
     id: "hugeluckiagony", name: "Riesiger Lucki Agony", rarity: "exklusiv",
-    baseWeightKg: 5000, moneyPercentOfBest: 120,
+    baseWeightKg: 5000, moneyPercentOfBest: 140,
     ability: {
       type: "roll_mutation_all_equipped",
       intervalSec: 1800,
