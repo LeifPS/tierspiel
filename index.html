@@ -117,6 +117,26 @@
         <feFuncB type="table" tableValues="0.00 0.02 0.20 0.45"/>
       </feComponentTransfer>
     </filter>
+    <!-- Umgebungsmutation "Glitched": isoliert je einen Farbkanal für den
+         RGB-Split-Effekt (siehe .glitch-layer-r/g/b in style.css). -->
+    <filter id="glitchR" color-interpolation-filters="sRGB">
+      <feColorMatrix type="matrix" values="1 0 0 0 0
+                                            0 0 0 0 0
+                                            0 0 0 0 0
+                                            0 0 0 1 0"/>
+    </filter>
+    <filter id="glitchG" color-interpolation-filters="sRGB">
+      <feColorMatrix type="matrix" values="0 0 0 0 0
+                                            0 1 0 0 0
+                                            0 0 0 0 0
+                                            0 0 0 1 0"/>
+    </filter>
+    <filter id="glitchB" color-interpolation-filters="sRGB">
+      <feColorMatrix type="matrix" values="0 0 0 0 0
+                                            0 0 0 0 0
+                                            0 0 1 0 0
+                                            0 0 0 1 0"/>
+    </filter>
   </defs>
 </svg>
 

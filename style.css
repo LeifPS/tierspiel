@@ -315,6 +315,40 @@ button:active { transform: scale(0.97); }
   background: linear-gradient(135deg, #1a1a2e, #b026ff, #1a1a2e);
 }
 
+/* ---------- Umgebungsmutation "Glitched": RGB-Split + Glitch-Pixel ----------
+   Zwei kombinierte Effekte statt einer Umfärbung: (1) kurze, gestaffelte
+   Farbkanal-Versatz-"Geister" (RGB-Split) über dem Pet-Bild, (2) viele
+   hart aufblitzende Partikel (siehe weiter unten). Beide sind additive
+   Overlays - das Basisbild selbst bleibt unverändert sichtbar. */
+.glitch-rgb-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.glitch-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: glitch-rgb-pop 2.4s steps(1, end) infinite;
+}
+.glitch-layer-r { filter: url(#glitchR); animation-delay: 0s; }
+.glitch-layer-g { filter: url(#glitchG); animation-delay: -0.6s; }
+.glitch-layer-b { filter: url(#glitchB); animation-delay: -1.2s; }
+@keyframes glitch-rgb-pop {
+  0%, 85%  { opacity: 0;    transform: translate(0, 0); }
+  86%      { opacity: 0.85; transform: translate(-4%, 1%); }
+  90%      { opacity: 0;    transform: translate(0, 0); }
+  91%      { opacity: 0.85; transform: translate(3%, -2%); }
+  94%      { opacity: 0;    transform: translate(0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .glitch-layer { animation: none; opacity: 0; }
+}
+
 /* ---------- Umgebungsmutationen: Partikel-Effekt statt Umfärbung ----------
    Anders als Ursprungsmutationen (Umfärbung + Glanz) erzeugen Umgebungs-
    mutationen kleine, hart aufblitzende Partikel ("Glitch-Pixel") statt das
@@ -331,8 +365,8 @@ button:active { transform: scale(0.97); }
   position: absolute;
   left: var(--gx, 50%);
   top: var(--gy, 50%);
-  width: 10%;
-  height: 10%;
+  width: 6%;
+  height: 6%;
   background: var(--gcolor, #b026ff);
   animation: glitch-pixel-pop 1.8s steps(1, end) infinite;
   animation-delay: var(--gdelay, 0s);

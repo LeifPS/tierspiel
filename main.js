@@ -125,7 +125,7 @@ const GLITCH_PARTICLE_COLORS = ["#39ff14", "#ff2079", "#00e5ff", "#b026ff"];
 // Deterministisch (nicht neu gewürfelt bei jedem Rendern) verteilte
 // Partikel-Positionen für den Glitch-Effekt, abgeleitet aus einem Hash der
 // Instanz-ID - dieselbe Idee wie swayDelayFor() für die Schwenk-Animation.
-function glitchParticleSpecs(id, count = 6) {
+function glitchParticleSpecs(id, count = 24) {
   let seed = 0;
   for (let i = 0; i < id.length; i++) seed = (seed * 31 + id.charCodeAt(i)) >>> 0;
   const specs = [];
@@ -141,6 +141,24 @@ function glitchParticleSpecs(id, count = 6) {
     specs.push({ x, y, delay, color });
   }
   return specs;
+}
+
+// RGB-Split-Effekt: drei übereinandergelegte Kopien des Bildes, je auf einen
+// Farbkanal reduziert (siehe #glitchR/#glitchG/#glitchB in index.html) und
+// per mix-blend-mode:screen kombiniert. Die CSS-Animation lässt sie
+// versetzt kurz "auseinanderspringen" (RGB-Split-Geister) statt dauerhaft
+// sichtbar zu sein - siehe glitch-rgb-pop in style.css.
+function createGlitchRGBLayer(src) {
+  const layer = document.createElement("div");
+  layer.className = "glitch-rgb-layer";
+  for (const channel of ["r", "g", "b"]) {
+    const img = document.createElement("img");
+    img.src = src;
+    img.alt = "";
+    img.className = `glitch-layer glitch-layer-${channel}`;
+    layer.appendChild(img);
+  }
+  return layer;
 }
 
 function createGlitchParticleLayer(id) {
@@ -196,6 +214,7 @@ function createArtEl(kind, id, label, rarityColor, locked = false, dimmed = fals
     wrap.appendChild(shine);
   }
   if (envMutation && !locked) {
+    wrap.appendChild(createGlitchRGBLayer(src));
     wrap.appendChild(createGlitchParticleLayer(id));
   }
   return wrap;
@@ -941,10 +960,13 @@ function renderEnvMutationsIndex() {
     }
 
     const artWrap = createMutationCycleArt(ownedPetIds, (img, petId, src, wrap) => {
-      const layer = createGlitchParticleLayer(petId);
-      layer.classList.add("mutation-cycle-img");
-      wrap.appendChild(layer);
-      return [layer];
+      const rgbLayer = createGlitchRGBLayer(src);
+      rgbLayer.classList.add("mutation-cycle-img");
+      wrap.appendChild(rgbLayer);
+      const particleLayer = createGlitchParticleLayer(petId);
+      particleLayer.classList.add("mutation-cycle-img");
+      wrap.appendChild(particleLayer);
+      return [rgbLayer, particleLayer];
     });
     card.appendChild(artWrap);
 
