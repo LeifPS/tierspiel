@@ -181,7 +181,7 @@ const EGGS = [
   // genauso oft im Shop wie das zweitseltenste Ei (Empyreum-Ei). Zusätzlich
   // gibt es eine winzige, unabhängige Chance, auch aus JEDEM anderen Ei ein
   // Huge Pet zu bekommen (siehe HUGE_PET_CHANCE_FROM_NORMAL_EGG unten).
-  { id: "huge",      name: "Huge-Ei",       rarity: "exklusiv",     luckPercent: 100000000000,hatchSeconds: 172800, basePrice: 50000000000000,appearChance: 0.0003,stock: [1, 1] },
+  { id: "huge",      name: "Huge-Ei",       rarity: "exklusiv",     luckPercent: 100000000000,hatchSeconds: 172800, basePrice: 50000000000000,appearChance: 0.0015,stock: [1, 1] },
 ];
 
 // ---- Rebirth-System ---------------------------------------------------------
@@ -304,8 +304,8 @@ function drawPetFromPool(luckPercent, eggRarity) {
 // damit sie realistisch bleibt: das Standard-Ei liegt bei 1 in 1 Milliarde,
 // selbst das glücklichste Ei im Spiel bleibt unter 1 in 5 Millionen -
 // "unfassbar selten" bleibt unfassbar selten, auch mit viel Glück.
-const HUGE_JACKPOT_BASE_CHANCE = 1 / 1000000000; // bei neutralem Glück (100%)
-const HUGE_JACKPOT_MAX_LUCK_MULTIPLIER = 200; // Deckel für den Glücks-Bonus
+const HUGE_JACKPOT_BASE_CHANCE = 5 / 1000000000; // bei neutralem Glück (100%) - x5 gegenüber vorher
+const HUGE_JACKPOT_MAX_LUCK_MULTIPLIER = 1000; // Deckel für den Glücks-Bonus - x5 gegenüber vorher
 
 function rollHugePetOverride(luckPercent) {
   const luckFactor = Math.max(luckPercent, 100) / 100;
