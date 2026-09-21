@@ -230,6 +230,9 @@ const REBIRTHS = [
   { level: 2, petId: "kitsune", price: 10000000,   equipSlots: 5, moneyMultiplier: 3 },
   { level: 3, petId: "phoenix", price: 100000000,  equipSlots: 6, moneyMultiplier: 4 },
   { level: 4, petId: "wyvern",  price: 1000000000, equipSlots: 7, moneyMultiplier: 5 },
+  { level: 5, petId: "empyreumloewe", price: 10000000000,   equipSlots: 8,  moneyMultiplier: 6 },
+  { level: 6, petId: "kosmosdrache",  price: 100000000000,  equipSlots: 9,  moneyMultiplier: 7 },
+  { level: 7, petId: "runenqual",     price: 1000000000000, equipSlots: 10, moneyMultiplier: 8 },
 ];
 
 // ---- Gewichts-Ausreißer-Tabelle -------------------------------------------
