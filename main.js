@@ -106,6 +106,7 @@ const ASSET_OVERRIDES = {
     kosmischequal: "https://static.wikia.nocookie.net/pets-go/images/a/a1/Cosmic_Agony.png",
     empyreumdominus: "https://static.wikia.nocookie.net/pets-go/images/7/7a/Empyrean_Dominus.png",
     nuklearwolf: "https://static.wikia.nocookie.net/pets-go/images/2/22/Nuclear_Wolf.png",
+    krampushund: "https://static.wikia.nocookie.net/pets-go/images/e/e5/Krampus_Hound.png",
   },
 };
 

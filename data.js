@@ -103,6 +103,7 @@ const PETS = [
   // Himmlisch
   { id: "empyreumloewe", name: "Empyreum-Löwe", rarity: "celestial", baseWeightKg: 350, baseMoney: 30000000 },
   { id: "schattenhai",   name: "Schattenhai",   rarity: "celestial", baseWeightKg: 700, baseMoney: 32000000 },
+  { id: "krampushund",   name: "Krampushund",   rarity: "celestial", baseWeightKg: 500, baseMoney: 31000000 },
   // Astral
   { id: "kosmosdrache", name: "Kosmischer Drache", rarity: "astral", baseWeightKg: 3000, baseMoney: 150000000 },
   { id: "diamantkatze", name: "Diamantkatze",      rarity: "astral", baseWeightKg: 5,    baseMoney: 160000000 },
