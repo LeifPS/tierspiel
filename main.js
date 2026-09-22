@@ -996,7 +996,17 @@ function renderIndex() {
 
   const petGrid = $("#index-pets-grid");
   petGrid.innerHTML = "";
-  for (const pet of PETS) {
+  // Nach Seltenheit sortiert (am seltensten zuerst), innerhalb derselben
+  // Seltenheit nach Geld/Sekunde (Huge Pets über ihren Prozentsatz, da sie
+  // kein festes Basis-Geld haben).
+  const sortedPets = [...PETS].sort((a, b) => {
+    const rarityDiff = RARITY_INDEX[b.rarity] - RARITY_INDEX[a.rarity];
+    if (rarityDiff !== 0) return rarityDiff;
+    const moneyA = a.baseMoney ?? a.moneyPercentOfBest ?? 0;
+    const moneyB = b.baseMoney ?? b.moneyPercentOfBest ?? 0;
+    return moneyB - moneyA;
+  });
+  for (const pet of sortedPets) {
     const discovered = knownPetIds.has(pet.id);
     const rarity = getRarity(pet.rarity);
     const card = document.createElement("div");
@@ -1014,7 +1024,7 @@ function renderIndex() {
       // stattdessen aus jedem Ei mit eigener Chance kommen können.
       const chanceOrSourceLine = pet.rarity === "exklusiv"
         ? `<div class="card-stat">🥚 Aus jedem Ei möglich (sehr selten)</div>`
-        : `<div class="card-stat">🍀 Chance: 1 in ${formatNumber(pet.baseChanceCache)}</div>`;
+        : `<div class="card-stat">🍀 Chance: 1 in ${formatNumber(Math.round(pet.baseChanceCache))}</div>`;
       // Huge Pets haben kein festes Basis-Geld - sie verdienen einen
       // Prozentsatz vom besten equippten Pet (siehe effectiveMoneyPerSec).
       const moneyLine = pet.moneyPercentOfBest !== undefined
