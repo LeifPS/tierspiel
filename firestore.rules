@@ -55,7 +55,7 @@ service cloud.firestore {
         && offer.keys().hasAll(["pets", "eggs", "coins"])
         && offer.pets is list && offer.pets.size() <= 20
         && offer.eggs is list && offer.eggs.size() <= 20
-        && offer.coins is number && offer.coins >= 0 && offer.coins <= 1e18;
+        && offer.coins is number && offer.coins >= 0 && offer.coins <= 1000000000000000000;
     }
 
     // Echtes Wetter (siehe weather.js): EIN geteiltes Dokument für alle
