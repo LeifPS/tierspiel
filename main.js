@@ -782,7 +782,7 @@ async function hatchAndRevealBatch(instanceIds) {
   renderAll();
   for (const result of results) {
     if (result.eggRefunded) {
-      toast(`🥚 Riesiger Sketch-Corgi hat dir ein ${result.egg.name} zurückgegeben!`);
+      toast(`🥚 Riesiger Sketch-Corgi hat dir ein ${result.egg.name} zurückgegeben - schon fertig zum Ausbrüten!`);
     }
   }
   await playHatchRevealBatch(results);

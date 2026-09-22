@@ -166,6 +166,9 @@ function maybeRefundEgg(state, eggId) {
     if (!ability || ability.type !== "refund_egg_chance") continue;
     if (Math.random() < ability.chance) {
       startHatching(state, eggId);
+      // Kommt direkt "fertig" zurück statt erneut die volle Brütezeit
+      // warten zu müssen - nur noch manuell ausbrüten nötig.
+      state.hatching[state.hatching.length - 1].remainingMs = 0;
       return true;
     }
   }
