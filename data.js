@@ -211,10 +211,16 @@ const EGGS = [
   { id: "metall",    name: "Metall-Ei",     rarity: "prismatic",    luckPercent: 1500000,    hatchSeconds: 25200,  basePrice: 250000000,    appearChance: 0.065, stock: [1, 1] },
   { id: "mosaik",    name: "Mosaik-Ei",     rarity: "prismatic",    luckPercent: 4000000,    hatchSeconds: 28800,  basePrice: 900000000,    appearChance: 0.026, stock: [1, 1] },
   { id: "runen",     name: "Runen-Ei",      rarity: "transcendent", luckPercent: 12000000,   hatchSeconds: 32400,  basePrice: 3500000000,   appearChance: 0.01353,stock: [1, 1] },
-  { id: "regenbogen",name: "Regenbogen-Ei", rarity: "transcendent", luckPercent: 40000000,   hatchSeconds: 36000,  basePrice: 15000000000,  appearChance: 0.007317,stock: [1, 1] },
+  { id: "regenbogen",name: "Buntes Ei",     rarity: "transcendent", luckPercent: 40000000,   hatchSeconds: 36000,  basePrice: 15000000000,  appearChance: 0.007317,stock: [1, 1] },
   { id: "schatten",  name: "Schatten-Ei",   rarity: "ethereal",     luckPercent: 150000000,  hatchSeconds: 39600,  basePrice: 70000000000,  appearChance: 0.003957,stock: [1, 1] },
   { id: "empyreum",  name: "Empyreum-Ei",   rarity: "secret",       luckPercent: 600000000,  hatchSeconds: 43200,  basePrice: 350000000000, appearChance: 0.00214,stock: [1, 1] },
   { id: "nebel",     name: "Engel-Ei",      rarity: "celestial",    luckPercent: 20000000000,hatchSeconds: 86400,  basePrice: 5000000000000,appearChance: 0.001157,stock: [1, 1] },
+  // Drei neue Top-Eier, seltener als das bisher beste (Engel-Ei) - nutzen die
+  // schon vorhandenen, bisher nur für Pets/Rebirths verwendeten Seltenheits-
+  // stufen astral/nova/solar (siehe RARITIES), in aufsteigender Reihenfolge.
+  { id: "iris",      name: "Regenbogen-Ei", rarity: "astral",       luckPercent: 60000000000,   hatchSeconds: 172800, basePrice: 30000000000000,   appearChance: 0.00065, stock: [1, 1] },
+  { id: "kolosseum", name: "Kolosseum-Ei",  rarity: "nova",         luckPercent: 250000000000,  hatchSeconds: 259200, basePrice: 200000000000000,  appearChance: 0.00036, stock: [1, 1] },
+  { id: "himmel",    name: "Himmels-Ei",    rarity: "solar",        luckPercent: 1200000000000, hatchSeconds: 345600, basePrice: 1500000000000000, appearChance: 0.0002,  stock: [1, 1] },
 ];
 // Kein eigenes Huge-Ei mehr - Huge Pets (Seltenheit "exklusiv") kommen
 // stattdessen aus JEDEM Ei, mit einer Chance, die sich am jeweiligen Ei
@@ -320,7 +326,13 @@ const LUCK_BOOST_STRENGTH = 9;
 // genutzt, damit beide exakt dieselbe Verteilung zugrunde legen.
 function computeWeightedPool(luckPercent, eggRarity) {
   const luckFactor = Math.max(luckPercent, 100) / 100; // 100% => 1.0
-  let minTierIdx = minEligibleRarityIndex(luckPercent);
+  // Nach oben gedeckelt auf MAX_TIER_INDEX: bei sehr hohem Glück (siehe
+  // minEligibleRarityIndex) würde die "trivial"-Schwelle sonst irgendwann
+  // über die höchste tatsächlich mit Pets belegte Stufe hinausschießen -
+  // eligiblePets wäre dann leer und der Fallback weiter unten würde den
+  // KOMPLETTEN Pool (inkl. gewöhnlicher Tiere) wieder freigeben, statt bei
+  // der höchsten Stufe zu bleiben.
+  let minTierIdx = Math.min(minEligibleRarityIndex(luckPercent), MAX_TIER_INDEX);
   // Zusätzlich zum Glücks-Mechanismus gibt es immer die feste Garantie auf
   // mindestens ein Pet der Seltenheit des Eis selbst - jedes Ei liefert also
   // nie ein niedrigeres Pet, als es selbst eingestuft ist.

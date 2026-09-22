@@ -46,6 +46,9 @@ const ASSET_OVERRIDES = {
     verlies: "https://static.wikia.nocookie.net/pet-simulator/images/e/e9/PS99_Dungeon_Egg.png",
     koeniglich: "https://static.wikia.nocookie.net/pet-simulator/images/2/2c/PS99_Royal_Egg.png",
     nebel: "https://static.wikia.nocookie.net/pet-simulator/images/8/83/PS99_Angel_Egg.png",
+    himmel: "https://static.wikia.nocookie.net/pet-simulator/images/d/dc/PS99_Heaven_Egg.png",
+    kolosseum: "https://static.wikia.nocookie.net/pet-simulator/images/8/86/PS99_Colosseum_Egg.png",
+    iris: "https://static.wikia.nocookie.net/pet-simulator/images/c/cc/PS99_Rainbow_Egg.png",
   },
   pets: {
     fuchs: "https://static.wikia.nocookie.net/pets-go/images/7/73/Fox.png",
