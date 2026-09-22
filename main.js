@@ -101,6 +101,7 @@ const ASSET_OVERRIDES = {
     sturmdrache: "https://static.wikia.nocookie.net/pets-go/images/a/a7/Storm_Dragon.png",
     runenqual: "https://static.wikia.nocookie.net/pets-go/images/e/e8/Runic_Agony.png",
     ente: "https://static.wikia.nocookie.net/pets-go/images/9/98/Ducky.png",
+    eichhoernchen: "https://static.wikia.nocookie.net/pets-go/images/4/41/Squirrel.png",
     eule: "https://static.wikia.nocookie.net/pets-go/images/5/5c/Owl.png",
     husky: "https://static.wikia.nocookie.net/pets-go/images/5/50/Husky.png",
     skorpion: "https://static.wikia.nocookie.net/pets-go/images/a/ab/Scorpion.png",

@@ -52,6 +52,7 @@ const PETS = [
   { id: "kuh",         name: "Kuh",         rarity: "common", baseWeightKg: 600,  baseMoney: 1.5 },
   { id: "pferd",       name: "Pferd",       rarity: "common", baseWeightKg: 500,  baseMoney: 1.3 },
   { id: "ente",        name: "Ente",        rarity: "common", baseWeightKg: 1.5,  baseMoney: 1.1 },
+  { id: "eichhoernchen", name: "Eichhörnchen", rarity: "common", baseWeightKg: 0.4, baseMoney: 1.05 },
   // Ungewöhnlich
   { id: "fuchs",       name: "Fuchs",       rarity: "uncommon", baseWeightKg: 6,    baseMoney: 4 },
   { id: "biene",       name: "Biene",       rarity: "uncommon", baseWeightKg: 0.0002, baseMoney: 5 },
