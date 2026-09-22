@@ -384,8 +384,21 @@ function astralOrBetterChance(luckPercent, eggRarity) {
 // orientiert: 5x seltener als astral-oder-besser aus demselben Ei.
 const HUGE_PET_RARITY_FACTOR = 5;
 
+// astralOrBetterChance sättigt bei 100%, sobald der Glücks-Pool eines Eis
+// komplett aus Astral-oder-besser-Tieren besteht (trifft schon auf recht
+// glücksstarke Eier zu, z.B. Engel-Ei) - ab da würden alle noch
+// glücksstärkeren Eier (z.B. die neuen Top-Eier) exakt dieselbe Huge-Chance
+// bekommen, obwohl sie eigentlich noch viel besser sein sollen. Deshalb
+// wächst die Chance oberhalb dieser Sättigungsschwelle zusätzlich leicht
+// mit jeder weiteren Zehnerpotenz Glück, gedeckelt bei HUGE_CHANCE_CAP.
+const ASTRAL_SATURATION_LUCK = 400000000 * 100; // Glückswert, ab dem der Pool ohnehin nur noch Astral-oder-besser enthält
+const HUGE_EXTRA_CHANCE_PER_LUCK_DECADE = 0.05; // +5 Prozentpunkte pro 10x Glück über der Sättigung
+const HUGE_CHANCE_CAP = 0.4;
+
 function rollHugePetOverride(luckPercent, eggRarity) {
-  const chance = astralOrBetterChance(luckPercent, eggRarity) / HUGE_PET_RARITY_FACTOR;
+  const baseChance = astralOrBetterChance(luckPercent, eggRarity) / HUGE_PET_RARITY_FACTOR;
+  const luckDecadesOverSaturation = Math.max(0, Math.log10(Math.max(luckPercent, ASTRAL_SATURATION_LUCK) / ASTRAL_SATURATION_LUCK));
+  const chance = Math.min(HUGE_CHANCE_CAP, baseChance + luckDecadesOverSaturation * HUGE_EXTRA_CHANCE_PER_LUCK_DECADE);
   if (Math.random() >= chance) return null;
   const hugePets = PETS.filter((p) => p.rarity === "exklusiv");
   if (hugePets.length === 0) return null;
