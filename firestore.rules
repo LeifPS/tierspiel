@@ -57,5 +57,26 @@ service cloud.firestore {
         && offer.eggs is list && offer.eggs.size() <= 20
         && offer.coins is number && offer.coins >= 0 && offer.coins <= 1e18;
     }
+
+    // Echtes Wetter (siehe weather.js): EIN geteiltes Dokument für alle
+    // Spieler, alle 15 Minuten von irgendeinem gerade aktiven Client
+    // aktualisiert. Ohne request.auth wieder nur eine Form-Prüfung, kein
+    // echter Schutz vor einem manipulierten Client (Ehrensystem wie beim
+    // Trading) - wer will, könnte sich hier ein Dauer-Regen-Wetter
+    // einschreiben. Der Schaden davon ist überschaubar (nur kosmetisch +
+    // etwas höhere Mutations-Chance für alle), daher bewusst kein größerer
+    // Aufwand hier.
+    match /weather/current {
+      allow read: if true;
+      allow write: if isValidWeather(request.resource.data);
+    }
+
+    function isValidWeather(data) {
+      return data.keys().hasAll(["condition", "isDay", "fetchedAtMs", "validUntilMs"])
+        && data.condition in ["sonne", "regen", "schnee", "windig"]
+        && data.isDay is bool
+        && data.fetchedAtMs is number
+        && data.validUntilMs is number;
+    }
   }
 }

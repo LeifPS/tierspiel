@@ -330,6 +330,20 @@ button:active { transform: scale(0.97); }
   color: #0d2b12;
   background: linear-gradient(135deg, #4ade80, #86efac);
 }
+.nass-badge, .gefroren-badge, .lunar-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 3px 9px;
+  border-radius: 999px;
+  width: fit-content;
+  color: #06202b;
+  text-shadow: none;
+}
+.nass-badge { background: linear-gradient(135deg, #38bdf8, #7dd3fc); }
+.gefroren-badge { background: linear-gradient(135deg, #a5f3fc, #e0f2fe); }
+.lunar-badge { background: linear-gradient(135deg, #c7b6f0, #e9e3fb); }
 
 /* ---------- Umgebungsmutation "Glitched": RGB-Split + Glitch-Pixel ----------
    Zwei kombinierte Effekte statt einer Umfärbung: (1) kurze, gestaffelte
@@ -782,6 +796,26 @@ button:active { transform: scale(0.97); }
 .admin-egg-btn {
   width: 100%;
   margin-top: 8px;
+}
+
+/* ---------- Echtes Wetter (Bergisch Gladbach, siehe weather.js) ---------- */
+.weather-widget {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background: var(--bg-deep);
+  border: 1px solid var(--border-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  z-index: 150;
+  cursor: default;
+  user-select: none;
 }
 
 /* ---------- Ei-Öffnen: bis zu 10 Eier gleichzeitig in einem 5x2-Raster ---------- */

@@ -504,6 +504,36 @@ const ENV_MUTATIONS = [
     moneyMultiplier: 7,
     disabled: true,
   },
+  // Wetterbasierte Mutationen: kein passiver Sekunden-Roll (chancePerSecond
+  // ungenutzt, disabled:true blockt den alten Passiv-Loop) - stattdessen ein
+  // eigener Roll alle 15s über tickWeatherMutations (game.js), nur solange
+  // gerade das passende ECHTE Wetter in Bergisch Gladbach herrscht (siehe
+  // weather.js). "die bessere gewinnt" gilt weiterhin gemeinsam mit
+  // Glitched/Lucky/Gold/Regenbogen.
+  {
+    id: "nass",
+    name: "Nass",
+    weatherCondition: "regen",
+    chancePer15s: 0.04, // 4% pro 15s-Tick, solange es gerade regnet
+    moneyMultiplier: 2,
+    disabled: true,
+  },
+  {
+    id: "gefroren",
+    name: "Gefroren",
+    weatherCondition: "schnee",
+    chancePer15s: 0.016, // 1,6% pro 15s-Tick, solange es gerade schneit
+    moneyMultiplier: 5,
+    disabled: true,
+  },
+  {
+    id: "lunar",
+    name: "Lunar",
+    weatherCondition: "nacht", // unabhängig vom Wetter, nur "ist es gerade Nacht"
+    chancePer15s: 0.024, // 2,4% pro 15s-Tick, solange gerade Nacht ist
+    moneyMultiplier: 2,
+    disabled: true,
+  },
 ];
 const ENV_MUTATION_BY_ID = Object.fromEntries(ENV_MUTATIONS.map((m) => [m.id, m]));
 

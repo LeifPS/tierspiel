@@ -4,12 +4,13 @@ import {
   EGG_BY_ID, PET_BY_ID, loadPlayer, savePlayer, resetPlayer, startHatching,
   tickHatching, isHatchingFinished, hatchEgg, accrueMoney, totalMoneyPerSecond, getMoneyMultiplier,
   performRebirth, equipPet, unequipPet, autoEquipBest, timeRemainingMs, tickEnvironmentalMutations,
-  tickHugeAbilities, effectiveMoneyPerSec,
+  tickHugeAbilities, effectiveMoneyPerSec, tickWeatherMutations,
   enableAdminMode, adminInstantHatch, adminGrantRandomHugePet, adminAddCoins,
   serializePetForTrade, serializeEggForTrade, removeOwnOfferFromState, addIncomingOfferToState,
 } from "./game.js";
 import { getOrCreatePlayerId, getPlayerName, setPlayerName, submitScore, fetchLeaderboard, deleteScore } from "./leaderboard.js";
 import { createTrade, joinTrade, subscribeTrade, updateOwnOffer, setReady, cancelTrade, tryCompleteTrade } from "./trading.js";
+import { ensureWeatherFresh, WEATHER_REFRESH_MS } from "./weather.js";
 
 // ---------------------------------------------------------------------------
 // Kleine DOM-Helfer
@@ -146,8 +147,36 @@ const MUTATION_VISUALS = {
 const ENV_MUTATION_VISUALS = {
   glitched: { emoji: "🟪", badgeClass: "glitch-badge", glowColor: "#b026ff", placeholderGradient: "linear-gradient(135deg, #1a1a2e, #b026ff, #1a1a2e)" },
   lucky: { emoji: "🍀", badgeClass: "lucky-badge", glowColor: "#4ade80", placeholderGradient: "linear-gradient(135deg, #123a1c, #4ade80, #123a1c)" },
+  nass: { emoji: "💧", badgeClass: "nass-badge", glowColor: "#38bdf8", placeholderGradient: "linear-gradient(135deg, #0c2b3a, #38bdf8, #0c2b3a)" },
+  gefroren: { emoji: "❄️", badgeClass: "gefroren-badge", glowColor: "#a5f3fc", placeholderGradient: "linear-gradient(135deg, #0e2a33, #a5f3fc, #0e2a33)" },
+  lunar: { emoji: "🌙", badgeClass: "lunar-badge", glowColor: "#c7b6f0", placeholderGradient: "linear-gradient(135deg, #1c1a3a, #c7b6f0, #1c1a3a)" },
 };
 const GLITCH_PARTICLE_COLORS = ["#39ff14", "#ff2079", "#00e5ff", "#b026ff"];
+
+// Anzeige-Texte/Icons fürs echte Wetter (siehe weather.js) - "nacht" ist
+// hier kein eigener weather.condition-Wert, sondern die separate isDay-Ebene,
+// aber als eigener Eintrag hier drin, damit renderEnvMutationsIndex einen
+// gemeinsamen Text für alle weatherCondition-Werte bauen kann.
+const WEATHER_LABELS = { sonne: "Sonne", regen: "Regen", schnee: "Schnee", windig: "Windig", nacht: "Nacht" };
+
+function weatherWidgetIcon(weather) {
+  if (!weather) return "❔";
+  const conditionIcon = { sonne: "☀️", regen: "🌧️", schnee: "❄️", windig: "💨" }[weather.condition] || "❔";
+  if (!weather.isDay) return weather.condition === "sonne" ? "🌙" : `${conditionIcon}🌙`;
+  return conditionIcon;
+}
+
+function renderWeatherWidget() {
+  const el = $("#weather-widget");
+  if (!el) return;
+  el.textContent = weatherWidgetIcon(currentWeather);
+  if (!currentWeather) {
+    el.title = "Wetter wird geladen…";
+    return;
+  }
+  const parts = [WEATHER_LABELS[currentWeather.condition], currentWeather.isDay ? "Tag" : "Nacht"];
+  el.title = `Bergisch Gladbach: ${parts.join(", ")}`;
+}
 
 // Deterministisch (nicht neu gewürfelt bei jedem Rendern) verteilte
 // Partikel-Positionen für den Glitch-Effekt, abgeleitet aus einem Hash der
@@ -206,10 +235,10 @@ function createGlitchParticleLayer(id, locked = false) {
   return layer;
 }
 
-// Kleeblatt-Partikel für die Umgebungsmutation "Lucky" - sanft aufsteigend/
-// verblassend statt hart aufblitzend wie beim Glitch-Pixel-Effekt, damit sich
-// der "positive Segen" optisch klar vom chaotischen Glitch unterscheidet.
-function cloverParticleSpecs(id, count = 10) {
+// Sanft aufsteigende/verblassende Emoji-Partikel, generisch für alle
+// "positiven" Umgebungsmutationen (Lucky 🍀, Nass 💧, Gefroren ❄️, Lunar 🌙) -
+// im Gegensatz zum hart aufblitzenden Glitch-Pixel-Effekt oben.
+function floatingParticleSpecs(id, count = 10) {
   let seed = 0;
   for (let i = 0; i < id.length; i++) seed = (seed * 31 + id.charCodeAt(i)) >>> 0;
   const specs = [];
@@ -225,13 +254,13 @@ function cloverParticleSpecs(id, count = 10) {
   return specs;
 }
 
-function createCloverParticleLayer(id, locked = false) {
+function createFloatingParticleLayer(emoji, id, locked = false) {
   const layer = document.createElement("div");
   layer.className = "clover-particle-layer";
-  for (const spec of cloverParticleSpecs(id)) {
+  for (const spec of floatingParticleSpecs(id)) {
     const particle = document.createElement("div");
     particle.className = "clover-particle" + (locked ? " locked" : "");
-    particle.textContent = "🍀";
+    particle.textContent = emoji;
     particle.style.setProperty("--cx", spec.x + "%");
     particle.style.setProperty("--cy", spec.y + "%");
     particle.style.setProperty("--cdelay", `-${spec.delay}s`);
@@ -245,7 +274,10 @@ function createCloverParticleLayer(id, locked = false) {
 // Umgebungsmutationen müssen hier nur einen Eintrag ergänzen.
 const ENV_MUTATION_ART_EFFECTS = {
   glitched: (src, id, locked) => [createGlitchRGBLayer(src, locked), createGlitchParticleLayer(id, locked)],
-  lucky: (src, id, locked) => [createCloverParticleLayer(id, locked)],
+  lucky: (src, id, locked) => [createFloatingParticleLayer("🍀", id, locked)],
+  nass: (src, id, locked) => [createFloatingParticleLayer("💧", id, locked)],
+  gefroren: (src, id, locked) => [createFloatingParticleLayer("❄️", id, locked)],
+  lunar: (src, id, locked) => [createFloatingParticleLayer("🌙", id, locked)],
 };
 
 function renderPlaceholderIcon(container, label, rarityColor, locked = false, mutation = null) {
@@ -361,6 +393,12 @@ let tradeSession = null; // { code, side: "host"|"guest", data, unsubscribe }
 let tradeDraftOffer = null; // { petIds: Set, eggIds: Set, coins }
 let tradeCompletionHandled = false;
 
+// ---------------------------------------------------------------------------
+// Echtes Wetter (siehe weather.js) - zuletzt bekannter Stand, wird per Poll
+// aktuell gehalten (holt bei Bedarf selbst einen Refresh, siehe dort).
+// ---------------------------------------------------------------------------
+let currentWeather = null; // { condition, isDay, fetchedAtMs, validUntilMs } oder null
+
 bootGame();
 
 function bootGame() {
@@ -386,7 +424,9 @@ function bootGame() {
     accrueMoney(state);
     // Umgebungsmutationen (z.B. Glitched) rollen NUR während aktiv gespielt
     // wird, nie für Offline-Zeit - siehe tickEnvironmentalMutations.
-    const envGains = tickEnvironmentalMutations(state, 333);
+    // Wetterbasierte (Nass/Gefroren/Lunar) laufen separat alle 15s, siehe
+    // tickWeatherMutations - gleiches Rückgabeformat, einfach zusammengefügt.
+    const envGains = [...tickEnvironmentalMutations(state, 333), ...tickWeatherMutations(state, 333, currentWeather)];
     // Nur die zeitabhängigen Anzeigen aktualisieren (Münzen, Brüt-Fortschritt).
     // Tiere/Index nicht neu rendern, sonst rucken CSS-Animationen dort bei
     // jedem Tick, weil ihre DOM-Elemente ständig neu erzeugt würden.
@@ -437,6 +477,24 @@ function bootGame() {
   // Online-Rangliste: beim Login und danach alle 2 Minuten für alle aktualisieren.
   refreshLeaderboard();
   setInterval(refreshLeaderboard, 2 * 60 * 1000);
+
+  // Echtes Wetter (siehe weather.js): einmal beim Start, danach regelmäßig
+  // prüfen, ob das geteilte Wetter-Dokument abgelaufen ist (alle 15 Min) -
+  // das eigentliche "nur alle 15 Min wirklich abrufen" passiert in
+  // ensureWeatherFresh() selbst, hier wird nur oft genug nachgeschaut.
+  refreshWeather();
+  setInterval(refreshWeather, 60 * 1000);
+}
+
+async function refreshWeather() {
+  try {
+    const weather = await ensureWeatherFresh();
+    if (weather) currentWeather = weather;
+    renderWeatherWidget();
+  } catch {
+    // Wetter-Poll fehlgeschlagen (z.B. offline) - altes Wetter einfach
+    // weiter anzeigen, nicht weiter stören.
+  }
 }
 
 function refreshShop() {
@@ -1142,9 +1200,12 @@ function renderEnvMutationsIndex() {
     card.appendChild(artWrap);
 
     const visuals = ENV_MUTATION_VISUALS[envMutation.id];
-    // Disabled = kein passiver Roll (z.B. nur über eine Huge-Pet-Fähigkeit
-    // erhältlich) - die "Chance pro Sekunde" wäre hier irreführend.
-    const chanceLine = envMutation.disabled
+    // Disabled = kein passiver Sekunden-Roll - entweder wetterbasiert (siehe
+    // weatherCondition/chancePer15s) oder nur über eine Huge-Pet-Fähigkeit
+    // erhältlich. Die "Chance pro Sekunde" wäre für beide irreführend.
+    const chanceLine = envMutation.weatherCondition
+      ? `<div class="card-stat">🌦️ ${formatNumber(envMutation.chancePer15s * 100)}% Chance alle 15s, solange gerade "${WEATHER_LABELS[envMutation.weatherCondition]}" ist</div>`
+      : envMutation.disabled
       ? `<div class="card-stat">🌀 Nur über bestimmte Huge-Pet-Fähigkeiten erhältlich</div>`
       : `<div class="card-stat">🍀 ${formatNumber(envMutation.chancePerSecond * 100)}% Chance pro aktiv equippter Sekunde</div>`;
     const info = document.createElement("div");

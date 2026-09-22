@@ -306,6 +306,54 @@ function tickEnvironmentalMutations(state, elapsedMs) {
   return gained;
 }
 
+// ---- Wetterbasierte Umgebungsmutationen (Nass/Gefroren/Lunar) --------------
+// Anders als die alte Sekunden-Chance oben: hier wird alle 15s EINMAL pro
+// aktivem Wettertyp gewürfelt (siehe chancePer15s in data.js), und nur wenn
+// das zugehörige Wetter (siehe weather.js) gerade tatsächlich zutrifft.
+// "weather" ist { condition: "sonne"|"regen"|"schnee"|"windig", isDay }
+// oder null (noch kein Wetter geladen) - dann passiert nichts.
+const WEATHER_MUTATION_TICK_MS = 15000;
+let weatherMutationProgressMs = 0;
+
+function isWeatherMutationActive(envMutation, weather) {
+  if (!weather || !envMutation.weatherCondition) return false;
+  if (envMutation.weatherCondition === "nacht") return weather.isDay === false;
+  return weather.condition === envMutation.weatherCondition;
+}
+
+function rollWeatherMutationsOnce(state, weather) {
+  if (!weather) return [];
+  const equippedSet = new Set(state.equipped);
+  const equippedPets = state.pets.filter((p) => equippedSet.has(p.instanceId));
+  const gained = [];
+  for (const envMutation of ENV_MUTATIONS) {
+    if (!isWeatherMutationActive(envMutation, weather)) continue;
+    const alreadyPresent = equippedPets.some((p) => p.envMutation === envMutation.id);
+    if (alreadyPresent) continue;
+    for (const pet of equippedPets) {
+      if (Math.random() >= envMutation.chancePer15s) continue;
+      if (!applyEnvMutationIfBetter(pet, envMutation.id)) continue;
+      gained.push({ pet, envMutation });
+      break; // dieser Typ ist jetzt im Loadout vergeben, nächster Typ
+    }
+  }
+  return gained;
+}
+
+// NUR während aktivem Spielen aufgerufen (wie tickEnvironmentalMutations),
+// nie für Offline-Zeit - der 15s-Fortschritt lebt bewusst außerhalb von
+// state (nicht gespeichert), ein Reload verliert also höchstens den
+// angefangenen Countdown bis zum nächsten Tick.
+function tickWeatherMutations(state, elapsedMs, weather) {
+  weatherMutationProgressMs += elapsedMs;
+  const gained = [];
+  while (weatherMutationProgressMs >= WEATHER_MUTATION_TICK_MS) {
+    weatherMutationProgressMs -= WEATHER_MUTATION_TICK_MS;
+    gained.push(...rollWeatherMutationsOnce(state, weather));
+  }
+  return gained;
+}
+
 // ---- Huge-Pet-Fähigkeiten: eigener Effekt pro equipptem Huge Pet ----------
 // Wie bei Umgebungsmutationen NUR während aktivem Spielen aufgerufen, nie
 // für Offline-Zeit. Jedes Pet mit PET_BY_ID[petId].ability sammelt pro Tick
@@ -572,7 +620,7 @@ export {
   defaultPlayerState, loadPlayer, savePlayer, resetPlayer,
   startHatching, tickHatching, isHatchingFinished, getFinishedHatching, hatchEgg,
   accrueMoney, totalMoneyPerSecond, getMoneyMultiplier, performRebirth,
-  equipPet, unequipPet, autoEquipBest, timeRemainingMs, tickEnvironmentalMutations,
+  equipPet, unequipPet, autoEquipBest, timeRemainingMs, tickEnvironmentalMutations, tickWeatherMutations,
   tickHugeAbilities, effectiveMoneyPerSec,
   enableAdminMode, adminInstantHatch, adminGrantRandomHugePet, adminAddCoins,
   serializePetForTrade, serializeEggForTrade, removeOwnOfferFromState, addIncomingOfferToState,
