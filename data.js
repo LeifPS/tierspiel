@@ -413,10 +413,26 @@ function rollHugePetOverride(luckPercent, eggRarity, eggId) {
 // unverändert, der Nerf sitzt bewusst nur hier zentral). War 1.15, jetzt
 // zusammen mit LUCK_BOOST_STRENGTH etwas abgeschwächt.
 const HIGH_TIER_NERF = 1.08;
+
+// Bisher hatte JEDES Pet einer Seltenheitsstufe exakt dieselbe Chance (alle
+// Common z.B. exakt 1 in 8) - etwas Variation pro einzelnem Pet, ohne die
+// Reihenfolge zwischen den Stufen zu gefährden: der kleinste Abstand
+// zwischen zwei benachbarten Stufen ist Faktor ~3,1 (common->uncommon), der
+// Streufaktor hier bleibt mit 0,6x…1,6x klar darunter (Faktor ~2,7), sodass
+// selbst das seltenste Common-Pet immer noch häufiger bleibt als das
+// häufigste Uncommon-Pet. Deterministisch aus der Pet-id abgeleitet, damit
+// es bei jedem Laden gleich bleibt statt bei jedem Zug neu zu variieren.
+function petVariationFactor(petId) {
+  let seed = 0;
+  for (let i = 0; i < petId.length; i++) seed = (seed * 31 + petId.charCodeAt(i)) >>> 0;
+  const t = (seed % 1000) / 1000; // 0..1, deterministisch pro Pet
+  return 0.6 + t * 1.0; // 0.6 .. 1.6
+}
+
 PETS.forEach((p) => {
   const tierIdx = RARITY_INDEX[p.rarity];
   const nerf = tierIdx >= RARITY_INDEX["legendary"] ? HIGH_TIER_NERF : 1;
-  p.baseChanceCache = RARITIES[tierIdx].petChance * nerf;
+  p.baseChanceCache = RARITIES[tierIdx].petChance * nerf * petVariationFactor(p.id);
 });
 
 // ---- Hilfsfunktionen für Anzeige -------------------------------------------
