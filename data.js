@@ -122,6 +122,11 @@ const PETS = [
   // Solar
   { id: "runenqual",    name: "Runen-Agony",    rarity: "solar", baseWeightKg: 400, baseMoney: 4000000000 },
   { id: "nuklearwolf",  name: "Nuklear-Wolf",  rarity: "solar", baseWeightKg: 600, baseMoney: 4200000000 },
+  // Lunar - neue beste Stufe, direkt über Solar (nächste bisher ungenutzte
+  // Stufe aus RARITIES).
+  { id: "galaxiefuchs", name: "Galaxie-Fuchs", rarity: "lunar", baseWeightKg: 100,  baseMoney: 20000000000 },
+  { id: "quantenqual",  name: "Quanten-Agony", rarity: "lunar", baseWeightKg: 700,  baseMoney: 21000000000 },
+  { id: "angelus",      name: "Angelus",       rarity: "lunar", baseWeightKg: 1000, baseMoney: 22000000000 },
   // Exklusiv (Huge Pets) - kommen aus jedem Ei (siehe rollHugePetOverride),
   // nie über normales Glück. Bei mehreren Huge Pets entscheidet ein
   // Gleichverteilungs-Los, welches konkret gezogen wird (siehe
@@ -291,7 +296,7 @@ function hugeWeightMultiplier(ratio) {
 // machen. Innerhalb des verbliebenen Pools potenziert das Glück weiterhin
 // das Grundgewicht seltener Tiere stärker als das häufiger Tiere.
 // Bei Glück=100% (Faktor 1) ändert sich nichts an der Basisverteilung.
-const MAX_TIER_INDEX = RARITY_INDEX["solar"]; // 14 – höchste im Pool vertretene Stufe
+const MAX_TIER_INDEX = RARITY_INDEX["lunar"]; // 15 – höchste im Pool vertretene Stufe
 
 function minEligibleRarityIndex(luckPercent) {
   let floorIdx = -1;
