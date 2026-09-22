@@ -301,6 +301,17 @@ function rarityBadgeHTML(rarity) {
   return `<div class="card-rarity${animated}" style="background:${rarity.color}">${rarity.name}</div>`;
 }
 
+// Ein CSS-Rahmen (border-color) kann keinen Farbverlauf direkt darstellen -
+// ab Prismatisch ist rarity.color aber ein linear-gradient. Statt dafür
+// überall pauschal Grau zu nehmen (dann sähen alle High-Tier-Karten gleich
+// aus), wird die erste Farbe aus dem jeweiligen Verlauf als Rahmenfarbe
+// verwendet - bleibt pro Seltenheit unterscheidbar.
+function rarityBorderColor(rarity) {
+  if (!rarity.color.startsWith("linear")) return rarity.color;
+  const match = rarity.color.match(/#[0-9a-fA-F]{3,8}/);
+  return match ? match[0] : "#888";
+}
+
 $("#reset-btn").addEventListener("click", () => {
   if (!confirm("Spielstand wirklich löschen und neu anfangen?")) return;
   resetPlayer();
@@ -581,7 +592,7 @@ function renderShop() {
     const rarity = getRarity(egg.rarity);
     const card = document.createElement("div");
     card.className = "card egg-card" + (soldOut ? " sold-out" : "");
-    card.style.setProperty("--rarity-color", rarity.color.startsWith("linear") ? "#888" : rarity.color);
+    card.style.setProperty("--rarity-color", rarityBorderColor(rarity));
     if (rarity.color.startsWith("linear")) card.style.borderImage = "";
 
     const art = createArtEl("eggs", egg.id, egg.name, rarity.color);
@@ -895,7 +906,7 @@ function renderIndex() {
     const card = document.createElement("div");
     card.className = "card" + (discovered ? "" : " locked");
     if (discovered) {
-      card.style.setProperty("--rarity-color", rarity.color.startsWith("linear") ? "#888" : rarity.color);
+      card.style.setProperty("--rarity-color", rarityBorderColor(rarity));
     }
     card.appendChild(createArtEl("eggs", egg.id, egg.name, rarity.color, !discovered));
 
@@ -926,7 +937,7 @@ function renderIndex() {
     const card = document.createElement("div");
     card.className = "card" + (discovered ? "" : " locked");
     if (discovered) {
-      card.style.setProperty("--rarity-color", rarity.color.startsWith("linear") ? "#888" : rarity.color);
+      card.style.setProperty("--rarity-color", rarityBorderColor(rarity));
     }
     card.appendChild(createArtEl("pets", pet.id, pet.name, rarity.color, !discovered));
 
@@ -1347,7 +1358,7 @@ function renderAdminPanel() {
     const rarity = getRarity(egg.rarity);
     const card = document.createElement("div");
     card.className = "card egg-card";
-    card.style.setProperty("--rarity-color", rarity.color.startsWith("linear") ? "#888" : rarity.color);
+    card.style.setProperty("--rarity-color", rarityBorderColor(rarity));
     card.appendChild(createArtEl("eggs", egg.id, egg.name, rarity.color));
 
     const info = document.createElement("div");
