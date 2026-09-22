@@ -153,26 +153,30 @@ function hatchEgg(state, instanceId) {
 
 // Fähigkeit "Riesiger Sketch-Corgi": anders als die zeitintervall-basierten
 // Huge-Fähigkeiten (siehe tickHugeAbilities) ein Ereignis-Trigger direkt
-// beim Ausbrüten - für jedes equippte Pet mit dieser Fähigkeit eine
-// unabhängige Chance, das gerade verbrauchte Ei erneut (mit vollem Timer)
-// in die Brüt-Liste zu legen. Bricht nach dem ersten Treffer ab, auch wenn
-// mehrere solcher Pets gleichzeitig ausgerüstet sind.
+// beim Ausbrüten. Mehrere ausgerüstete Corgis addieren ihre Chance
+// (1-(1-c)^n), aber gedeckelt bei REFUND_CHANCE_STACK_CAP - sonst wäre bei
+// genug Corgis (max. 10 Ausrüstungsplätze) eine viel zu hohe, quasi
+// garantierte Chance drin. Gibt maximal EIN Ei pro Ausbrüten zurück.
+const REFUND_CHANCE_STACK_CAP = 0.5;
+
 function maybeRefundEgg(state, eggId) {
   const equippedSet = new Set(state.equipped);
+  let noRefundProb = 1;
   for (const p of state.pets) {
     if (!equippedSet.has(p.instanceId)) continue;
     const def = PET_BY_ID[p.petId];
     const ability = def && def.ability;
     if (!ability || ability.type !== "refund_egg_chance") continue;
-    if (Math.random() < ability.chance) {
-      startHatching(state, eggId);
-      // Kommt direkt "fertig" zurück statt erneut die volle Brütezeit
-      // warten zu müssen - nur noch manuell ausbrüten nötig.
-      state.hatching[state.hatching.length - 1].remainingMs = 0;
-      return true;
-    }
+    noRefundProb *= 1 - ability.chance;
   }
-  return false;
+  const combinedChance = Math.min(REFUND_CHANCE_STACK_CAP, 1 - noRefundProb);
+  if (combinedChance <= 0 || Math.random() >= combinedChance) return false;
+
+  startHatching(state, eggId);
+  // Kommt direkt "fertig" zurück statt erneut die volle Brütezeit warten zu
+  // müssen - nur noch manuell ausbrüten nötig.
+  state.hatching[state.hatching.length - 1].remainingMs = 0;
+  return true;
 }
 
 // ---- Admin-/Testmodus -------------------------------------------------------
