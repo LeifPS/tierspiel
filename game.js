@@ -142,7 +142,7 @@ function hatchEgg(state, instanceId) {
   const egg = EGG_BY_ID[entry.eggId];
   // Jedes Ei hat eine eigene, unabhängige Chance auf ein Huge Pet (5x
   // seltener als astral-oder-besser aus demselben Ei) - kein eigenes Ei nötig.
-  const hugeJackpot = rollHugePetOverride(egg.luckPercent, egg.rarity);
+  const hugeJackpot = rollHugePetOverride(egg.luckPercent, egg.rarity, egg.id);
   const pet = hugeJackpot || drawPetFromPool(egg.luckPercent, egg.rarity);
   const petInstance = createPetInstance(pet);
   state.pets.push(petInstance);
@@ -163,7 +163,7 @@ function enableAdminMode(state) {
 function adminInstantHatch(state, eggId) {
   const egg = EGG_BY_ID[eggId];
   if (!egg) throw new Error("Unbekanntes Ei.");
-  const hugeJackpot = rollHugePetOverride(egg.luckPercent, egg.rarity);
+  const hugeJackpot = rollHugePetOverride(egg.luckPercent, egg.rarity, egg.id);
   const pet = hugeJackpot || drawPetFromPool(egg.luckPercent, egg.rarity);
   const petInstance = createPetInstance(pet);
   state.pets.push(petInstance);
