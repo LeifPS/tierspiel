@@ -383,6 +383,7 @@ function bootGame() {
     // Huge-Pet-Fähigkeiten laufen genauso nur online (siehe tickHugeAbilities).
     const abilityTriggers = tickHugeAbilities(state, 333);
     updateAbilityCountdowns();
+    updateTradeEggProgress();
     if (envGains.length > 0 || abilityTriggers.length > 0) {
       for (const { pet, envMutation } of envGains) {
         const visuals = ENV_MUTATION_VISUALS[envMutation.id];
@@ -1573,15 +1574,23 @@ function renderTradeOwnGrid() {
     const egg = EGG_BY_ID[h.eggId];
     const rarity = getRarity(egg.rarity);
     const selected = tradeDraftOffer.eggIds.has(h.instanceId);
+    const finished = isHatchingFinished(h);
+    const pct = Math.min(100, 100 * (1 - timeRemainingMs(h) / h.durationMs));
     const card = document.createElement("div");
     card.className = "card egg-card trade-pick-card" + (selected ? " selected" : "");
-    card.appendChild(createArtEl("eggs", egg.id, egg.name, rarity.color));
+    card.dataset.instanceId = h.instanceId;
+    const art = createArtEl("eggs", egg.id, egg.name, rarity.color);
+    // Wächst optisch mit dem Brütefortschritt, genau wie im Brüten-Tab.
+    const hatchScale = 0.35 + 0.65 * (pct / 100);
+    art.style.setProperty("--hatch-scale", hatchScale.toFixed(3));
+    card.appendChild(art);
     const info = document.createElement("div");
     info.className = "card-info";
     info.innerHTML = `
       <div class="card-name">${egg.name}</div>
       ${rarityBadgeHTML(rarity)}
-      <div class="card-stat">${isHatchingFinished(h) ? "Fertig" : formatDuration(timeRemainingMs(h) / 1000) + " übrig"}</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <div class="card-stat trade-egg-progress-text">${finished ? "Fertig!" : formatDuration(timeRemainingMs(h) / 1000) + " übrig"}</div>
     `;
     card.appendChild(info);
     card.addEventListener("click", () => {
@@ -1593,6 +1602,26 @@ function renderTradeOwnGrid() {
   }
   if (state.pets.length === 0 && state.hatching.length === 0) {
     grid.innerHTML = `<div class="empty-hint">Du hast noch nichts zum Anbieten.</div>`;
+  }
+}
+
+// Aktualisiert nur Fortschrittsbalken/-text der Ei-Karten im eigenen
+// Trade-Angebot (jeden schnellen Tick, siehe updateAbilityCountdowns-Muster),
+// ohne die Karten komplett neu zu rendern - sonst würde z.B. die Ei-Schwenk-
+// Animation bei jedem Tick neu starten.
+function updateTradeEggProgress() {
+  if (!tradeSession) return;
+  for (const card of $$("#trade-own-offer-grid .egg-card[data-instance-id]")) {
+    const h = state.hatching.find((entry) => entry.instanceId === card.dataset.instanceId);
+    if (!h) continue;
+    const finished = isHatchingFinished(h);
+    const pct = Math.min(100, 100 * (1 - timeRemainingMs(h) / h.durationMs));
+    const fill = card.querySelector(".progress-fill");
+    if (fill) fill.style.width = `${pct}%`;
+    const art = card.querySelector(".art");
+    if (art) art.style.setProperty("--hatch-scale", (0.35 + 0.65 * (pct / 100)).toFixed(3));
+    const text = card.querySelector(".trade-egg-progress-text");
+    if (text) text.textContent = finished ? "Fertig!" : formatDuration(timeRemainingMs(h) / 1000) + " übrig";
   }
 }
 
@@ -1617,12 +1646,23 @@ function renderTradeOtherGrid(offer) {
     const egg = EGG_BY_ID[e.eggId];
     if (!egg) continue;
     const rarity = getRarity(egg.rarity);
+    const durationMs = egg.hatchSeconds * 1000;
+    const remainingMs = Math.min(durationMs, Math.max(0, e.remainingMs));
+    const pct = Math.min(100, 100 * (1 - remainingMs / durationMs));
+    const finished = remainingMs <= 0;
     const card = document.createElement("div");
     card.className = "card egg-card";
-    card.appendChild(createArtEl("eggs", egg.id, egg.name, rarity.color));
+    const art = createArtEl("eggs", egg.id, egg.name, rarity.color);
+    art.style.setProperty("--hatch-scale", (0.35 + 0.65 * (pct / 100)).toFixed(3));
+    card.appendChild(art);
     const info = document.createElement("div");
     info.className = "card-info";
-    info.innerHTML = `<div class="card-name">${egg.name}</div>${rarityBadgeHTML(rarity)}`;
+    info.innerHTML = `
+      <div class="card-name">${egg.name}</div>
+      ${rarityBadgeHTML(rarity)}
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      <div class="card-stat">${finished ? "Fertig!" : formatDuration(remainingMs / 1000) + " übrig (Stand beim Angebot)"}</div>
+    `;
     card.appendChild(info);
     grid.appendChild(card);
   }
