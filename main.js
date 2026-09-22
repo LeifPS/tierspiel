@@ -516,7 +516,38 @@ function toast(msg, type = "success") {
   toast._t = setTimeout(() => el.classList.remove("show"), 4000);
 }
 
-const MAX_REVEAL_SLOTS = 12; // Raster: waagerecht 4x3, senkrecht 3x4 – so viele Eier können gleichzeitig geöffnet werden
+// ---------------------------------------------------------------------------
+// Einstellungen - reine Geräte-/Anzeige-Präferenzen, bewusst NICHT Teil des
+// Spielstands (überleben also auch ein "Zurücksetzen" des Spielstands).
+// ---------------------------------------------------------------------------
+const MAX_REVEAL_SLOTS_KEY = "tierspiel_max_reveal_slots";
+const MAX_REVEAL_SLOTS_DEFAULT = 12;
+const MAX_REVEAL_SLOTS_LIMIT = 48; // Raster-Obergrenze: waagerecht 8x6
+
+function getMaxRevealSlots() {
+  const v = parseInt(localStorage.getItem(MAX_REVEAL_SLOTS_KEY), 10);
+  if (!Number.isFinite(v)) return MAX_REVEAL_SLOTS_DEFAULT;
+  return Math.min(MAX_REVEAL_SLOTS_LIMIT, Math.max(1, v));
+}
+
+function setMaxRevealSlots(v) {
+  const rounded = Number.isFinite(v) ? Math.round(v) : MAX_REVEAL_SLOTS_DEFAULT;
+  const clamped = Math.min(MAX_REVEAL_SLOTS_LIMIT, Math.max(1, rounded));
+  localStorage.setItem(MAX_REVEAL_SLOTS_KEY, String(clamped));
+  return clamped;
+}
+
+$("#settings-btn").addEventListener("click", () => {
+  $("#settings-max-reveal").value = getMaxRevealSlots();
+  $("#settings-overlay").classList.remove("hidden");
+});
+$("#settings-close").addEventListener("click", () => {
+  $("#settings-overlay").classList.add("hidden");
+});
+$("#settings-max-reveal").addEventListener("change", () => {
+  const input = $("#settings-max-reveal");
+  input.value = setMaxRevealSlots(Number(input.value));
+});
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -534,8 +565,12 @@ function playHatchRevealBatch(results) {
 
   // Weniger Eier auf einmal -> weniger Spalten -> größere Slots (siehe
   // minmax-Obergrenze in .reveal-grid). Spaltenzahl nie größer als das
-  // Maximum für die aktuelle Bildschirm-Orientierung.
-  const maxCols = window.matchMedia("(orientation: portrait)").matches ? 3 : 4;
+  // Maximum für die aktuelle Bildschirm-Orientierung, skaliert mit der
+  // Anzahl (bei den vollen 48 aus den Einstellungen: 8x6 waagerecht).
+  const isPortrait = window.matchMedia("(orientation: portrait)").matches;
+  const maxCols = results.length <= 12 ? (isPortrait ? 3 : 4)
+    : results.length <= 24 ? (isPortrait ? 4 : 6)
+    : (isPortrait ? 6 : 8);
   grid.style.setProperty("--reveal-cols", Math.min(results.length, maxCols));
 
   const slots = results.map((result) => {
@@ -730,11 +765,12 @@ function handleBuy(egg) {
   toast(`${egg.name} gekauft – es brütet jetzt!`);
 }
 
-// Bütet bis zu MAX_REVEAL_SLOTS Eier auf einmal aus und zeigt sie zusammen
-// in einem Raster an, statt einzeln nacheinander (siehe playHatchRevealBatch).
+// Bütet bis zu getMaxRevealSlots() Eier auf einmal aus und zeigt sie
+// zusammen in einem Raster an, statt einzeln nacheinander (siehe
+// playHatchRevealBatch).
 async function hatchAndRevealBatch(instanceIds) {
   const results = [];
-  for (const instanceId of instanceIds.slice(0, MAX_REVEAL_SLOTS)) {
+  for (const instanceId of instanceIds.slice(0, getMaxRevealSlots())) {
     try {
       results.push(hatchEgg(state, instanceId));
     } catch (err) {
@@ -1403,8 +1439,9 @@ $("#hatch-all-btn").addEventListener("click", async () => {
     return RARITY_INDEX[eggA.rarity] - RARITY_INDEX[eggB.rarity] || eggA.luckPercent - eggB.luckPercent;
   });
   const instanceIds = finished.map((h) => h.instanceId);
-  for (let i = 0; i < instanceIds.length; i += MAX_REVEAL_SLOTS) {
-    await hatchAndRevealBatch(instanceIds.slice(i, i + MAX_REVEAL_SLOTS));
+  const batchSize = getMaxRevealSlots();
+  for (let i = 0; i < instanceIds.length; i += batchSize) {
+    await hatchAndRevealBatch(instanceIds.slice(i, i + batchSize));
   }
 });
 

@@ -798,6 +798,32 @@ button:active { transform: scale(0.97); }
   margin-top: 8px;
 }
 
+/* ---------- Einstellungen ---------- */
+.settings-box {
+  background: var(--bg-panel, var(--bg-deep));
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  width: min(90vw, 420px);
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 14px;
+}
+.settings-row label { font-size: 0.9rem; }
+.settings-row input {
+  background: var(--bg-deep);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  color: inherit;
+  padding: 8px 10px;
+  width: 80px;
+  text-align: center;
+}
+
 /* ---------- Echtes Wetter (Bergisch Gladbach, siehe weather.js) ---------- */
 .weather-widget {
   position: fixed;
