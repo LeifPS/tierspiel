@@ -996,15 +996,15 @@ function renderIndex() {
 
   const petGrid = $("#index-pets-grid");
   petGrid.innerHTML = "";
-  // Nach Seltenheit sortiert (am seltensten zuerst), innerhalb derselben
-  // Seltenheit nach Geld/Sekunde (Huge Pets über ihren Prozentsatz, da sie
-  // kein festes Basis-Geld haben).
+  // Nach Seltenheit sortiert (am häufigsten zuerst), innerhalb derselben
+  // Seltenheit nach Geld/Sekunde aufsteigend (Huge Pets über ihren
+  // Prozentsatz, da sie kein festes Basis-Geld haben).
   const sortedPets = [...PETS].sort((a, b) => {
-    const rarityDiff = RARITY_INDEX[b.rarity] - RARITY_INDEX[a.rarity];
+    const rarityDiff = RARITY_INDEX[a.rarity] - RARITY_INDEX[b.rarity];
     if (rarityDiff !== 0) return rarityDiff;
     const moneyA = a.baseMoney ?? a.moneyPercentOfBest ?? 0;
     const moneyB = b.baseMoney ?? b.moneyPercentOfBest ?? 0;
-    return moneyB - moneyA;
+    return moneyA - moneyB;
   });
   for (const pet of sortedPets) {
     const discovered = knownPetIds.has(pet.id);
