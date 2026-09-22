@@ -181,6 +181,17 @@ const PETS = [
       description: "Alle 300s: schenkt dir so viel Geld, wie du in 60s verdient hättest",
     },
   },
+  {
+    id: "hugesketchcorgi", name: "Riesiger Sketch-Corgi", rarity: "exklusiv",
+    baseWeightKg: 5000, moneyPercentOfBest: 150,
+    // Anders als die anderen Huge-Fähigkeiten kein Zeit-Intervall, sondern
+    // ein Ereignis-Trigger beim Ausbrüten (siehe maybeRefundEgg in game.js).
+    ability: {
+      type: "refund_egg_chance",
+      chance: 0.1,
+      description: "10% Chance, ein ausgebrütetes Ei zurückzubekommen (erneut ausbrüten, voller Timer)",
+    },
+  },
 ];
 
 // ---- Eier -----------------------------------------------------------------

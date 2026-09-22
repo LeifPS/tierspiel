@@ -123,6 +123,7 @@ const ASSET_OVERRIDES = {
     hugeluckiagony: "https://static.wikia.nocookie.net/pets-go/images/c/c8/Huge_Lucki_Agony.png",
     hugemysticcorgi: "https://static.wikia.nocookie.net/pets-go/images/b/bf/Huge_Mystic_Corgi.png",
     hugealienoctopus: "https://static.wikia.nocookie.net/pets-go/images/5/52/Huge_Alien_Octopus.png",
+    hugesketchcorgi: "https://static.wikia.nocookie.net/pets-go/images/1/11/Huge_Sketch_Corgi.png",
   },
 };
 
@@ -743,6 +744,11 @@ async function hatchAndRevealBatch(instanceIds) {
   if (results.length === 0) return;
   savePlayer(state);
   renderAll();
+  for (const result of results) {
+    if (result.eggRefunded) {
+      toast(`🥚 Riesiger Sketch-Corgi hat dir ein ${result.egg.name} zurückgegeben!`);
+    }
+  }
   await playHatchRevealBatch(results);
 }
 

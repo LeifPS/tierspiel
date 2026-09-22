@@ -147,7 +147,29 @@ function hatchEgg(state, instanceId) {
   const petInstance = createPetInstance(pet);
   state.pets.push(petInstance);
   state.hatching = state.hatching.filter((h) => h.instanceId !== instanceId);
-  return { pet, instance: petInstance, egg };
+  const eggRefunded = maybeRefundEgg(state, entry.eggId);
+  return { pet, instance: petInstance, egg, eggRefunded };
+}
+
+// Fähigkeit "Riesiger Sketch-Corgi": anders als die zeitintervall-basierten
+// Huge-Fähigkeiten (siehe tickHugeAbilities) ein Ereignis-Trigger direkt
+// beim Ausbrüten - für jedes equippte Pet mit dieser Fähigkeit eine
+// unabhängige Chance, das gerade verbrauchte Ei erneut (mit vollem Timer)
+// in die Brüt-Liste zu legen. Bricht nach dem ersten Treffer ab, auch wenn
+// mehrere solcher Pets gleichzeitig ausgerüstet sind.
+function maybeRefundEgg(state, eggId) {
+  const equippedSet = new Set(state.equipped);
+  for (const p of state.pets) {
+    if (!equippedSet.has(p.instanceId)) continue;
+    const def = PET_BY_ID[p.petId];
+    const ability = def && def.ability;
+    if (!ability || ability.type !== "refund_egg_chance") continue;
+    if (Math.random() < ability.chance) {
+      startHatching(state, eggId);
+      return true;
+    }
+  }
+  return false;
 }
 
 // ---- Admin-/Testmodus -------------------------------------------------------
