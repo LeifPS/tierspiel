@@ -78,5 +78,24 @@ service cloud.firestore {
         && data.fetchedAtMs is number
         && data.validUntilMs is number;
     }
+
+    // Online-Rangliste (siehe leaderboard.js): läuft ohne Login, Dokument-ID
+    // ist eine zufällige, lokal generierte Spieler-ID. "list" muss erlaubt
+    // sein (nicht nur "get"), weil fetchLeaderboard eine Top-N-Query über die
+    // ganze Collection macht, um die Bestenliste für alle anzuzeigen.
+    // "delete" wird gebraucht, wenn ein Spieler den Admin-/Testmodus aktiviert
+    // (der eigene Eintrag wird dann entfernt, siehe deleteScore).
+    match /leaderboard/{id} {
+      allow read: if true;
+      allow write: if isValidLeaderboardEntry(request.resource.data);
+      allow delete: if true;
+    }
+
+    function isValidLeaderboardEntry(data) {
+      return data.keys().hasAll(["name", "moneyPerSec", "updatedAtMs"])
+        && data.name is string && data.name.size() <= 20
+        && data.moneyPerSec is number && data.moneyPerSec >= 0
+        && data.updatedAtMs is number;
+    }
   }
 }
