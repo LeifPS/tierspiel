@@ -14,5 +14,48 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if request.auth != null;
     }
+
+    // Trading (siehe trading.js): läuft ohne Login, nur über einen zufälligen
+    // Code als Dokument-ID. Ohne request.auth kann hier keine echte
+    // Ownership-Prüfung stattfinden - wer den Code kennt, kann technisch
+    // jedes Feld schreiben. Diese Regeln prüfen deshalb nur, dass ein
+    // Dokument überhaupt die erwartete Form hat (Ehrensystem, kein Schutz
+    // vor einem absichtlich manipulierten Client).
+    // "get" (ein bekannter Code) ist erlaubt, "list" (alle Trades
+    // durchsuchen) bewusst nicht - sonst könnte man fremde offene Trades
+    // erraten/abgreifen, ohne den Code zu kennen.
+    match /trades/{code} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if isValidTrade(request.resource.data);
+      allow update: if isValidTrade(request.resource.data)
+                    && request.resource.data.code == resource.data.code
+                    && request.resource.data.createdAtMs == resource.data.createdAtMs;
+      allow delete: if false;
+    }
+
+    function isValidTrade(data) {
+      return data.keys().hasAll(["code", "createdAtMs", "expiresAtMs", "status", "host", "guest"])
+        && data.status in ["open", "completed", "cancelled"]
+        && isValidTradeSide(data.host)
+        && isValidTradeSide(data.guest);
+    }
+
+    function isValidTradeSide(side) {
+      return side is map
+        && side.keys().hasAll(["playerId", "name", "offer", "ready"])
+        && (side.playerId == null || side.playerId is string)
+        && (side.name == null || side.name is string)
+        && side.ready is bool
+        && isValidTradeOffer(side.offer);
+    }
+
+    function isValidTradeOffer(offer) {
+      return offer is map
+        && offer.keys().hasAll(["pets", "eggs", "coins"])
+        && offer.pets is list && offer.pets.size() <= 20
+        && offer.eggs is list && offer.eggs.size() <= 20
+        && offer.coins is number && offer.coins >= 0 && offer.coins <= 1e18;
+    }
   }
 }

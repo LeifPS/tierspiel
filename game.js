@@ -472,6 +472,101 @@ function timeRemainingMs(hatchEntry) {
   return Math.max(0, hatchEntry.remainingMs);
 }
 
+// ---- Trading: Ein Angebot ist { pets: [...], eggs: [...], coins } -----------
+// Läuft komplett ohne Login/Server-Autorität (siehe trading.js) - wer seinen
+// Client manipuliert, kann theoretisch ein falsches Angebot verschicken. Die
+// Empfängerseite übernimmt deshalb nie übertragene Zahlen wie moneyPerSec
+// oder durationMs direkt, sondern rechnet sie aus den echten Spieldaten neu
+// aus (siehe addIncomingOfferToState) - ein gefälschter Wert hätte so keine
+// Wirkung, nur eine gefälschte petId/Mutation könnte (bewusst) durchgehen.
+function serializePetForTrade(petInstance) {
+  return {
+    instanceId: petInstance.instanceId,
+    petId: petInstance.petId,
+    ratio: petInstance.ratio,
+    mutation: petInstance.mutation || null,
+    envMutation: petInstance.envMutation || null,
+  };
+}
+
+function serializeEggForTrade(hatchEntry) {
+  return {
+    instanceId: hatchEntry.instanceId,
+    eggId: hatchEntry.eggId,
+    remainingMs: Math.max(0, hatchEntry.remainingMs),
+  };
+}
+
+// Der Gewichtsfaktor liegt laut WEIGHT_ROLL_TABLE (data.js) immer zwischen
+// 0.85x und 10x - etwas großzügiger geprüft, um keine legitimen Werte durch
+// Rundung abzulehnen.
+function isValidTradedPet(p) {
+  if (!p || typeof p !== "object") return false;
+  if (!PET_BY_ID[p.petId]) return false;
+  if (typeof p.ratio !== "number" || !(p.ratio >= 0.8 && p.ratio <= 10.5)) return false;
+  if (p.mutation !== null && p.mutation !== undefined && !MUTATION_BY_ID[p.mutation]) return false;
+  if (p.envMutation !== null && p.envMutation !== undefined && !ENV_MUTATION_BY_ID[p.envMutation]) return false;
+  return true;
+}
+
+function isValidTradedEgg(e) {
+  if (!e || typeof e !== "object") return false;
+  if (!EGG_BY_ID[e.eggId]) return false;
+  if (typeof e.remainingMs !== "number" || e.remainingMs < 0) return false;
+  return true;
+}
+
+// Entfernt das eigene Angebot (Pets/Eier per instanceId + Münzen) aus dem
+// lokalen Spielstand - wird beim Abschluss des eigenen Trades aufgerufen.
+function removeOwnOfferFromState(state, offer) {
+  const petIds = new Set((offer.pets || []).map((p) => p.instanceId));
+  const eggIds = new Set((offer.eggs || []).map((e) => e.instanceId));
+  state.pets = state.pets.filter((p) => !petIds.has(p.instanceId));
+  state.equipped = state.equipped.filter((id) => !petIds.has(id));
+  state.hatching = state.hatching.filter((h) => !eggIds.has(h.instanceId));
+  state.coins = Math.max(0, state.coins - (Number(offer.coins) || 0));
+}
+
+// Übernimmt das (eingefrorene) Angebot der Gegenseite - erzeugt dabei neue
+// instanceIds und rechnet moneyPerSec/durationMs frisch aus petId/ratio/
+// Mutation aus (siehe Kommentar oben), statt übertragenen Zahlen zu trauen.
+function addIncomingOfferToState(state, offer) {
+  for (const p of (offer.pets || [])) {
+    if (!isValidTradedPet(p)) continue;
+    const def = PET_BY_ID[p.petId];
+    const mutationMult = p.mutation ? MUTATION_BY_ID[p.mutation].moneyMultiplier : 1;
+    const envMult = p.envMutation ? ENV_MUTATION_BY_ID[p.envMutation].moneyMultiplier : 1;
+    const moneyPerSec = def.moneyPercentOfBest !== undefined
+      ? 0
+      : def.baseMoney * moneyMultiplierFromWeightRatio(p.ratio) * mutationMult * envMult;
+    state.pets.push({
+      instanceId: newInstanceId(),
+      petId: p.petId,
+      weightKg: def.baseWeightKg * p.ratio,
+      ratio: p.ratio,
+      moneyPerSec,
+      mutation: p.mutation || null,
+      envMutation: p.envMutation || null,
+      abilityProgressMs: 0,
+      obtainedAtMs: Date.now(),
+    });
+  }
+  for (const e of (offer.eggs || [])) {
+    if (!isValidTradedEgg(e)) continue;
+    const egg = EGG_BY_ID[e.eggId];
+    const durationMs = egg.hatchSeconds * 1000;
+    state.hatching.push({
+      instanceId: newInstanceId(),
+      eggId: e.eggId,
+      durationMs,
+      remainingMs: Math.min(durationMs, Math.max(0, e.remainingMs)),
+    });
+    if (!state.seenEggs) state.seenEggs = [];
+    if (!state.seenEggs.includes(e.eggId)) state.seenEggs.push(e.eggId);
+  }
+  state.coins += Math.max(0, Number(offer.coins) || 0);
+}
+
 export {
   EGG_BY_ID, PET_BY_ID, START_COINS, START_EQUIP_SLOTS,
   defaultPlayerState, loadPlayer, savePlayer, resetPlayer,
@@ -480,4 +575,5 @@ export {
   equipPet, unequipPet, autoEquipBest, timeRemainingMs, tickEnvironmentalMutations,
   tickHugeAbilities, effectiveMoneyPerSec,
   enableAdminMode, adminInstantHatch, adminGrantRandomHugePet, adminAddCoins,
+  serializePetForTrade, serializeEggForTrade, removeOwnOfferFromState, addIncomingOfferToState,
 };

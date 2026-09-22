@@ -43,6 +43,7 @@
     <button class="tab-btn" data-tab="pets"><span class="tab-icon">🐾</span><span class="tab-label">Tiere</span></button>
     <button class="tab-btn" data-tab="index"><span class="tab-icon">📖</span><span class="tab-label">Index</span></button>
     <button class="tab-btn" data-tab="rebirth"><span class="tab-icon">🔁</span><span class="tab-label">Rebirth</span></button>
+    <button class="tab-btn" data-tab="trade"><span class="tab-icon">🤝</span><span class="tab-label">Handel</span></button>
     <button class="tab-btn" data-tab="leaderboard"><span class="tab-icon">🏆</span><span class="tab-label">Rangliste</span></button>
     <button id="admin-tab-btn" class="tab-btn hidden" data-tab="admin"><span class="tab-icon">🛠️</span><span class="tab-label">Admin</span></button>
   </div>
@@ -100,6 +101,45 @@
   <div id="panel-rebirth" class="tab-panel">
     <div class="panel-header"><span>Gib Münzen + ein bestimmtes Tier ab für dauerhafte Boni</span></div>
     <div id="rebirth-content"></div>
+  </div>
+
+  <div id="panel-trade" class="tab-panel">
+    <div class="panel-header">
+      <span>Tausche Tiere, Eier &amp; Münzen mit anderen Spielern – Ehrensystem, kein Login nötig</span>
+    </div>
+    <div id="trade-lobby">
+      <div class="trade-lobby-row">
+        <button id="trade-create-btn" class="action-btn">➕ Trade erstellen</button>
+      </div>
+      <div class="trade-lobby-row">
+        <input id="trade-join-input" type="text" maxlength="6" placeholder="Code eingeben">
+        <button id="trade-join-btn" class="action-btn">Beitreten</button>
+      </div>
+    </div>
+    <div id="trade-active" class="hidden">
+      <div class="trade-code-banner">
+        <span>Code: <strong id="trade-code-display"></strong></span>
+        <button id="trade-copy-link-btn" class="action-btn">🔗 Link kopieren</button>
+        <button id="trade-leave-btn" class="action-btn danger-btn">✕ Verlassen</button>
+      </div>
+      <div class="trade-columns">
+        <div class="trade-column">
+          <h3>Dein Angebot</h3>
+          <div class="trade-coins-row">
+            <label for="trade-coins-input">💰 Münzen:</label>
+            <input id="trade-coins-input" type="number" min="0" step="1" value="0">
+          </div>
+          <div id="trade-own-offer-grid" class="grid trade-offer-grid"></div>
+          <button id="trade-ready-btn" class="primary-btn">✅ Bereit</button>
+        </div>
+        <div class="trade-column">
+          <h3 id="trade-other-title">Angebot der Gegenseite</h3>
+          <div class="trade-coins-row" id="trade-other-coins"></div>
+          <div id="trade-other-offer-grid" class="grid trade-offer-grid"></div>
+          <div id="trade-other-ready-status" class="trade-ready-status"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div id="panel-leaderboard" class="tab-panel">

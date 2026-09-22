@@ -6,8 +6,10 @@ import {
   performRebirth, equipPet, unequipPet, autoEquipBest, timeRemainingMs, tickEnvironmentalMutations,
   tickHugeAbilities, effectiveMoneyPerSec,
   enableAdminMode, adminInstantHatch, adminGrantRandomHugePet, adminAddCoins,
+  serializePetForTrade, serializeEggForTrade, removeOwnOfferFromState, addIncomingOfferToState,
 } from "./game.js";
 import { getOrCreatePlayerId, getPlayerName, setPlayerName, submitScore, fetchLeaderboard, deleteScore } from "./leaderboard.js";
+import { createTrade, joinTrade, subscribeTrade, updateOwnOffer, setReady, cancelTrade, tryCompleteTrade } from "./trading.js";
 
 // ---------------------------------------------------------------------------
 // Kleine DOM-Helfer
@@ -336,6 +338,15 @@ const MS_PER_CYCLE_SLOT = 3000; // jedes Pet ist ca. 3s "dran", Gesamtdauer wäc
 // Geheimer URL-Parameter für den Admin-/Testmodus (siehe setupAdminMode weiter unten).
 const ADMIN_SECRET = "leif-7f3a9c21";
 
+// ---------------------------------------------------------------------------
+// Trading (siehe trading.js) - Zustand der aktiven Trade-Session, falls
+// gerade eine läuft, plus das eigene noch nicht abgeschickte Angebot.
+// ---------------------------------------------------------------------------
+const TRADE_SESSION_KEY = "tierspiel_active_trade";
+let tradeSession = null; // { code, side: "host"|"guest", data, unsubscribe }
+let tradeDraftOffer = null; // { petIds: Set, eggIds: Set, coins }
+let tradeCompletionHandled = false;
+
 bootGame();
 
 function bootGame() {
@@ -350,6 +361,7 @@ function bootGame() {
   }
 
   setupAdminMode();
+  setupTradeFromUrlOrStorage();
   refreshShop();
   renderAll();
 
@@ -1383,4 +1395,294 @@ $$(".tab-btn").forEach((btn) => {
     btn.classList.add("active");
     $(`#panel-${btn.dataset.tab}`).classList.add("active");
   });
+});
+
+// ---------------------------------------------------------------------------
+// Trading - siehe trading.js für die Firestore-Seite und den Kommentar dort
+// zum Ehrensystem-Charakter ohne Login. Ablauf: Trade erstellen/beitreten per
+// Code oder Link -> beide Seiten stellen ihr Angebot zusammen (Live-Sync über
+// onSnapshot) -> beide drücken "Bereit" -> eine Firestore-Transaktion schließt
+// den Trade genau einmal ab -> jede Seite übernimmt lokal das eingefrorene
+// Angebot der Gegenseite in ihr Inventar.
+// ---------------------------------------------------------------------------
+function activeTradeCode() {
+  return tradeSession ? tradeSession.code : null;
+}
+
+function startTradeSession(code, side) {
+  tradeSession = { code, side, data: null, unsubscribe: null };
+  tradeDraftOffer = { petIds: new Set(), eggIds: new Set(), coins: 0 };
+  tradeCompletionHandled = false;
+  localStorage.setItem(TRADE_SESSION_KEY, JSON.stringify({ code, side }));
+  tradeSession.unsubscribe = subscribeTrade(code, onTradeUpdate);
+  $("#trade-lobby").classList.add("hidden");
+  $("#trade-active").classList.remove("hidden");
+  $("#trade-code-display").textContent = code;
+  $("#trade-coins-input").value = 0;
+}
+
+function exitTradeSession(message) {
+  if (tradeSession && tradeSession.unsubscribe) tradeSession.unsubscribe();
+  tradeSession = null;
+  tradeDraftOffer = null;
+  localStorage.removeItem(TRADE_SESSION_KEY);
+  $("#trade-active").classList.add("hidden");
+  $("#trade-lobby").classList.remove("hidden");
+  $("#trade-join-input").value = "";
+  if (message) toast(message);
+}
+
+function setupTradeFromUrlOrStorage() {
+  const params = new URLSearchParams(location.search);
+  const urlCode = params.get("trade");
+  if (urlCode) {
+    params.delete("trade");
+    const rest = params.toString();
+    history.replaceState(null, "", location.pathname + (rest ? "?" + rest : "") + location.hash);
+    const code = urlCode.trim().toUpperCase();
+    joinTrade(code, getOrCreatePlayerId(), getPlayerName())
+      .then((side) => {
+        startTradeSession(code, side);
+        $$(".tab-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === "trade"));
+        $$(".tab-panel").forEach((p) => p.classList.toggle("active", p.id === "panel-trade"));
+        toast("Trade beigetreten!");
+      })
+      .catch((err) => toast(err.message || "Trade nicht gefunden.", "error"));
+    return;
+  }
+  const saved = localStorage.getItem(TRADE_SESSION_KEY);
+  if (!saved) return;
+  try {
+    const { code, side } = JSON.parse(saved);
+    if (code && side) startTradeSession(code, side);
+  } catch {
+    localStorage.removeItem(TRADE_SESSION_KEY);
+  }
+}
+
+function onTradeUpdate(data) {
+  if (!tradeSession) return;
+  if (!data) {
+    exitTradeSession("Dieser Trade existiert nicht mehr.");
+    return;
+  }
+  tradeSession.data = data;
+  if (data.status === "cancelled") {
+    exitTradeSession("Der Trade wurde abgebrochen.");
+    return;
+  }
+  if (data.status === "open" && Date.now() > data.expiresAtMs) {
+    cancelTrade(tradeSession.code).catch(() => {});
+    exitTradeSession("Der Trade ist abgelaufen.");
+    return;
+  }
+  if (data.status === "completed") {
+    if (!tradeCompletionHandled) {
+      tradeCompletionHandled = true;
+      applyCompletedTrade(data);
+    }
+    return;
+  }
+  renderTradeActive();
+  if (data.host.ready && data.guest.ready) {
+    // Egal ob beide Clients das gleichzeitig versuchen - tryCompleteTrade
+    // ist eine Transaktion und feuert dadurch trotzdem nur einmal wirklich.
+    tryCompleteTrade(tradeSession.code).catch(() => {});
+  }
+}
+
+function applyCompletedTrade(data) {
+  const side = tradeSession.side;
+  const otherSide = side === "host" ? "guest" : "host";
+  removeOwnOfferFromState(state, data[side].offer);
+  addIncomingOfferToState(state, data[otherSide].offer);
+  savePlayer(state);
+  renderAll();
+  toast("🤝 Trade abgeschlossen!");
+  exitTradeSession(null);
+}
+
+function buildOwnOfferPayload() {
+  return {
+    pets: [...tradeDraftOffer.petIds]
+      .map((id) => state.pets.find((p) => p.instanceId === id))
+      .filter(Boolean)
+      .map(serializePetForTrade),
+    eggs: [...tradeDraftOffer.eggIds]
+      .map((id) => state.hatching.find((h) => h.instanceId === id))
+      .filter(Boolean)
+      .map(serializeEggForTrade),
+    coins: tradeDraftOffer.coins,
+  };
+}
+
+function pushOwnOffer() {
+  if (!tradeSession) return;
+  renderTradeOwnGrid(); // sofortiges Feedback, nicht auf den Firestore-Roundtrip warten
+  updateOwnOffer(tradeSession.code, tradeSession.side, buildOwnOfferPayload())
+    .catch((err) => toast("Angebot konnte nicht aktualisiert werden: " + err.message, "error"));
+}
+
+function renderTradeActive() {
+  if (!tradeSession || !tradeSession.data) return;
+  const data = tradeSession.data;
+  const side = tradeSession.side;
+  const otherSide = side === "host" ? "guest" : "host";
+  const own = data[side];
+  const other = data[otherSide];
+
+  $("#trade-other-title").textContent = other.playerId
+    ? `Angebot von ${other.name || "Mitspieler"}`
+    : "Warte auf einen zweiten Spieler…";
+  $("#trade-ready-btn").textContent = own.ready ? "❌ Bereit zurücknehmen" : "✅ Bereit";
+  $("#trade-ready-btn").disabled = !other.playerId;
+  $("#trade-other-ready-status").textContent = !other.playerId
+    ? "⏳ Wartet auf einen zweiten Spieler…"
+    : other.ready ? "✅ Bereit" : "⏳ Noch nicht bereit";
+
+  const coinsInput = $("#trade-coins-input");
+  if (document.activeElement !== coinsInput) coinsInput.value = tradeDraftOffer.coins;
+  coinsInput.max = Math.floor(state.coins);
+
+  renderTradeOwnGrid();
+  renderTradeOtherGrid(other.offer);
+}
+
+function renderTradeOwnGrid() {
+  const grid = $("#trade-own-offer-grid");
+  grid.innerHTML = "";
+  for (const inst of state.pets) {
+    const pet = PET_BY_ID[inst.petId];
+    const rarity = getRarity(pet.rarity);
+    const selected = tradeDraftOffer.petIds.has(inst.instanceId);
+    const card = document.createElement("div");
+    card.className = "card pet-card trade-pick-card" + (selected ? " selected" : "");
+    card.appendChild(createArtEl("pets", pet.id, pet.name, rarity.color, false, false, inst.mutation, inst.envMutation));
+    const info = document.createElement("div");
+    info.className = "card-info";
+    info.innerHTML = `<div class="card-name">${pet.name}</div>${rarityBadgeHTML(rarity)}`;
+    card.appendChild(info);
+    card.addEventListener("click", () => {
+      if (selected) tradeDraftOffer.petIds.delete(inst.instanceId);
+      else tradeDraftOffer.petIds.add(inst.instanceId);
+      pushOwnOffer();
+    });
+    grid.appendChild(card);
+  }
+  for (const h of state.hatching) {
+    const egg = EGG_BY_ID[h.eggId];
+    const rarity = getRarity(egg.rarity);
+    const selected = tradeDraftOffer.eggIds.has(h.instanceId);
+    const card = document.createElement("div");
+    card.className = "card egg-card trade-pick-card" + (selected ? " selected" : "");
+    card.appendChild(createArtEl("eggs", egg.id, egg.name, rarity.color));
+    const info = document.createElement("div");
+    info.className = "card-info";
+    info.innerHTML = `
+      <div class="card-name">${egg.name}</div>
+      ${rarityBadgeHTML(rarity)}
+      <div class="card-stat">${isHatchingFinished(h) ? "Fertig" : formatDuration(timeRemainingMs(h) / 1000) + " übrig"}</div>
+    `;
+    card.appendChild(info);
+    card.addEventListener("click", () => {
+      if (selected) tradeDraftOffer.eggIds.delete(h.instanceId);
+      else tradeDraftOffer.eggIds.add(h.instanceId);
+      pushOwnOffer();
+    });
+    grid.appendChild(card);
+  }
+  if (state.pets.length === 0 && state.hatching.length === 0) {
+    grid.innerHTML = `<div class="empty-hint">Du hast noch nichts zum Anbieten.</div>`;
+  }
+}
+
+function renderTradeOtherGrid(offer) {
+  const grid = $("#trade-other-offer-grid");
+  grid.innerHTML = "";
+  $("#trade-other-coins").innerHTML = `💰 ${coinIcon()} ${formatNumber(offer.coins || 0)}`;
+  for (const p of (offer.pets || [])) {
+    const pet = PET_BY_ID[p.petId];
+    if (!pet) continue;
+    const rarity = getRarity(pet.rarity);
+    const card = document.createElement("div");
+    card.className = "card pet-card";
+    card.appendChild(createArtEl("pets", pet.id, pet.name, rarity.color, false, false, p.mutation, p.envMutation));
+    const info = document.createElement("div");
+    info.className = "card-info";
+    info.innerHTML = `<div class="card-name">${pet.name}</div>${rarityBadgeHTML(rarity)}`;
+    card.appendChild(info);
+    grid.appendChild(card);
+  }
+  for (const e of (offer.eggs || [])) {
+    const egg = EGG_BY_ID[e.eggId];
+    if (!egg) continue;
+    const rarity = getRarity(egg.rarity);
+    const card = document.createElement("div");
+    card.className = "card egg-card";
+    card.appendChild(createArtEl("eggs", egg.id, egg.name, rarity.color));
+    const info = document.createElement("div");
+    info.className = "card-info";
+    info.innerHTML = `<div class="card-name">${egg.name}</div>${rarityBadgeHTML(rarity)}`;
+    card.appendChild(info);
+    grid.appendChild(card);
+  }
+  if ((offer.pets || []).length === 0 && (offer.eggs || []).length === 0 && !offer.coins) {
+    grid.innerHTML = `<div class="empty-hint">Noch nichts angeboten.</div>`;
+  }
+}
+
+$("#trade-create-btn").addEventListener("click", async () => {
+  try {
+    const code = await createTrade(getOrCreatePlayerId(), getPlayerName());
+    startTradeSession(code, "host");
+    toast(`Trade erstellt – Code: ${code}`);
+  } catch (err) {
+    toast("Trade konnte nicht erstellt werden: " + err.message, "error");
+  }
+});
+
+$("#trade-join-btn").addEventListener("click", async () => {
+  const code = $("#trade-join-input").value.trim().toUpperCase();
+  if (!code) return;
+  try {
+    const side = await joinTrade(code, getOrCreatePlayerId(), getPlayerName());
+    startTradeSession(code, side);
+    toast("Trade beigetreten!");
+  } catch (err) {
+    toast(err.message || "Trade nicht gefunden.", "error");
+  }
+});
+
+$("#trade-coins-input").addEventListener("change", () => {
+  if (!tradeSession) return;
+  const input = $("#trade-coins-input");
+  let val = Math.floor(Number(input.value) || 0);
+  val = Math.max(0, Math.min(val, Math.floor(state.coins)));
+  tradeDraftOffer.coins = val;
+  input.value = val;
+  pushOwnOffer();
+});
+
+$("#trade-ready-btn").addEventListener("click", () => {
+  if (!tradeSession || !tradeSession.data) return;
+  const own = tradeSession.data[tradeSession.side];
+  setReady(tradeSession.code, tradeSession.side, !own.ready).catch((err) => toast(err.message, "error"));
+});
+
+$("#trade-leave-btn").addEventListener("click", async () => {
+  if (!tradeSession) return;
+  const code = tradeSession.code;
+  exitTradeSession("Trade verlassen.");
+  cancelTrade(code).catch(() => {});
+});
+
+$("#trade-copy-link-btn").addEventListener("click", async () => {
+  if (!tradeSession) return;
+  const url = `${location.origin}${location.pathname}?trade=${tradeSession.code}`;
+  try {
+    await navigator.clipboard.writeText(url);
+    toast("Link kopiert!");
+  } catch {
+    toast(`Link: ${url}`);
+  }
 });
