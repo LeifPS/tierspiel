@@ -40,6 +40,51 @@ function rollShopStockForRotation(rotationIndex) {
   return stock;
 }
 
+// ---- "Zuletzt im Shop erschienen" je Ei -----------------------------------
+// Rein clientseitig berechnet (kein Firebase nötig): da die Rotation
+// deterministisch aus dem Zeitfenster gewürfelt wird, kann man exakt
+// dieselbe Formel einfach rückwärts durchrechnen, um herauszufinden, wann
+// ein Ei zuletzt im Shop war - ganz ohne irgendwo eine Historie zu speichern.
+const LAST_APPEARANCE_SCAN_LIMIT = 300000; // ~2,85 Jahre zurück - reicht für jedes Ei
+
+// Würfelt exakt wie rollShopStockForRotation, bricht aber ab, sobald das
+// gesuchte Ei dran war - wichtig: der Zufalls-Stream muss trotzdem für jedes
+// vorherige Ei GENAUSO viele rand()-Aufrufe verbrauchen (Erschein-Chance +
+// ggf. Stückzahl), sonst würde ab hier alles verschieden ausgewürfelt.
+function didEggAppearInRotation(eggId, rotationIndex) {
+  const rand = createSeededRandom(rotationIndex);
+  for (const egg of EGGS) {
+    const appeared = rand() <= egg.appearChance;
+    if (appeared) rand(); // Stückzahl-Wurf konsumieren, auch wenn uninteressant
+    if (egg.id === eggId) return appeared;
+  }
+  return false;
+}
+
+function findLastAppearanceRotation(eggId) {
+  const from = currentRotationIndex();
+  for (let i = from; i > from - LAST_APPEARANCE_SCAN_LIMIT; i--) {
+    if (didEggAppearInRotation(eggId, i)) return i;
+  }
+  return null; // seit LAST_APPEARANCE_SCAN_LIMIT Rotationen nicht erschienen
+}
+
+// Pro Ei nur einmal je Rotationsfenster neu berechnen (die Rückwärtssuche ist
+// nicht gratis) - wird ungültig, sobald der Shop das nächste Mal rotiert.
+let lastAppearanceCache = { rotationIndex: null, results: {} };
+
+function getLastAppearanceMs(eggId) {
+  const nowRot = currentRotationIndex();
+  if (lastAppearanceCache.rotationIndex !== nowRot) {
+    lastAppearanceCache = { rotationIndex: nowRot, results: {} };
+  }
+  if (!(eggId in lastAppearanceCache.results)) {
+    lastAppearanceCache.results[eggId] = findLastAppearanceRotation(eggId);
+  }
+  const foundRotation = lastAppearanceCache.results[eggId];
+  return foundRotation === null ? null : foundRotation * ROTATION_MS;
+}
+
 function readShop() {
   const raw = localStorage.getItem(SHOP_KEY);
   if (!raw) return null;
@@ -88,4 +133,4 @@ function msUntilNextRotation(rotatedAtMs) {
   return Math.max(0, ROTATION_MS - elapsed);
 }
 
-export { getOrRotateShop, buyEgg, msUntilNextRotation, currentRotationIndex, ROTATION_MS };
+export { getOrRotateShop, buyEgg, msUntilNextRotation, currentRotationIndex, ROTATION_MS, getLastAppearanceMs };

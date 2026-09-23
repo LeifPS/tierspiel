@@ -1,5 +1,5 @@
 import { EGGS, PETS, REBIRTHS, RARITY_INDEX, MUTATIONS, MUTATION_BY_ID, ENV_MUTATIONS, ENV_MUTATION_BY_ID, getRarity, formatNumber, formatDuration } from "./data.js";
-import { getOrRotateShop, buyEgg, msUntilNextRotation, currentRotationIndex, ROTATION_MS } from "./shop.js";
+import { getOrRotateShop, buyEgg, msUntilNextRotation, currentRotationIndex, ROTATION_MS, getLastAppearanceMs } from "./shop.js";
 import {
   EGG_BY_ID, PET_BY_ID, loadPlayer, savePlayer, resetPlayer, startHatching,
   tickHatching, isHatchingFinished, hatchEgg, accrueMoney, totalMoneyPerSecond, getMoneyMultiplier,
@@ -350,6 +350,20 @@ function rarityBorderColor(rarity) {
   if (!rarity.color.startsWith("linear")) return rarity.color;
   const match = rarity.color.match(/#[0-9a-fA-F]{3,8}/);
   return match ? match[0] : "#888";
+}
+
+// "Vor X Tagen/Stunden" - rein aus der deterministischen Shop-Formel
+// zurückgerechnet (siehe getLastAppearanceMs in shop.js), kein Firebase/
+// keine gespeicherte Historie nötig.
+function formatTimeAgo(ms) {
+  const diffSec = Math.max(0, (Date.now() - ms) / 1000);
+  const days = Math.floor(diffSec / 86400);
+  const hours = Math.floor((diffSec % 86400) / 3600);
+  const mins = Math.floor((diffSec % 3600) / 60);
+  if (days > 0) return `vor ${days} Tag${days === 1 ? "" : "en"}${hours > 0 ? ` ${hours}h` : ""}`;
+  if (hours > 0) return `vor ${hours}h ${mins}min`;
+  if (mins > 0) return `vor ${mins}min`;
+  return "gerade eben";
 }
 
 $("#reset-btn").addEventListener("click", () => {
@@ -1020,11 +1034,16 @@ function renderIndex() {
     const info = document.createElement("div");
     info.className = "card-info";
     if (discovered) {
+      const lastMs = getLastAppearanceMs(egg.id);
+      const lastLine = lastMs === null
+        ? `<div class="card-stat">🛒 Zuletzt im Shop: schon sehr lange nicht mehr</div>`
+        : `<div class="card-stat">🛒 Zuletzt im Shop: ${formatTimeAgo(lastMs)}</div>`;
       info.innerHTML = `
         <div class="card-name">${egg.name}</div>
         ${rarityBadgeHTML(rarity)}
         <div class="card-stat">🍀 ${formatNumber(egg.luckPercent)}% Glück</div>
         <div class="card-stat">⏱ ${formatDuration(egg.hatchSeconds)}</div>
+        ${lastLine}
       `;
     } else {
       info.innerHTML = `
