@@ -5,8 +5,17 @@
 import {
   EGGS, PETS, REBIRTHS, MUTATION_BY_ID, ENV_MUTATIONS, ENV_MUTATION_BY_ID,
   rollWeightFactor, moneyMultiplierFromWeightRatio, hugeWeightMultiplier, drawPetFromPool, rollMutation,
-  rollHugePetOverride,
+  rollHugePetOverride, rollPremiumPet,
 } from "./data.js";
+
+// Zieht das Pet für ein ausgebrütetes Ei - für das Premium-Glas-Ei
+// (egg.premiumOnly) komplett eigener Mechanismus statt der normalen
+// Huge-Chance + Glücks-Leiter (siehe rollPremiumPet in data.js).
+function drawHatchedPet(egg) {
+  if (egg.premiumOnly) return rollPremiumPet();
+  const hugeJackpot = rollHugePetOverride(egg.luckPercent, egg.rarity, egg.id);
+  return hugeJackpot || drawPetFromPool(egg.luckPercent, egg.rarity);
+}
 
 const EGG_BY_ID = Object.fromEntries(EGGS.map((e) => [e.id, e]));
 const PET_BY_ID = Object.fromEntries(PETS.map((p) => [p.id, p]));
@@ -143,8 +152,7 @@ function hatchEgg(state, instanceId) {
   const egg = EGG_BY_ID[entry.eggId];
   // Jedes Ei hat eine eigene, unabhängige Chance auf ein Huge Pet (5x
   // seltener als astral-oder-besser aus demselben Ei) - kein eigenes Ei nötig.
-  const hugeJackpot = rollHugePetOverride(egg.luckPercent, egg.rarity, egg.id);
-  const pet = hugeJackpot || drawPetFromPool(egg.luckPercent, egg.rarity);
+  const pet = drawHatchedPet(egg);
   const petInstance = createPetInstance(pet);
   state.pets.push(petInstance);
   state.hatching = state.hatching.filter((h) => h.instanceId !== instanceId);
@@ -193,8 +201,7 @@ function enableAdminMode(state) {
 function adminInstantHatch(state, eggId) {
   const egg = EGG_BY_ID[eggId];
   if (!egg) throw new Error("Unbekanntes Ei.");
-  const hugeJackpot = rollHugePetOverride(egg.luckPercent, egg.rarity, egg.id);
-  const pet = hugeJackpot || drawPetFromPool(egg.luckPercent, egg.rarity);
+  const pet = drawHatchedPet(egg);
   const petInstance = createPetInstance(pet);
   state.pets.push(petInstance);
   if (!state.seenEggs) state.seenEggs = [];

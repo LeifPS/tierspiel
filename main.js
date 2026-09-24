@@ -124,12 +124,26 @@ const ASSET_OVERRIDES = {
     hugemysticcorgi: "https://static.wikia.nocookie.net/pets-go/images/b/bf/Huge_Mystic_Corgi.png",
     hugealienoctopus: "https://static.wikia.nocookie.net/pets-go/images/5/52/Huge_Alien_Octopus.png",
     hugesketchcorgi: "https://static.wikia.nocookie.net/pets-go/images/1/11/Huge_Sketch_Corgi.png",
+    glaskrokodil: "https://db.biggames.io/api/thumbnails/asset/127362746898839",
+    glasdominus: "https://db.biggames.io/api/thumbnails/asset/139016294644183",
+    glaskraken: "https://db.biggames.io/api/thumbnails/asset/106435290275347",
+    glaskrokodilriesig: "https://db.biggames.io/api/thumbnails/asset/85063221597865",
+    glasdominusriesig: "https://db.biggames.io/api/thumbnails/asset/72368340879061",
   },
 };
 
 const COIN_ICON_URL = "https://static.wikia.nocookie.net/pet-simulator/images/b/b2/PS99_-_Coin.png";
 const coinIcon = () => `<img src="${COIN_ICON_URL}" alt="Münzen" class="coin-icon">`;
 const GOLD_BAR_ICON_URL = "https://static.wikia.nocookie.net/pet-simulator/images/e/e8/PS99_-_Gold_Bar.png";
+
+// Das Premium-Glas-Ei nutzt luckPercent nur kosmetisch (siehe premiumOnly in
+// data.js) - eine riesige Prozentzahl wäre hier irreführend, da sie beim
+// Ausbrüten gar nicht zum Einsatz kommt.
+function eggLuckLine(egg) {
+  return egg.premiumOnly
+    ? `<div class="card-stat">🍀 Enthält nur Premium-Tiere</div>`
+    : `<div class="card-stat">🍀 ${formatNumber(egg.luckPercent)}% Glück</div>`;
+}
 
 function assetSrc(kind, id) {
   const override = ASSET_OVERRIDES[kind]?.[id];
@@ -304,11 +318,16 @@ function swayDelayFor(id) {
   return `-${((hash % 320) / 100).toFixed(2)}s`;
 }
 
+// Huge Pets (Seltenheit "exklusiv") UND die "Riesig"-Premium-Varianten
+// (isHugeVariant, siehe data.js) gelten optisch überall als "Huge" - größere
+// Darstellung, "🎉 RIESIG!"-Aufdruck, extra Ei-Öffnen-Effekt.
+function isHugeStylePet(pet) {
+  return !!pet && (pet.rarity === "exklusiv" || pet.isHugeVariant === true);
+}
+
 function createArtEl(kind, id, label, rarityColor, locked = false, dimmed = false, mutation = null, envMutation = null) {
-  // Huge Pets (Seltenheit "exklusiv") werden überall etwas größer dargestellt
-  // als normale Pets - automatisch erkannt, kein extra Parameter an jedem
-  // Aufrufort nötig.
-  const isHuge = kind === "pets" && !locked && PET_BY_ID[id]?.rarity === "exklusiv";
+  // Automatisch erkannt, kein extra Parameter an jedem Aufrufort nötig.
+  const isHuge = kind === "pets" && !locked && isHugeStylePet(PET_BY_ID[id]);
   const wrap = document.createElement("div");
   wrap.className = "art" + (locked ? " locked" : "") + (dimmed ? " dimmed" : "") + (isHuge ? " huge-pet-art" : "");
   wrap.style.setProperty("--sway-delay", swayDelayFor(id));
@@ -590,7 +609,7 @@ function playHatchRevealBatch(results) {
   const slots = results.map((result) => {
     const { pet, egg, instance } = result;
     const rarity = getRarity(pet.rarity);
-    const isHuge = pet.rarity === "exklusiv";
+    const isHuge = isHugeStylePet(pet);
     const mutationVisuals = instance.mutation && MUTATION_VISUALS[instance.mutation];
     const glowColor = mutationVisuals ? mutationVisuals.glowColor
       : rarity.color.startsWith("linear") ? "#ffffff" : rarity.color;
@@ -718,7 +737,7 @@ function renderShop() {
     info.innerHTML = `
       <div class="card-name">${egg.name}</div>
       ${rarityBadgeHTML(rarity)}
-      <div class="card-stat">🍀 ${formatNumber(egg.luckPercent)}% Glück</div>
+      ${eggLuckLine(egg)}
       <div class="card-stat">⏱ ${formatDuration(egg.hatchSeconds)}</div>
       <div class="card-stat">📦 Lager: ${soldOut ? "Ausverkauft" : stock}</div>
     `;
@@ -1041,7 +1060,7 @@ function renderIndex() {
       info.innerHTML = `
         <div class="card-name">${egg.name}</div>
         ${rarityBadgeHTML(rarity)}
-        <div class="card-stat">🍀 ${formatNumber(egg.luckPercent)}% Glück</div>
+        ${eggLuckLine(egg)}
         <div class="card-stat">⏱ ${formatDuration(egg.hatchSeconds)}</div>
         ${lastLine}
       `;
@@ -1082,14 +1101,19 @@ function renderIndex() {
     if (discovered) {
       // Huge Pets (Seltenheit "exklusiv") kommen nie über die normale
       // Glücks-Leiter - die "1 in X"-Chance wäre hier irreführend, da sie
-      // stattdessen aus jedem Ei mit eigener Chance kommen können.
+      // stattdessen aus jedem Ei mit eigener Chance kommen können. Premium
+      // Pets kommen dagegen NUR aus dem Premium-Glas-Ei.
       const chanceOrSourceLine = pet.rarity === "exklusiv"
         ? `<div class="card-stat">🥚 Aus jedem Ei möglich (sehr selten)</div>`
+        : pet.rarity === "premium"
+        ? `<div class="card-stat">🥚 Nur aus dem Premium-Glas-Ei möglich</div>`
         : `<div class="card-stat">🍀 Chance: 1 in ${formatNumber(Math.round(pet.baseChanceCache))}</div>`;
-      // Huge Pets haben kein festes Basis-Geld - sie verdienen einen
-      // Prozentsatz vom besten equippten Pet (siehe effectiveMoneyPerSec).
+      // Huge-artige Pets (moneyPercentOfBest gesetzt) haben kein festes
+      // Basis-Geld - ihr genauer Prozentsatz bleibt bewusst verborgen
+      // (siehe HUGE_MONEY_PERCENT in data.js), nur ob sie exakt gleichauf
+      // (100%) oder immer stärker (>100%) sind, wird angezeigt.
       const moneyLine = pet.moneyPercentOfBest !== undefined
-        ? `<div class="card-stat">${coinIcon()} ${pet.moneyPercentOfBest}% deines besten ausgerüsteten Pets</div>`
+        ? `<div class="card-stat">${coinIcon()} ${pet.moneyPercentOfBest > 100 ? "Immer stärker als" : "Genau so stark wie"} dein bestes ausgerüstetes Pet</div>`
         : `<div class="card-stat">${coinIcon()} Basis: ${formatNumber(pet.baseMoney)}/s</div>`;
       info.innerHTML = `
         <div class="card-name">${pet.name}</div>
