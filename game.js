@@ -38,6 +38,7 @@ function defaultPlayerState() {
     rebirth: 0,          // erreichte Rebirth-Stufe (0 = noch keine)
     lastActiveMs: Date.now(),
     adminMode: false,    // Testmodus (siehe enableAdminMode) - zählt nie für die Rangliste
+    leaderboardOptOut: false, // Spieler-Wunsch: freiwillig nicht an der Rangliste teilnehmen
   };
 }
 

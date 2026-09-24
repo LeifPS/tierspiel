@@ -1422,9 +1422,10 @@ function renderLeaderboard() {
 
 async function refreshLeaderboard() {
   try {
-    // Admin-/Testmodus zählt nie für die Rangliste - eigener Score wird
-    // weder aktualisiert noch (neu) angelegt, siehe enableAdminMode.
-    if (!state.adminMode) await submitScore(totalMoneyPerSecond(state));
+    // Admin-/Testmodus UND ein freiwilliger Opt-out zählen nie für die
+    // Rangliste - eigener Score wird weder aktualisiert noch (neu) angelegt,
+    // siehe enableAdminMode / leaderboard-optout-checkbox.
+    if (!state.adminMode && !state.leaderboardOptOut) await submitScore(totalMoneyPerSecond(state));
     cachedLeaderboard = await fetchLeaderboard();
     $("#leaderboard-updated").textContent = `Aktualisiert: ${new Date().toLocaleTimeString()}`;
     renderLeaderboard();
@@ -1439,6 +1440,25 @@ $("#leaderboard-name-save").addEventListener("click", () => {
   $("#leaderboard-name-input").value = saved;
   toast(`Name gespeichert: ${saved}`);
   refreshLeaderboard();
+});
+
+$("#leaderboard-optout-checkbox").checked = state.leaderboardOptOut;
+$("#leaderboard-optout-checkbox").addEventListener("change", async (e) => {
+  state.leaderboardOptOut = e.target.checked;
+  savePlayer(state);
+  if (state.leaderboardOptOut) {
+    // Sofort verschwinden, statt erst beim nächsten Ablauf des alten Scores -
+    // auch den lokal gecachten Eintrag rausfiltern, damit die Liste ohne
+    // Warten auf den nächsten Fetch korrekt aussieht.
+    try { await deleteScore(); } catch { /* egal, war evtl. eh nie eingetragen */ }
+    const myId = getOrCreatePlayerId();
+    cachedLeaderboard = cachedLeaderboard.filter((entry) => entry.id !== myId);
+    toast("Du nimmst nicht mehr an der Rangliste teil.");
+    renderLeaderboard();
+  } else {
+    toast("Du nimmst wieder an der Rangliste teil.");
+    refreshLeaderboard();
+  }
 });
 
 $("#auto-equip-btn").addEventListener("click", () => {

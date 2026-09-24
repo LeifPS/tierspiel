@@ -642,6 +642,18 @@ button:active { transform: scale(0.97); }
 }
 .leaderboard-name-row input:focus { outline: 2px solid var(--accent); }
 
+.leaderboard-optout-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  cursor: pointer;
+  width: fit-content;
+}
+.leaderboard-optout-row input { cursor: pointer; }
+
 .leaderboard-row {
   display: grid;
   grid-template-columns: 44px 1fr auto;
