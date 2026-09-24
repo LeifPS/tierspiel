@@ -266,7 +266,7 @@ button:active { transform: scale(0.97); }
   padding: var(--art-padding);
 }
 .art img { width: 100%; height: 100%; object-fit: contain; }
-/* Huge-artige Pets (siehe isHugeStylePet in main.js) werden überall etwas größer dargestellt -
+/* Huge Pets (Seltenheit "exklusiv") werden überall etwas größer dargestellt -
    weniger Padding im selben Kartenrahmen statt eine eigene Kartengröße,
    damit das Grid-Layout unverändert bleibt. */
 .art.huge-pet-art { --art-padding: 6px; }
