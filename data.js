@@ -31,15 +31,12 @@ const RARITIES = [
   { id: "galactic",     name: "Galaktisch", color: "linear-gradient(135deg,#1565c0,#64b5f6,#1565c0)", petChance: 250000000000 },
   { id: "stellar",      name: "Stellar",    color: "linear-gradient(135deg,#2e7d32,#a5d6a7,#2e7d32)", petChance: 1000000000000 },
   { id: "nebula",       name: "Nebula",     color: "linear-gradient(135deg,#b71c1c,#ff8a80,#b71c1c)", petChance: 5000000000000 },
-  // Exklusiv: eigener Zweig für Huge Pets, nicht Teil der normalen
-  // Seltenheits-Leiter - man bekommt sie NUR über das Huge-Ei (siehe unten),
-  // nie über normales Glück bei anderen Eiern (siehe drawPetFromPool).
-  { id: "exklusiv",     name: "Exklusiv",   color: "linear-gradient(90deg,#ff3b3b,#ff9f1c,#ffe135,#4ade80,#38bdf8,#a78bfa,#ff6ec7)", petChance: 1000000000000000 },
-  // Noch exklusiver als "exklusiv": kommt NUR aus dem Premium-Glas-Ei (siehe
-  // rollPremiumPet unten), nie aus irgendeinem anderen Ei oder über Glück -
-  // deshalb wie "exklusiv" komplett aus computeWeightedPool ausgeschlossen.
-  // Der animierte Gold-Verlauf sorgt automatisch für die goldene "Premium"-
-  // Pille auf jeder Ei-/Tier-Karte (siehe rarityBadgeHTML in main.js).
+  // Premium: gemeinsamer Zweig für ALLE Huge-artigen Pets (die klassischen
+  // Huge Pets, die aus jedem Ei kommen können, siehe anyEgg-Flag unten, UND
+  // die Pets aus dem Premium-Glas-Ei) - nicht Teil der normalen
+  // Seltenheits-Leiter, komplett aus computeWeightedPool ausgeschlossen (siehe
+  // dort). Der animierte Gold-Verlauf sorgt automatisch für die goldene
+  // "Premium"-Pille auf jeder Ei-/Tier-Karte (siehe rarityBadgeHTML in main.js).
   { id: "premium",      name: "Premium",    color: "linear-gradient(120deg,#8a6d00,#ffe066,#fff7cc,#ffe066,#8a6d00)", petChance: 5000000000000000 },
 ];
 const RARITY_INDEX = Object.fromEntries(RARITIES.map((r, i) => [r.id, i]));
@@ -49,8 +46,9 @@ const RARITY_INDEX = Object.fromEntries(RARITIES.map((r, i) => [r.id, i]));
 // baseMoney: Geld/Sekunde bei genau 1x Basisgewicht
 // image: Platzhalter-Schlüssel – wird später durch echte Bilder ersetzt
 
-// Einheitlicher Prozentsatz für ALLE Huge-artigen Pets (Seltenheit "exklusiv"
-// + die "Riesig"-Premium-Varianten weiter unten) - siehe Kommentar dort.
+// Einheitlicher Prozentsatz für ALLE Huge-artigen Pets (die klassischen Huge
+// Pets mit anyEgg:true + die "Riesig"-Glas-Varianten weiter unten) - siehe
+// Kommentar dort.
 const HUGE_MONEY_PERCENT = 150;
 
 const PETS = [
@@ -138,10 +136,11 @@ const PETS = [
   { id: "galaxiefuchs", name: "Galaxie-Fuchs", rarity: "lunar", baseWeightKg: 100,  baseMoney: 20000000000 },
   { id: "quantenqual",  name: "Quanten-Agony", rarity: "lunar", baseWeightKg: 700,  baseMoney: 21000000000 },
   { id: "angelus",      name: "Angelus",       rarity: "lunar", baseWeightKg: 1000, baseMoney: 22000000000 },
-  // Exklusiv (Huge Pets) - kommen aus jedem Ei (siehe rollHugePetOverride),
-  // nie über normales Glück. Bei mehreren Huge Pets entscheidet ein
-  // Gleichverteilungs-Los, welches konkret gezogen wird (siehe
-  // rollHugePetOverride) - die GESAMT-Chance auf irgendein Huge Pet aus
+  // Klassische Huge Pets - Seltenheit "premium" (wie das Premium-Glas-Ei
+  // unten), aber über das anyEgg-Flag als "kommt aus JEDEM Ei" markiert
+  // (siehe rollHugePetOverride) statt nur aus dem Glas-Ei. Bei mehreren Huge
+  // Pets entscheidet ein Gleichverteilungs-Los, welches konkret gezogen wird
+  // (siehe rollHugePetOverride) - die GESAMT-Chance auf irgendein Huge Pet aus
   // einem Ei bleibt dabei unverändert, nur die individuelle Chance pro
   // Huge Pet sinkt (bei 2 Huge Pets z.B. jeweils halbiert).
   // Huge Pets haben kein festes Geld/Sekunde: sie verdienen stattdessen
@@ -156,7 +155,7 @@ const PETS = [
   // Spielern nirgends angezeigt (siehe moneyLine in main.js) - dort steht nur
   // "immer stärker als dein bestes ausgerüstetes Pet".
   {
-    id: "hugeglitchedphoenix", name: "Riesiger Glitched-Phönix", rarity: "exklusiv",
+    id: "hugeglitchedphoenix", name: "Riesiger Glitched-Phönix", rarity: "premium", anyEgg: true,
     baseWeightKg: 5000, moneyPercentOfBest: HUGE_MONEY_PERCENT,
     ability: {
       type: "mutate_random_equipped",
@@ -166,7 +165,7 @@ const PETS = [
     },
   },
   {
-    id: "hugeluckiagony", name: "Riesiger Lucki Agony", rarity: "exklusiv",
+    id: "hugeluckiagony", name: "Riesiger Lucki Agony", rarity: "premium", anyEgg: true,
     baseWeightKg: 5000, moneyPercentOfBest: HUGE_MONEY_PERCENT,
     ability: {
       type: "roll_mutation_all_equipped",
@@ -177,7 +176,7 @@ const PETS = [
     },
   },
   {
-    id: "hugemysticcorgi", name: "Riesiger Mystic Corgi", rarity: "exklusiv",
+    id: "hugemysticcorgi", name: "Riesiger Mystic Corgi", rarity: "premium", anyEgg: true,
     baseWeightKg: 5000, moneyPercentOfBest: HUGE_MONEY_PERCENT,
     ability: {
       type: "upgrade_origin_mutation",
@@ -188,7 +187,7 @@ const PETS = [
     },
   },
   {
-    id: "hugealienoctopus", name: "Riesiger Alien-Octopus", rarity: "exklusiv",
+    id: "hugealienoctopus", name: "Riesiger Alien-Octopus", rarity: "premium", anyEgg: true,
     baseWeightKg: 5000, moneyPercentOfBest: HUGE_MONEY_PERCENT,
     ability: {
       type: "grant_income_bonus",
@@ -198,7 +197,7 @@ const PETS = [
     },
   },
   {
-    id: "hugesketchcorgi", name: "Riesiger Sketch-Corgi", rarity: "exklusiv",
+    id: "hugesketchcorgi", name: "Riesiger Sketch-Corgi", rarity: "premium", anyEgg: true,
     baseWeightKg: 5000, moneyPercentOfBest: HUGE_MONEY_PERCENT,
     // Anders als die anderen Huge-Fähigkeiten kein Zeit-Intervall, sondern
     // ein Ereignis-Trigger beim Ausbrüten (siehe maybeRefundEgg in game.js).
@@ -208,14 +207,15 @@ const PETS = [
       description: "10% Chance, ein ausgebrütetes Ei zurückzubekommen (erneut ausbrüten, voller Timer)",
     },
   },
-  // ---- Premium Pets (Seltenheit "premium") ---------------------------------
-  // Kommen NUR aus dem Premium-Glas-Ei (siehe rollPremiumPet unten), nie aus
-  // Glück/anderen Eiern. Die drei Grundtiere verdienen exakt so viel wie das
-  // beste ausgerüstete Pet (moneyPercentOfBest: 100); die beiden "Riesig"-
-  // Varianten sind seltene Upgrades davon (siehe PREMIUM_HUGE_UPGRADE) und
-  // verdienen wie normale Huge Pets HUGE_MONEY_PERCENT - isHugeVariant sorgt
-  // dafür, dass sie optisch (Größe, Ei-Öffnen-Effekt) wie Huge Pets behandelt
-  // werden, obwohl ihre Seltenheit "premium" statt "exklusiv" ist.
+  // ---- Glas-Pets (Seltenheit "premium", aber ohne anyEgg) ------------------
+  // Anders als die Huge Pets oben kommen diese NUR aus dem Premium-Glas-Ei
+  // (siehe rollPremiumPet unten), nie aus Glück/anderen Eiern - deshalb kein
+  // anyEgg-Flag. Die drei Grundtiere verdienen exakt so viel wie das beste
+  // ausgerüstete Pet (moneyPercentOfBest: 100); die beiden "Riesig"-Varianten
+  // sind seltene Upgrades davon (siehe PREMIUM_HUGE_UPGRADE) und verdienen wie
+  // die Huge Pets HUGE_MONEY_PERCENT - isHugeVariant sorgt dafür, dass sie
+  // optisch (Größe, Ei-Öffnen-Effekt) genauso wie Huge Pets behandelt werden
+  // (siehe isHugeStylePet in main.js).
   { id: "glaskrokodil", name: "Glas-Krokodil", rarity: "premium", baseWeightKg: 900, moneyPercentOfBest: 100 },
   { id: "glasdominus",  name: "Glas-Dominus",  rarity: "premium", baseWeightKg: 1400, moneyPercentOfBest: 100 },
   { id: "glaskraken",   name: "Glas-Kraken",   rarity: "premium", baseWeightKg: 2000, moneyPercentOfBest: 100 },
@@ -280,9 +280,9 @@ const EGGS = [
   // in hatchEgg/adminInstantHatch in game.js).
   { id: "glaspremium", name: "Premium-Glas-Ei", rarity: "premium", luckPercent: 5000000000000, hatchSeconds: 432000, basePrice: 5000000000000000, appearChance: 0.00008, stock: [1, 1], premiumOnly: true },
 ];
-// Kein eigenes Huge-Ei mehr - Huge Pets (Seltenheit "exklusiv") kommen
-// stattdessen aus JEDEM Ei, mit einer Chance, die sich am jeweiligen Ei
-// selbst orientiert (siehe rollHugePetOverride/astralOrBetterChance unten).
+// Kein eigenes Huge-Ei mehr - klassische Huge Pets (Seltenheit "premium" mit
+// anyEgg: true) kommen stattdessen aus JEDEM Ei, mit einer Chance, die sich
+// am jeweiligen Ei selbst orientiert (siehe rollHugePetOverride/astralOrBetterChance unten).
 
 // ---- Rebirth-System ---------------------------------------------------------
 // Für Münzen UND ein bestimmtes Pet (wird dabei verbraucht, der Rest der
@@ -377,7 +377,7 @@ function minEligibleRarityIndex(luckPercent) {
 const LUCK_BOOST_STRENGTH = 9;
 
 // Gemeinsame Gewichtungs-Logik für einen Ei-Glückswert: liefert den Pool
-// (ohne "exklusiv" - Huge Pets sind nie Teil der normalen Glücks-Leiter,
+// (ohne "premium" - Huge/Glas-Pets sind nie Teil der normalen Glücks-Leiter,
 // siehe rollHugePetOverride weiter unten) sowie das Gewicht jedes Pets
 // darin. Wird sowohl vom eigentlichen Ziehen (drawPetFromPool) als auch
 // von der Huge-Pet-Chance (die sich an der Astral-Chance orientiert)
@@ -398,9 +398,9 @@ function computeWeightedPool(luckPercent, eggRarity) {
     minTierIdx = Math.max(minTierIdx, RARITY_INDEX[eggRarity]);
   }
   const eligiblePets = PETS.filter((pet) => (
-    RARITY_INDEX[pet.rarity] >= minTierIdx && pet.rarity !== "exklusiv" && pet.rarity !== "premium"
+    RARITY_INDEX[pet.rarity] >= minTierIdx && pet.rarity !== "premium"
   ));
-  const pool = eligiblePets.length > 0 ? eligiblePets : PETS.filter((p) => p.rarity !== "exklusiv" && p.rarity !== "premium");
+  const pool = eligiblePets.length > 0 ? eligiblePets : PETS.filter((p) => p.rarity !== "premium");
 
   const boost = 1 + LUCK_BOOST_STRENGTH / Math.sqrt(luckFactor);
   const weights = pool.map((pet) => {
@@ -436,8 +436,8 @@ function astralOrBetterChance(luckPercent, eggRarity) {
   return astralWeight / total;
 }
 
-// Huge Pets (Seltenheit "exklusiv") sind nie Teil der normalen Glücks-Leiter
-// (siehe computeWeightedPool) - stattdessen hat JEDES Ei eine eigene,
+// Huge Pets (Seltenheit "premium" + anyEgg: true) sind nie Teil der normalen
+// Glücks-Leiter (siehe computeWeightedPool) - stattdessen hat JEDES Ei eine eigene,
 // unabhängige Chance darauf, die sich direkt an dessen eigener Astral-Chance
 // orientiert: 5x seltener als astral-oder-besser aus demselben Ei.
 const HUGE_PET_RARITY_FACTOR = 5;
@@ -459,7 +459,10 @@ function rollHugePetOverride(luckPercent, eggRarity, eggId) {
     ? HUGE_CHANCE_OVERRIDE_BY_EGG_ID[eggId]
     : astralOrBetterChance(luckPercent, eggRarity) / HUGE_PET_RARITY_FACTOR;
   if (Math.random() >= chance) return null;
-  const hugePets = PETS.filter((p) => p.rarity === "exklusiv");
+  // anyEgg grenzt die klassischen Huge Pets von den Glas-Pets ab, die trotz
+  // derselben Seltenheit "premium" NUR aus dem Premium-Glas-Ei kommen dürfen
+  // (siehe rollPremiumPet unten).
+  const hugePets = PETS.filter((p) => p.rarity === "premium" && p.anyEgg === true);
   if (hugePets.length === 0) return null;
   return hugePets[Math.floor(Math.random() * hugePets.length)];
 }

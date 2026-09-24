@@ -318,11 +318,13 @@ function swayDelayFor(id) {
   return `-${((hash % 320) / 100).toFixed(2)}s`;
 }
 
-// Huge Pets (Seltenheit "exklusiv") UND die "Riesig"-Premium-Varianten
-// (isHugeVariant, siehe data.js) gelten optisch überall als "Huge" - größere
-// Darstellung, "🎉 RIESIG!"-Aufdruck, extra Ei-Öffnen-Effekt.
+// Klassische Huge Pets (anyEgg, siehe data.js) UND die "Riesig"-Glas-Varianten
+// (isHugeVariant) gelten optisch überall als "Huge" - größere Darstellung,
+// "🎉 RIESIG!"-Aufdruck, extra Ei-Öffnen-Effekt. Die drei normal-starken
+// Glas-Pets teilen sich zwar dieselbe Seltenheit "premium", bleiben aber
+// optisch normal groß, da sie keins der beiden Flags tragen.
 function isHugeStylePet(pet) {
-  return !!pet && (pet.rarity === "exklusiv" || pet.isHugeVariant === true);
+  return !!pet && (pet.anyEgg === true || pet.isHugeVariant === true);
 }
 
 function createArtEl(kind, id, label, rarityColor, locked = false, dimmed = false, mutation = null, envMutation = null) {
@@ -1099,11 +1101,12 @@ function renderIndex() {
     const info = document.createElement("div");
     info.className = "card-info";
     if (discovered) {
-      // Huge Pets (Seltenheit "exklusiv") kommen nie über die normale
+      // Klassische Huge Pets (anyEgg) kommen nie über die normale
       // Glücks-Leiter - die "1 in X"-Chance wäre hier irreführend, da sie
-      // stattdessen aus jedem Ei mit eigener Chance kommen können. Premium
-      // Pets kommen dagegen NUR aus dem Premium-Glas-Ei.
-      const chanceOrSourceLine = pet.rarity === "exklusiv"
+      // stattdessen aus jedem Ei mit eigener Chance kommen können. Die
+      // übrigen Premium-Pets (Glas-Pets) kommen dagegen NUR aus dem
+      // Premium-Glas-Ei, obwohl sie dieselbe Seltenheit "premium" teilen.
+      const chanceOrSourceLine = pet.anyEgg
         ? `<div class="card-stat">🥚 Aus jedem Ei möglich (sehr selten)</div>`
         : pet.rarity === "premium"
         ? `<div class="card-stat">🥚 Nur aus dem Premium-Glas-Ei möglich</div>`
