@@ -127,6 +127,10 @@ const PETS = [
   { id: "galaxiefuchs", name: "Galaxie-Fuchs", rarity: "lunar", baseWeightKg: 100,  baseMoney: 20000000000 },
   { id: "quantenqual",  name: "Quanten-Agony", rarity: "lunar", baseWeightKg: 700,  baseMoney: 21000000000 },
   { id: "angelus",      name: "Angelus",       rarity: "lunar", baseWeightKg: 1000, baseMoney: 22000000000 },
+  // Galaktisch - neues bestes normales Pet, eine Stufe über Lunar (nächste
+  // bisher ungenutzte Stufe aus RARITIES), konsistent mit dem üblichen
+  // ~5x-Sprung im Basis-Geld zwischen zwei Stufen.
+  { id: "himmelsdrache", name: "Himmelsdrache", rarity: "galactic", baseWeightKg: 2500, baseMoney: 110000000000 },
   // Exklusiv (Huge Pets) - kommen aus jedem Ei (siehe rollHugePetOverride),
   // nie über normales Glück. Bei mehreren Huge Pets entscheidet ein
   // Gleichverteilungs-Los, welches konkret gezogen wird (siehe
@@ -325,7 +329,13 @@ function hugeWeightMultiplier(ratio) {
 // machen. Innerhalb des verbliebenen Pools potenziert das Glück weiterhin
 // das Grundgewicht seltener Tiere stärker als das häufiger Tiere.
 // Bei Glück=100% (Faktor 1) ändert sich nichts an der Basisverteilung.
-const MAX_TIER_INDEX = RARITY_INDEX["lunar"]; // 15 – höchste im Pool vertretene Stufe
+// Bewusst NICHT auf die neue Stufe "galactic" angehoben: dient nur als
+// Referenzpunkt für den Luck-Exponenten (siehe computeWeightedPool) - ein
+// Pet oberhalb dieser Referenz (wie das neue Himmelsdrache) bleibt trotzdem
+// über den ">="-Vergleich im Pool, bekommt durch tierIdx > MAX_TIER_INDEX
+// aber einen noch steileren Exponenten und ist dadurch noch schwerer zu
+// ziehen als alles bis Lunar.
+const MAX_TIER_INDEX = RARITY_INDEX["lunar"]; // 15 – Referenzstufe für den Luck-Exponenten
 
 function minEligibleRarityIndex(luckPercent) {
   let floorIdx = -1;

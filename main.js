@@ -118,6 +118,7 @@ const ASSET_OVERRIDES = {
     galaxiefuchs: "https://static.wikia.nocookie.net/pets-go/images/3/3c/Galaxy_Fox.png",
     quantenqual: "https://static.wikia.nocookie.net/pets-go/images/e/e1/Quantum_Agony.png",
     angelus: "https://static.wikia.nocookie.net/pets-go/images/c/c4/Angelus.png",
+    himmelsdrache: "https://static.wikia.nocookie.net/pets-go/images/a/aa/Celestial_Dragon.png",
     eule: "https://static.wikia.nocookie.net/pets-go/images/5/5c/Owl.png",
     husky: "https://static.wikia.nocookie.net/pets-go/images/5/50/Husky.png",
     skorpion: "https://static.wikia.nocookie.net/pets-go/images/a/ab/Scorpion.png",
