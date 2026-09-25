@@ -421,14 +421,16 @@ const HUGE_PET_RARITY_FACTOR = 5;
 
 // astralOrBetterChance sättigt bei 100%, sobald der Glücks-Pool eines Eis
 // komplett aus Astral-oder-besser-Tieren besteht (trifft schon auf Engel-Ei
-// zu) - die 4 besten Eier bekämen damit alle exakt dieselbe Huge-Chance.
-// Für genau diese 4 Eier sind deshalb feste Wunsch-Werte hinterlegt, alle
-// anderen Eier nutzen weiter die normale, glücksbasierte Formel.
+// zu) - die besten Eier bekämen damit alle exakt dieselbe Huge-Chance.
+// Für genau diese Eier sind deshalb feste Wunsch-Werte hinterlegt, alle
+// anderen Eier nutzen weiter die normale, glücksbasierte Formel. Das aktuell
+// beste Ei (Himmelstürme-Ei) garantiert absichtlich IMMER ein Huge Pet (1/1).
 const HUGE_CHANCE_OVERRIDE_BY_EGG_ID = {
   nebel: 1 / 5,      // Engel-Ei
   himmel: 1 / 4,     // Himmels-Ei
   kolosseum: 1 / 3,  // Kolosseum-Ei
   iris: 1 / 2,        // Regenbogen-Ei
+  halospires: 1,      // Himmelstürme-Ei
 };
 
 function rollHugePetOverride(luckPercent, eggRarity, eggId) {
