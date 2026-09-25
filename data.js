@@ -204,21 +204,25 @@ const PETS = [
 // stock: { min, max } normale Stückzahl, wenn im Shop verfügbar
 // appearChance: Wahrscheinlichkeit (0–1), dass das Ei bei einem Shop-Refresh
 //               überhaupt angeboten wird
+// Common/Uncommon/Rare/Epic stehen absichtlich bei 0.9 statt 1.0 (leicht
+// ausgedünnt, seit der Shop mit den vielen neuen Eiern voll wirkte) - ab
+// Legendär bleibt die appearChance unverändert, damit die selteneren/
+// wertvolleren Eier nicht noch schwerer zu bekommen werden.
 const EGGS = [
-  { id: "standard",  name: "Standard-Ei",   rarity: "common",       luckPercent: 100,        hatchSeconds: 10,     basePrice: 25,           appearChance: 1.0,  stock: [6, 12] },
-  { id: "holz",      name: "Holz-Ei",       rarity: "common",       luckPercent: 150,        hatchSeconds: 30,     basePrice: 75,           appearChance: 1.0,  stock: [6, 12] },
-  { id: "striped",   name: "Gestreiftes Ei",rarity: "common",       luckPercent: 200,        hatchSeconds: 45,     basePrice: 150,          appearChance: 1.0,  stock: [6, 12] },
-  { id: "getupft",   name: "Getupftes Ei",  rarity: "uncommon",     luckPercent: 250,        hatchSeconds: 120,    basePrice: 300,          appearChance: 1.0,  stock: [4, 8] },
-  { id: "spike",     name: "Stachel-Ei",    rarity: "uncommon",     luckPercent: 325,        hatchSeconds: 200,    basePrice: 550,          appearChance: 1.0,  stock: [4, 8] },
-  { id: "stein",     name: "Stein-Ei",      rarity: "uncommon",     luckPercent: 400,        hatchSeconds: 300,    basePrice: 900,          appearChance: 1.0,  stock: [4, 8] },
-  { id: "keimling",  name: "Pilz-Ei",       rarity: "rare",         luckPercent: 700,        hatchSeconds: 600,    basePrice: 3000,         appearChance: 1.0,  stock: [2, 5] },
-  { id: "bonsai",    name: "Bonsai-Ei",     rarity: "rare",         luckPercent: 950,        hatchSeconds: 750,    basePrice: 5000,         appearChance: 1.0,  stock: [2, 5] },
-  { id: "dschungel", name: "Dschungel-Ei",  rarity: "rare",         luckPercent: 1200,       hatchSeconds: 900,    basePrice: 8000,         appearChance: 1.0,  stock: [2, 5] },
-  { id: "summermelon",name: "Sommermelonen-Ei", rarity: "rare",     luckPercent: 1450,       hatchSeconds: 1050,   basePrice: 13000,        appearChance: 1.0,  stock: [2, 5] },
-  { id: "sonnen",    name: "Sonnen-Ei",     rarity: "epic",         luckPercent: 2500,       hatchSeconds: 1800,   basePrice: 25000,        appearChance: 1.0,  stock: [1, 3] },
-  { id: "schatz",    name: "Schatz-Ei",     rarity: "epic",         luckPercent: 3700,       hatchSeconds: 2700,   basePrice: 45000,        appearChance: 1.0,  stock: [1, 3] },
-  { id: "piraten",   name: "Piraten-Ei",    rarity: "epic",         luckPercent: 5000,       hatchSeconds: 3600,   basePrice: 70000,        appearChance: 1.0,  stock: [1, 3] },
-  { id: "sturdy",    name: "Robustes Ei",   rarity: "epic",         luckPercent: 6300,       hatchSeconds: 4500,   basePrice: 110000,       appearChance: 1.0,  stock: [1, 3] },
+  { id: "standard",  name: "Standard-Ei",   rarity: "common",       luckPercent: 100,        hatchSeconds: 10,     basePrice: 25,           appearChance: 0.9,  stock: [6, 12] },
+  { id: "holz",      name: "Holz-Ei",       rarity: "common",       luckPercent: 150,        hatchSeconds: 30,     basePrice: 75,           appearChance: 0.9,  stock: [6, 12] },
+  { id: "striped",   name: "Gestreiftes Ei",rarity: "common",       luckPercent: 200,        hatchSeconds: 45,     basePrice: 150,          appearChance: 0.9,  stock: [6, 12] },
+  { id: "getupft",   name: "Getupftes Ei",  rarity: "uncommon",     luckPercent: 250,        hatchSeconds: 120,    basePrice: 300,          appearChance: 0.9,  stock: [4, 8] },
+  { id: "spike",     name: "Stachel-Ei",    rarity: "uncommon",     luckPercent: 325,        hatchSeconds: 200,    basePrice: 550,          appearChance: 0.9,  stock: [4, 8] },
+  { id: "stein",     name: "Stein-Ei",      rarity: "uncommon",     luckPercent: 400,        hatchSeconds: 300,    basePrice: 900,          appearChance: 0.9,  stock: [4, 8] },
+  { id: "keimling",  name: "Pilz-Ei",       rarity: "rare",         luckPercent: 700,        hatchSeconds: 600,    basePrice: 3000,         appearChance: 0.9,  stock: [2, 5] },
+  { id: "bonsai",    name: "Bonsai-Ei",     rarity: "rare",         luckPercent: 950,        hatchSeconds: 750,    basePrice: 5000,         appearChance: 0.9,  stock: [2, 5] },
+  { id: "dschungel", name: "Dschungel-Ei",  rarity: "rare",         luckPercent: 1200,       hatchSeconds: 900,    basePrice: 8000,         appearChance: 0.9,  stock: [2, 5] },
+  { id: "summermelon",name: "Wassermelonen-Ei", rarity: "rare",     luckPercent: 1450,       hatchSeconds: 1050,   basePrice: 13000,        appearChance: 0.9,  stock: [2, 5] },
+  { id: "sonnen",    name: "Sonnen-Ei",     rarity: "epic",         luckPercent: 2500,       hatchSeconds: 1800,   basePrice: 25000,        appearChance: 0.9,  stock: [1, 3] },
+  { id: "schatz",    name: "Schatz-Ei",     rarity: "epic",         luckPercent: 3700,       hatchSeconds: 2700,   basePrice: 45000,        appearChance: 0.9,  stock: [1, 3] },
+  { id: "piraten",   name: "Piraten-Ei",    rarity: "epic",         luckPercent: 5000,       hatchSeconds: 3600,   basePrice: 70000,        appearChance: 0.9,  stock: [1, 3] },
+  { id: "sturdy",    name: "Robustes Ei",   rarity: "epic",         luckPercent: 6300,       hatchSeconds: 4500,   basePrice: 110000,       appearChance: 0.9,  stock: [1, 3] },
   // Bewusst zwischen Episch und Legendär angesiedelt (niedrigere appearChance
   // + kleinerer Lagerbestand als die übrigen Episch-Eier), auch wenn die
   // Seltenheitsstufe selbst noch "epic" bleibt.
