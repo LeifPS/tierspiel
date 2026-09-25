@@ -207,37 +207,55 @@ const PETS = [
 const EGGS = [
   { id: "standard",  name: "Standard-Ei",   rarity: "common",       luckPercent: 100,        hatchSeconds: 10,     basePrice: 25,           appearChance: 1.0,  stock: [6, 12] },
   { id: "holz",      name: "Holz-Ei",       rarity: "common",       luckPercent: 150,        hatchSeconds: 30,     basePrice: 75,           appearChance: 1.0,  stock: [6, 12] },
+  { id: "striped",   name: "Gestreiftes Ei",rarity: "common",       luckPercent: 200,        hatchSeconds: 45,     basePrice: 150,          appearChance: 1.0,  stock: [6, 12] },
   { id: "getupft",   name: "Getupftes Ei",  rarity: "uncommon",     luckPercent: 250,        hatchSeconds: 120,    basePrice: 300,          appearChance: 1.0,  stock: [4, 8] },
   { id: "spike",     name: "Stachel-Ei",    rarity: "uncommon",     luckPercent: 325,        hatchSeconds: 200,    basePrice: 550,          appearChance: 1.0,  stock: [4, 8] },
   { id: "stein",     name: "Stein-Ei",      rarity: "uncommon",     luckPercent: 400,        hatchSeconds: 300,    basePrice: 900,          appearChance: 1.0,  stock: [4, 8] },
   { id: "keimling",  name: "Pilz-Ei",       rarity: "rare",         luckPercent: 700,        hatchSeconds: 600,    basePrice: 3000,         appearChance: 1.0,  stock: [2, 5] },
   { id: "bonsai",    name: "Bonsai-Ei",     rarity: "rare",         luckPercent: 950,        hatchSeconds: 750,    basePrice: 5000,         appearChance: 1.0,  stock: [2, 5] },
   { id: "dschungel", name: "Dschungel-Ei",  rarity: "rare",         luckPercent: 1200,       hatchSeconds: 900,    basePrice: 8000,         appearChance: 1.0,  stock: [2, 5] },
+  { id: "summermelon",name: "Sommermelonen-Ei", rarity: "rare",     luckPercent: 1450,       hatchSeconds: 1050,   basePrice: 13000,        appearChance: 1.0,  stock: [2, 5] },
   { id: "sonnen",    name: "Sonnen-Ei",     rarity: "epic",         luckPercent: 2500,       hatchSeconds: 1800,   basePrice: 25000,        appearChance: 1.0,  stock: [1, 3] },
   { id: "schatz",    name: "Schatz-Ei",     rarity: "epic",         luckPercent: 3700,       hatchSeconds: 2700,   basePrice: 45000,        appearChance: 1.0,  stock: [1, 3] },
   { id: "piraten",   name: "Piraten-Ei",    rarity: "epic",         luckPercent: 5000,       hatchSeconds: 3600,   basePrice: 70000,        appearChance: 1.0,  stock: [1, 3] },
+  { id: "sturdy",    name: "Robustes Ei",   rarity: "epic",         luckPercent: 6300,       hatchSeconds: 4500,   basePrice: 110000,       appearChance: 1.0,  stock: [1, 3] },
+  // Bewusst zwischen Episch und Legendär angesiedelt (niedrigere appearChance
+  // + kleinerer Lagerbestand als die übrigen Episch-Eier), auch wenn die
+  // Seltenheitsstufe selbst noch "epic" bleibt.
+  { id: "mystmirebloom",name: "Nebelblüten-Ei", rarity: "epic",     luckPercent: 8000,       hatchSeconds: 5000,   basePrice: 160000,       appearChance: 0.88, stock: [1, 2] },
   { id: "fossil",    name: "Fossil-Ei",     rarity: "legendary",    luckPercent: 10000,      hatchSeconds: 5400,   basePrice: 250000,       appearChance: 0.78,  stock: [1, 2] },
   { id: "gekroent",  name: "Gekröntes Ei",  rarity: "legendary",    luckPercent: 15000,      hatchSeconds: 6300,   basePrice: 450000,       appearChance: 0.85,  stock: [1, 2] },
   { id: "aegyptisch",name: "Ägyptisches Ei",rarity: "legendary",    luckPercent: 20000,      hatchSeconds: 7200,   basePrice: 700000,       appearChance: 0.92,  stock: [1, 2] },
+  { id: "moonlight", name: "Mondlicht-Ei",  rarity: "legendary",    luckPercent: 25000,      hatchSeconds: 8100,   basePrice: 1000000,      appearChance: 0.95,  stock: [1, 2] },
   { id: "schnee",    name: "Schnee-Ei",     rarity: "mythic",       luckPercent: 45000,      hatchSeconds: 10800,  basePrice: 2500000,      appearChance: 0.39,  stock: [1, 1] },
   { id: "koeniglich",name: "Königliches Ei",rarity: "mythic",       luckPercent: 70000,      hatchSeconds: 12500,  basePrice: 5000000,      appearChance: 0.44,  stock: [1, 1] },
   { id: "knochen",   name: "Knochen-Ei",    rarity: "mythic",       luckPercent: 100000,     hatchSeconds: 14400,  basePrice: 7000000,      appearChance: 0.48,  stock: [1, 1] },
+  { id: "pixie",     name: "Pixie-Ei",      rarity: "mythic",       luckPercent: 130000,     hatchSeconds: 16200,  basePrice: 9500000,      appearChance: 0.52, stock: [1, 1] },
+  { id: "aether",    name: "Äther-Ei",      rarity: "mythic",       luckPercent: 160000,     hatchSeconds: 18000,  basePrice: 12000000,     appearChance: 0.55, stock: [1, 1] },
   { id: "obsidian",  name: "Obsidian-Ei",   rarity: "divine",       luckPercent: 250000,     hatchSeconds: 18000,  basePrice: 25000000,     appearChance: 0.156, stock: [1, 1] },
   { id: "verlies",   name: "Verlies-Ei",    rarity: "divine",       luckPercent: 400000,     hatchSeconds: 19800,  basePrice: 45000000,     appearChance: 0.175, stock: [1, 1] },
   { id: "hoellen",   name: "Höllen-Ei",     rarity: "divine",       luckPercent: 600000,     hatchSeconds: 21600,  basePrice: 70000000,     appearChance: 0.195, stock: [1, 1] },
+  { id: "luxe",      name: "Luxus-Ei",      rarity: "divine",       luckPercent: 800000,     hatchSeconds: 23400,  basePrice: 100000000,    appearChance: 0.21, stock: [1, 1] },
+  { id: "veilroot",  name: "Schleierwurzel-Ei", rarity: "divine",   luckPercent: 1000000,    hatchSeconds: 25200,  basePrice: 135000000,    appearChance: 0.225, stock: [1, 1] },
   { id: "metall",    name: "Metall-Ei",     rarity: "prismatic",    luckPercent: 1500000,    hatchSeconds: 25200,  basePrice: 250000000,    appearChance: 0.065, stock: [1, 1] },
   { id: "mosaik",    name: "Mosaik-Ei",     rarity: "prismatic",    luckPercent: 4000000,    hatchSeconds: 28800,  basePrice: 900000000,    appearChance: 0.026, stock: [1, 1] },
+  { id: "quantumspace",name: "Quantenraum-Ei", rarity: "prismatic", luckPercent: 7000000,    hatchSeconds: 32400,  basePrice: 1800000000,   appearChance: 0.012, stock: [1, 1] },
   { id: "runen",     name: "Runen-Ei",      rarity: "transcendent", luckPercent: 12000000,   hatchSeconds: 32400,  basePrice: 3500000000,   appearChance: 0.01353,stock: [1, 1] },
   { id: "regenbogen",name: "Buntes Ei",     rarity: "transcendent", luckPercent: 40000000,   hatchSeconds: 36000,  basePrice: 15000000000,  appearChance: 0.007317,stock: [1, 1] },
   { id: "schatten",  name: "Schatten-Ei",   rarity: "ethereal",     luckPercent: 150000000,  hatchSeconds: 39600,  basePrice: 70000000000,  appearChance: 0.003957,stock: [1, 1] },
   { id: "empyreum",  name: "Empyreum-Ei",   rarity: "secret",       luckPercent: 600000000,  hatchSeconds: 43200,  basePrice: 350000000000, appearChance: 0.00214,stock: [1, 1] },
+  { id: "voidspiral",name: "Leerenspiralen-Ei", rarity: "secret",   luckPercent: 900000000,  hatchSeconds: 54000,  basePrice: 550000000000, appearChance: 0.0016,stock: [1, 1] },
   { id: "nebel",     name: "Engel-Ei",      rarity: "celestial",    luckPercent: 20000000000,hatchSeconds: 86400,  basePrice: 5000000000000,appearChance: 0.001157,stock: [1, 1] },
+  { id: "hollow",    name: "Hohles Ei",     rarity: "celestial",    luckPercent: 35000000000,hatchSeconds: 108000, basePrice: 9000000000000,appearChance: 0.0008,stock: [1, 1] },
   // Drei neue Top-Eier, seltener als das bisher beste (Engel-Ei) - nutzen die
   // schon vorhandenen, bisher nur für Pets/Rebirths verwendeten Seltenheits-
   // stufen astral/nova/solar (siehe RARITIES), in aufsteigender Reihenfolge.
   { id: "himmel",    name: "Himmels-Ei",    rarity: "astral",       luckPercent: 60000000000,   hatchSeconds: 172800, basePrice: 30000000000000,   appearChance: 0.00065, stock: [1, 1] },
   { id: "kolosseum", name: "Kolosseum-Ei",  rarity: "nova",         luckPercent: 250000000000,  hatchSeconds: 259200, basePrice: 200000000000000,  appearChance: 0.00036, stock: [1, 1] },
   { id: "iris",      name: "Regenbogen-Ei", rarity: "solar",        luckPercent: 1200000000000, hatchSeconds: 345600, basePrice: 1500000000000000, appearChance: 0.0002,  stock: [1, 1] },
+  // Neues bestes Ei, eine Stufe über dem bisherigen Regenbogen-Ei - nutzt die
+  // "lunar"-Stufe, die schon von 3 Pets verwendet wird (siehe PETS oben).
+  { id: "halospires",name: "Himmelstürme-Ei",rarity: "lunar",       luckPercent: 5000000000000, hatchSeconds: 432000, basePrice: 10000000000000000, appearChance: 0.0001, stock: [1, 1] },
 ];
 // Kein eigenes Huge-Ei mehr - Huge Pets (Seltenheit "exklusiv") kommen
 // stattdessen aus JEDEM Ei, mit einer Chance, die sich am jeweiligen Ei
