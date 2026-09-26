@@ -172,6 +172,22 @@ function buyEgg(eggId) {
   return true;
 }
 
+// ---- Admin-/Testfunktion ---------------------------------------------------
+// Erzwingt sofort (unabhängig von der echten Uhrzeit) ein bestimmtes
+// Stunden-Exklusiv-Ei als aktuell garantiertes Angebot, mit frischem Bestand -
+// rein lokal (localStorage), betrifft also nie andere Spieler. Nur dafür da,
+// den echten Kauf-/Shop-Ablauf zu testen, ohne bis zur nächsten vollen
+// Stunde warten zu müssen.
+function forceHourlyEgg(eggId, stockMultiplier = 1) {
+  const data = readShop() || getOrRotateShop();
+  data.hourlyEggId = eggId;
+  data.hourlyIndex = currentHourlyIndex();
+  data.hourlyRotatedAtMs = Date.now();
+  data.stock[eggId] = Math.max(1, Math.round(1 * stockMultiplier));
+  data.rolledStock[eggId] = data.stock[eggId];
+  return writeShop(data);
+}
+
 function msUntilNextRotation(rotatedAtMs) {
   const elapsed = Date.now() - rotatedAtMs;
   return Math.max(0, ROTATION_MS - elapsed);
@@ -184,5 +200,5 @@ function msUntilNextHourly(hourlyRotatedAtMs) {
 
 export {
   getOrRotateShop, buyEgg, msUntilNextRotation, currentRotationIndex, ROTATION_MS, getLastAppearanceMs,
-  msUntilNextHourly, HOURLY_ROTATION_MS,
+  msUntilNextHourly, HOURLY_ROTATION_MS, forceHourlyEgg,
 };

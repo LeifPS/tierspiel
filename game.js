@@ -267,6 +267,13 @@ function adminGrantRandomHugePet(state) {
   return { pet, instance: petInstance };
 }
 
+// Setzt alle gerade brütenden Eier auf "fertig" - zum Testen des echten
+// Kauf-/Brüt-Ablaufs (z.B. eines im echten Shop gekauften Stunden-Exklusiv-
+// Eis), ohne auf die reale Brutzeit warten zu müssen.
+function adminFinishAllHatching(state) {
+  for (const h of state.hatching) h.remainingMs = 0;
+}
+
 function adminAddCoins(state, amount) {
   state.coins += amount;
 }
@@ -727,6 +734,6 @@ export {
   accrueMoney, totalMoneyPerSecond, getMoneyMultiplier, performRebirth,
   equipPet, unequipPet, autoEquipBest, timeRemainingMs, tickEnvironmentalMutations, tickWeatherMutations,
   tickHugeAbilities, effectiveMoneyPerSec, getShopStockMultiplier,
-  enableAdminMode, adminInstantHatch, adminGrantRandomHugePet, adminAddCoins,
+  enableAdminMode, adminInstantHatch, adminGrantRandomHugePet, adminAddCoins, adminFinishAllHatching,
   serializePetForTrade, serializeEggForTrade, removeOwnOfferFromState, addIncomingOfferToState,
 };

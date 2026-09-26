@@ -1,14 +1,14 @@
 import { EGGS, PETS, REBIRTHS, RARITY_INDEX, MUTATIONS, MUTATION_BY_ID, ENV_MUTATIONS, ENV_MUTATION_BY_ID, getRarity, formatNumber, formatDuration } from "./data.js";
 import {
   getOrRotateShop, buyEgg, msUntilNextRotation, currentRotationIndex, ROTATION_MS, getLastAppearanceMs,
-  msUntilNextHourly,
+  msUntilNextHourly, forceHourlyEgg,
 } from "./shop.js";
 import {
   EGG_BY_ID, PET_BY_ID, loadPlayer, savePlayer, resetPlayer, startHatching,
   tickHatching, isHatchingFinished, hatchEgg, accrueMoney, totalMoneyPerSecond, getMoneyMultiplier,
   performRebirth, equipPet, unequipPet, autoEquipBest, timeRemainingMs, tickEnvironmentalMutations,
   tickHugeAbilities, effectiveMoneyPerSec, tickWeatherMutations, getShopStockMultiplier,
-  enableAdminMode, adminInstantHatch, adminGrantRandomHugePet, adminAddCoins,
+  enableAdminMode, adminInstantHatch, adminGrantRandomHugePet, adminAddCoins, adminFinishAllHatching,
   serializePetForTrade, serializeEggForTrade, removeOwnOfferFromState, addIncomingOfferToState,
 } from "./game.js";
 import { getOrCreatePlayerId, getPlayerName, setPlayerName, submitScore, fetchLeaderboard, deleteScore } from "./leaderboard.js";
@@ -1604,6 +1604,20 @@ function setupAdminMode() {
 }
 
 function renderAdminPanel() {
+  const hourlyRow = $("#admin-hourly-row");
+  hourlyRow.innerHTML = "";
+  for (const eggId of Object.keys(EGG_BY_ID).filter((id) => EGG_BY_ID[id].hourlyExclusive)) {
+    const btn = document.createElement("button");
+    btn.className = "action-btn";
+    btn.textContent = `⏰ ${EGG_BY_ID[eggId].name}`;
+    btn.addEventListener("click", () => {
+      forceHourlyEgg(eggId, getShopStockMultiplier(state));
+      refreshShop();
+      toast(`${EGG_BY_ID[eggId].name} steht jetzt im echten Shop (Admin).`);
+    });
+    hourlyRow.appendChild(btn);
+  }
+
   const grid = $("#admin-eggs-grid");
   grid.innerHTML = "";
   for (const egg of EGGS) {
@@ -1649,6 +1663,13 @@ $("#admin-huge-btn").addEventListener("click", () => {
   } catch (err) {
     toast(err.message, "error");
   }
+});
+
+$("#admin-finish-hatching-btn").addEventListener("click", () => {
+  adminFinishAllHatching(state);
+  savePlayer(state);
+  renderAll();
+  toast("⏩ Alle brütenden Eier sind jetzt fertig (Admin) - im Brüten-Tab ausbrüten.");
 });
 
 // Nav zwischen Tabs (Shop / Brüten / Tiere)
