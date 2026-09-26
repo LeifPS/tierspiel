@@ -5,8 +5,62 @@
 import {
   EGGS, PETS, REBIRTHS, MUTATION_BY_ID, ENV_MUTATIONS, ENV_MUTATION_BY_ID,
   rollWeightFactor, moneyMultiplierFromWeightRatio, hugeWeightMultiplier, drawPetFromPool, rollMutation,
-  rollHugePetOverride,
+  rollHugePetOverride, rollHourlyExclusivePet,
 } from "./data.js";
+
+// Zieht das Pet für ein ausgebrütetes Ei - für die Stunden-Exklusiv-Eier
+// (egg.hourlyExclusive) komplett eigener Mechanismus statt der normalen
+// Huge-Chance + Glücks-Leiter (siehe rollHourlyExclusivePet in data.js).
+function drawHatchedPet(egg) {
+  if (egg.hourlyExclusive) return rollHourlyExclusivePet(egg.id);
+  const hugeJackpot = rollHugePetOverride(egg.luckPercent, egg.rarity, egg.id);
+  return hugeJackpot || drawPetFromPool(egg.luckPercent, egg.rarity);
+}
+
+// ---- Passive Fähigkeiten der Stunden-Exklusiv-Huge-Pets --------------------
+// Anders als tickHugeAbilities (zeitintervall-basierte Fähigkeiten) sind das
+// STÄNDIGE Effekte, solange das Pet ausgerüstet ist - kein Fortschritt/
+// Intervall nötig, einfach bei jedem Bedarf frisch aus state.equipped lesen.
+const PASSIVE_INCOME_MULTIPLIER_CAP = 4;
+
+// Tokusatsu-Huges: permanenter Geld-Multiplikator, multiplikativ gestackt,
+// aber gedeckelt (siehe PASSIVE_INCOME_MULTIPLIER_CAP).
+function getHugeIncomeMultiplier(state) {
+  const equippedSet = new Set(state.equipped);
+  let multiplier = 1;
+  for (const p of state.pets) {
+    if (!equippedSet.has(p.instanceId)) continue;
+    const ability = PET_BY_ID[p.petId]?.ability;
+    if (ability?.type === "passive_income_multiplier") multiplier *= ability.multiplier;
+  }
+  return Math.min(multiplier, PASSIVE_INCOME_MULTIPLIER_CAP);
+}
+
+// Super-Fluffy-Huges: Brut-Geschwindigkeit - bei mehreren gleichzeitig
+// ausgerüsteten zählt der stärkste, kein zusätzliches Stacken.
+function getHatchSpeedMultiplier(state) {
+  const equippedSet = new Set(state.equipped);
+  let multiplier = 1;
+  for (const p of state.pets) {
+    if (!equippedSet.has(p.instanceId)) continue;
+    const ability = PET_BY_ID[p.petId]?.ability;
+    if (ability?.type === "hatch_speed_multiplier") multiplier = Math.max(multiplier, ability.multiplier);
+  }
+  return multiplier;
+}
+
+// Cardboard-Huges: mehr Lager im Shop - bei mehreren gleichzeitig
+// ausgerüsteten zählt der stärkste, kein zusätzliches Stacken.
+function getShopStockMultiplier(state) {
+  const equippedSet = new Set(state.equipped);
+  let multiplier = 1;
+  for (const p of state.pets) {
+    if (!equippedSet.has(p.instanceId)) continue;
+    const ability = PET_BY_ID[p.petId]?.ability;
+    if (ability?.type === "boost_shop_stock") multiplier = Math.max(multiplier, ability.stockMultiplier);
+  }
+  return multiplier;
+}
 
 const EGG_BY_ID = Object.fromEntries(EGGS.map((e) => [e.id, e]));
 const PET_BY_ID = Object.fromEntries(PETS.map((p) => [p.id, p]));
@@ -91,8 +145,12 @@ function startHatching(state, eggId) {
 // speedMultiplier: 1x während der Spieler weg war (Offline-Zeit),
 // 2x während das Spiel aktiv im Browser-Tab läuft.
 function tickHatching(state, elapsedMs, speedMultiplier = 1) {
+  // Super-Fluffy-Huges beschleunigen ALLE Eier, solange ausgerüstet - gilt
+  // hier zentral für beide Aufrufer (online UND Offline-Nachholen), siehe
+  // getHatchSpeedMultiplier.
+  const extraMultiplier = getHatchSpeedMultiplier(state);
   for (const h of state.hatching) {
-    h.remainingMs -= elapsedMs * speedMultiplier;
+    h.remainingMs -= elapsedMs * speedMultiplier * extraMultiplier;
   }
 }
 
@@ -143,8 +201,7 @@ function hatchEgg(state, instanceId) {
   const egg = EGG_BY_ID[entry.eggId];
   // Jedes Ei hat eine eigene, unabhängige Chance auf ein Huge Pet (5x
   // seltener als astral-oder-besser aus demselben Ei) - kein eigenes Ei nötig.
-  const hugeJackpot = rollHugePetOverride(egg.luckPercent, egg.rarity, egg.id);
-  const pet = hugeJackpot || drawPetFromPool(egg.luckPercent, egg.rarity);
+  const pet = drawHatchedPet(egg);
   const petInstance = createPetInstance(pet);
   state.pets.push(petInstance);
   state.hatching = state.hatching.filter((h) => h.instanceId !== instanceId);
@@ -193,8 +250,7 @@ function enableAdminMode(state) {
 function adminInstantHatch(state, eggId) {
   const egg = EGG_BY_ID[eggId];
   if (!egg) throw new Error("Unbekanntes Ei.");
-  const hugeJackpot = rollHugePetOverride(egg.luckPercent, egg.rarity, egg.id);
-  const pet = hugeJackpot || drawPetFromPool(egg.luckPercent, egg.rarity);
+  const pet = drawHatchedPet(egg);
   const petInstance = createPetInstance(pet);
   state.pets.push(petInstance);
   if (!state.seenEggs) state.seenEggs = [];
@@ -203,7 +259,7 @@ function adminInstantHatch(state, eggId) {
 }
 
 function adminGrantRandomHugePet(state) {
-  const hugePets = PETS.filter((p) => p.rarity === "exklusiv");
+  const hugePets = PETS.filter((p) => p.rarity === "exklusiv" && !p.hourlyEggId);
   if (hugePets.length === 0) throw new Error("Es gibt noch kein Riesen-Pet.");
   const pet = hugePets[Math.floor(Math.random() * hugePets.length)];
   const petInstance = createPetInstance(pet);
@@ -264,7 +320,9 @@ function totalMoneyPerSecond(state) {
   const base = state.pets
     .filter((p) => equippedSet.has(p.instanceId))
     .reduce((sum, p) => sum + effectiveMoneyPerSec(state, p), 0);
-  return base * getMoneyMultiplier(state);
+  // Tokusatsu-Huges: permanenter, zusätzlicher Multiplikator (siehe
+  // getHugeIncomeMultiplier) - stackt mit, ersetzt nicht den Rebirth-Multi.
+  return base * getMoneyMultiplier(state) * getHugeIncomeMultiplier(state);
 }
 
 // ---- Rebirth: Geld + ein bestimmtes Pet gegen dauerhafte Boni tauschen -----
@@ -432,7 +490,22 @@ function executeAbility(state, sourcePet, ability) {
     state.coins += coinsGranted;
     return { targets: [], coinsGranted };
   }
+  if (ability.type === "drain_random_hatching_ms") {
+    const target = drainRandomHatching(state, ability.reduceMs);
+    return { targets: target ? [target] : [], coinsGranted: 0 };
+  }
   return { targets: [], coinsGranted: 0 };
+}
+
+// Vapor-Huges: zieht einem zufälligen, noch nicht fertigen Ei Restzeit ab -
+// läuft nur, solange aktiv gespielt wird (wie alle Huge-Fähigkeiten, siehe
+// tickHugeAbilities), zählt also nie für Offline-Zeit.
+function drainRandomHatching(state, reduceMs) {
+  const candidates = state.hatching.filter((h) => h.remainingMs > 0);
+  if (candidates.length === 0) return null;
+  const target = candidates[Math.floor(Math.random() * candidates.length)];
+  target.remainingMs = Math.max(0, target.remainingMs - reduceMs);
+  return target;
 }
 
 // Wählt zufällig ein anderes ausgerüstetes Pet mit der Ursprungsmutation
@@ -447,7 +520,9 @@ function upgradeOriginMutation(state, sourceInstanceId, fromMutationId, toMutati
   ));
   if (candidates.length === 0) return null;
   const target = candidates[Math.floor(Math.random() * candidates.length)];
-  const fromMult = MUTATION_BY_ID[fromMutationId].moneyMultiplier;
+  // fromMutationId darf null sein (z.B. Ornate-Huges: "noch unmutiert" -> Gold)
+  // - dann gibt es keinen alten Multiplikator herauszurechnen.
+  const fromMult = fromMutationId ? MUTATION_BY_ID[fromMutationId].moneyMultiplier : 1;
   const toMult = MUTATION_BY_ID[toMutationId].moneyMultiplier;
   target.moneyPerSec = (target.moneyPerSec / fromMult) * toMult;
   target.mutation = toMutationId;
@@ -651,7 +726,7 @@ export {
   startHatching, tickHatching, isHatchingFinished, getFinishedHatching, hatchEgg,
   accrueMoney, totalMoneyPerSecond, getMoneyMultiplier, performRebirth,
   equipPet, unequipPet, autoEquipBest, timeRemainingMs, tickEnvironmentalMutations, tickWeatherMutations,
-  tickHugeAbilities, effectiveMoneyPerSec,
+  tickHugeAbilities, effectiveMoneyPerSec, getShopStockMultiplier,
   enableAdminMode, adminInstantHatch, adminGrantRandomHugePet, adminAddCoins,
   serializePetForTrade, serializeEggForTrade, removeOwnOfferFromState, addIncomingOfferToState,
 };

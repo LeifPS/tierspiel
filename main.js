@@ -1,10 +1,13 @@
 import { EGGS, PETS, REBIRTHS, RARITY_INDEX, MUTATIONS, MUTATION_BY_ID, ENV_MUTATIONS, ENV_MUTATION_BY_ID, getRarity, formatNumber, formatDuration } from "./data.js";
-import { getOrRotateShop, buyEgg, msUntilNextRotation, currentRotationIndex, ROTATION_MS, getLastAppearanceMs } from "./shop.js";
+import {
+  getOrRotateShop, buyEgg, msUntilNextRotation, currentRotationIndex, ROTATION_MS, getLastAppearanceMs,
+  msUntilNextHourly,
+} from "./shop.js";
 import {
   EGG_BY_ID, PET_BY_ID, loadPlayer, savePlayer, resetPlayer, startHatching,
   tickHatching, isHatchingFinished, hatchEgg, accrueMoney, totalMoneyPerSecond, getMoneyMultiplier,
   performRebirth, equipPet, unequipPet, autoEquipBest, timeRemainingMs, tickEnvironmentalMutations,
-  tickHugeAbilities, effectiveMoneyPerSec, tickWeatherMutations,
+  tickHugeAbilities, effectiveMoneyPerSec, tickWeatherMutations, getShopStockMultiplier,
   enableAdminMode, adminInstantHatch, adminGrantRandomHugePet, adminAddCoins,
   serializePetForTrade, serializeEggForTrade, removeOwnOfferFromState, addIncomingOfferToState,
 } from "./game.js";
@@ -63,6 +66,12 @@ const ASSET_OVERRIDES = {
     mystmirebloom: "https://static.wikia.nocookie.net/pet-simulator/images/c/ce/PS99_Mystmire_Bloom_Egg.png",
     veilroot: "https://static.wikia.nocookie.net/pet-simulator/images/e/e2/PS99_Veilroot_Egg.png",
     voidspiral: "https://static.wikia.nocookie.net/pet-simulator/images/a/a8/PS99_Void_Spiral_Egg.png",
+    ornate: "https://static.wikia.nocookie.net/pet-simulator/images/c/c9/PS99_Eggs_-_Exclusive_Ornate_Egg.png",
+    cardboard: "https://static.wikia.nocookie.net/pet-simulator/images/b/b0/PS99_Eggs_-_Exclusive_Cardboard_Egg.png",
+    holofoil: "https://static.wikia.nocookie.net/pet-simulator/images/a/a8/PS99_Eggs_-_Exclusive_Holofoil_Egg.png",
+    tokusatsu: "https://static.wikia.nocookie.net/pet-simulator/images/1/1f/PS99_Eggs_-_Exclusive_Tokusatsu_Egg.png",
+    superfluffy: "https://static.wikia.nocookie.net/pet-simulator/images/9/98/PS99_Eggs_-_Exclusive_Super_Fluffy_Egg.png",
+    vapor: "https://static.wikia.nocookie.net/pet-simulator/images/4/41/PS99_Exclusive_Vapor_Egg.png",
   },
   pets: {
     fuchs: "https://static.wikia.nocookie.net/pets-go/images/7/73/Fox.png",
@@ -138,12 +147,51 @@ const ASSET_OVERRIDES = {
     hugemysticcorgi: "https://static.wikia.nocookie.net/pets-go/images/b/bf/Huge_Mystic_Corgi.png",
     hugealienoctopus: "https://static.wikia.nocookie.net/pets-go/images/5/52/Huge_Alien_Octopus.png",
     hugesketchcorgi: "https://static.wikia.nocookie.net/pets-go/images/1/11/Huge_Sketch_Corgi.png",
+    ornatephoenix: "https://static.wikia.nocookie.net/pet-simulator/images/8/84/PS99_Ornate_Phoenix.png",
+    ornatetiger: "https://static.wikia.nocookie.net/pet-simulator/images/5/56/PS99_Ornate_Tiger.png",
+    ornatekoi: "https://static.wikia.nocookie.net/pet-simulator/images/5/58/PS99_Ornate_Koi_Fish.png",
+    hugeornatephoenix: "https://static.wikia.nocookie.net/pet-simulator/images/e/e3/PS99_Huge_Ornate_Phoenix.png",
+    hugeornatekoi: "https://static.wikia.nocookie.net/pet-simulator/images/0/01/PS99_Huge_Ornate_Koi_Fish.png",
+    cardboardshark: "https://static.wikia.nocookie.net/pet-simulator/images/3/37/PS99_Cardboard_Shark.png",
+    cardboardmascot: "https://static.wikia.nocookie.net/pet-simulator/images/4/45/PS99_Cardboard_Maskot.png",
+    cardboardblobfish: "https://static.wikia.nocookie.net/pet-simulator/images/c/c1/PS99_Cardboard_Blobfish.png",
+    hugecardboardshark: "https://static.wikia.nocookie.net/pet-simulator/images/7/70/PS99_Huge_Cardboard_Shark.png",
+    hugecardboardblobfish: "https://static.wikia.nocookie.net/pet-simulator/images/4/49/PS99_Huge_Cardboard_Blobfish.png",
+    tokusatsusabertooth: "https://static.wikia.nocookie.net/pet-simulator/images/4/40/PS99_Tokusatsu_Sabertooth.png",
+    tokusatsuladybug: "https://static.wikia.nocookie.net/pet-simulator/images/e/ec/PS99_Tokusatsu_Ladybug.png",
+    tokusatsucrab: "https://static.wikia.nocookie.net/pet-simulator/images/d/da/PS99_Tokusatsu_Crab.png",
+    hugetokusatsusabertooth: "https://static.wikia.nocookie.net/pet-simulator/images/2/2a/PS99_Huge_Tokusatsu_Sabertooth.png",
+    hugetokusatsucrab: "https://static.wikia.nocookie.net/pet-simulator/images/5/54/PS99_Huge_Tokusatsu_Crab.png",
+    holofoilaxolotl: "https://static.wikia.nocookie.net/pet-simulator/images/0/00/PS99_Holofoil_Axolotl.png",
+    holofoilhammerhead: "https://static.wikia.nocookie.net/pet-simulator/images/4/4f/PS99_Holofoil_Hammerhead.png",
+    holofoiltiger: "https://static.wikia.nocookie.net/pet-simulator/images/2/26/PS99_Holofoil_Tiger.png",
+    hugeholofoilaxolotl: "https://static.wikia.nocookie.net/pet-simulator/images/9/91/PS99_Huge_Holofoil_Axolotl.png",
+    hugeholofoiltiger: "https://static.wikia.nocookie.net/pet-simulator/images/d/de/PS99_Huge_Holofoil_Tiger.png",
+    superfluffypanda: "https://static.wikia.nocookie.net/pet-simulator/images/5/51/PS99_Super_Fluffy_Panda.png",
+    superfluffybunny: "https://static.wikia.nocookie.net/pet-simulator/images/1/1c/PS99_Super_Fluffy_Bunny.png",
+    superfluffyunicorn: "https://static.wikia.nocookie.net/pet-simulator/images/4/47/PS99_Super_Fluffy_Unicorn.png",
+    hugesuperfluffypanda: "https://static.wikia.nocookie.net/pet-simulator/images/2/23/PS99_Huge_Super_Fluffy_Panda.png",
+    hugesuperfluffyunicorn: "https://static.wikia.nocookie.net/pet-simulator/images/0/01/PS99_Huge_Super_Fluffy_Unicorn.png",
+    vaporcat: "https://static.wikia.nocookie.net/pet-simulator/images/c/ce/PS99_Vapor_Cat.png",
+    vaporfox: "https://static.wikia.nocookie.net/pet-simulator/images/4/46/PS99_Vapor_Fox.png",
+    vaporwolf: "https://static.wikia.nocookie.net/pet-simulator/images/b/b7/PS99_Vapor_Wolf.png",
+    hugevaporcat: "https://static.wikia.nocookie.net/pet-simulator/images/2/23/PS99_Huge_Vapor_Cat.png",
+    hugevaporwolf: "https://static.wikia.nocookie.net/pet-simulator/images/6/6f/PS99_Huge_Vapor_Wolf.png",
   },
 };
 
 const COIN_ICON_URL = "https://static.wikia.nocookie.net/pet-simulator/images/b/b2/PS99_-_Coin.png";
 const coinIcon = () => `<img src="${COIN_ICON_URL}" alt="Münzen" class="coin-icon">`;
 const GOLD_BAR_ICON_URL = "https://static.wikia.nocookie.net/pet-simulator/images/e/e8/PS99_-_Gold_Bar.png";
+
+// Stunden-Exklusiv-Eier (hourlyExclusive) nutzen luckPercent nicht (siehe
+// data.js) - eine "0% Glück"-Zeile wäre irreführend, stattdessen ein Hinweis
+// auf den eigentlichen Mechanismus (garantiert 1x pro Stunde im Shop).
+function eggLuckLine(egg) {
+  return egg.hourlyExclusive
+    ? `<div class="card-stat">⏰ Garantiert 1x pro Stunde im Shop</div>`
+    : `<div class="card-stat">🍀 ${formatNumber(egg.luckPercent)}% Glück</div>`;
+}
 
 function assetSrc(kind, id) {
   const override = ASSET_OVERRIDES[kind]?.[id];
@@ -318,11 +366,17 @@ function swayDelayFor(id) {
   return `-${((hash % 320) / 100).toFixed(2)}s`;
 }
 
+// Huge-artige Pets (klassische Huges UND die Stunden-Exklusiv-Huges) werden
+// überall etwas größer dargestellt - erkannt über moneyPercentOfBest >= 100
+// (die normalen Stunden-Exklusiv-Pets liegen bei 80/90/95, bleiben also
+// normal groß, obwohl sie dieselbe Seltenheit "exklusiv" teilen).
+function isHugeStylePet(pet) {
+  return !!pet && pet.moneyPercentOfBest !== undefined && pet.moneyPercentOfBest >= 100;
+}
+
 function createArtEl(kind, id, label, rarityColor, locked = false, dimmed = false, mutation = null, envMutation = null) {
-  // Huge Pets (Seltenheit "exklusiv") werden überall etwas größer dargestellt
-  // als normale Pets - automatisch erkannt, kein extra Parameter an jedem
-  // Aufrufort nötig.
-  const isHuge = kind === "pets" && !locked && PET_BY_ID[id]?.rarity === "exklusiv";
+  // Automatisch erkannt, kein extra Parameter an jedem Aufrufort nötig.
+  const isHuge = kind === "pets" && !locked && isHugeStylePet(PET_BY_ID[id]);
   const wrap = document.createElement("div");
   wrap.className = "art" + (locked ? " locked" : "") + (dimmed ? " dimmed" : "") + (isHuge ? " huge-pet-art" : "");
   wrap.style.setProperty("--sway-delay", swayDelayFor(id));
@@ -484,6 +538,12 @@ function bootGame() {
             const targetDef = PET_BY_ID[target.petId];
             toast(`💎 ${sourceDef.name}s Fähigkeit hat ${targetDef.name} zu ${MUTATION_BY_ID[ability.toMutationId].name} aufgewertet!`);
           }
+        } else if (ability.type === "drain_random_hatching_ms") {
+          // targets sind hier Brüt-Einträge (eggId/remainingMs), keine Pets.
+          for (const target of targets) {
+            const targetEgg = EGG_BY_ID[target.eggId];
+            toast(`⏳ ${sourceDef.name}s Fähigkeit hat ${targetEgg.name} ${Math.round(ability.reduceMs / 60000)}min Restzeit abgezogen!`);
+          }
         } else if (targets && targets.length > 0) {
           for (const target of targets) {
             const targetDef = PET_BY_ID[target.petId];
@@ -531,7 +591,9 @@ async function refreshWeather() {
 }
 
 function refreshShop() {
-  shop = getOrRotateShop();
+  // Cardboard-Huges boosten die Lager-Menge (siehe getShopStockMultiplier) -
+  // wirkt nur auf die Stückzahl, nie darauf, welche Eier erscheinen.
+  shop = getOrRotateShop(getShopStockMultiplier(state));
   renderShop();
 }
 
@@ -604,7 +666,7 @@ function playHatchRevealBatch(results) {
   const slots = results.map((result) => {
     const { pet, egg, instance } = result;
     const rarity = getRarity(pet.rarity);
-    const isHuge = pet.rarity === "exklusiv";
+    const isHuge = isHugeStylePet(pet);
     const mutationVisuals = instance.mutation && MUTATION_VISUALS[instance.mutation];
     const glowColor = mutationVisuals ? mutationVisuals.glowColor
       : rarity.color.startsWith("linear") ? "#ffffff" : rarity.color;
@@ -732,7 +794,7 @@ function renderShop() {
     info.innerHTML = `
       <div class="card-name">${egg.name}</div>
       ${rarityBadgeHTML(rarity)}
-      <div class="card-stat">🍀 ${formatNumber(egg.luckPercent)}% Glück</div>
+      ${eggLuckLine(egg)}
       <div class="card-stat">⏱ ${formatDuration(egg.hatchSeconds)}</div>
       <div class="card-stat">📦 Lager: ${soldOut ? "Ausverkauft" : stock}</div>
     `;
@@ -774,6 +836,12 @@ function updateShopRotationText() {
   }
   const remaining = msUntilNextRotation(shop.rotatedAtMs);
   $("#shop-rotation").textContent = `Nächste Rotation in ${formatDuration(remaining / 1000)}`;
+
+  if (shop.hourlyEggId && shop.hourlyRotatedAtMs !== undefined) {
+    const hourlyEgg = EGG_BY_ID[shop.hourlyEggId];
+    const hourlyRemaining = msUntilNextHourly(shop.hourlyRotatedAtMs);
+    $("#shop-hourly").textContent = `⏰ ${hourlyEgg.name} jetzt im Shop – nächstes Stunden-Ei in ${formatDuration(hourlyRemaining / 1000)}`;
+  }
 }
 
 function handleBuy(egg) {
@@ -1048,14 +1116,20 @@ function renderIndex() {
     const info = document.createElement("div");
     info.className = "card-info";
     if (discovered) {
-      const lastMs = getLastAppearanceMs(egg.id);
-      const lastLine = lastMs === null
-        ? `<div class="card-stat">🛒 Zuletzt im Shop: schon sehr lange nicht mehr</div>`
-        : `<div class="card-stat">🛒 Zuletzt im Shop: ${formatTimeAgo(lastMs)}</div>`;
+      // Die deterministische Rückwärtssuche (getLastAppearanceMs) geht von
+      // appearChance aus - bei Stunden-Exklusiv-Eiern (appearChance:0) fände
+      // sie nie etwas, deshalb hier übersprungen (siehe eggLuckLine oben,
+      // die den eigentlichen Mechanismus schon erklärt).
+      const lastLine = egg.hourlyExclusive ? "" : (() => {
+        const lastMs = getLastAppearanceMs(egg.id);
+        return lastMs === null
+          ? `<div class="card-stat">🛒 Zuletzt im Shop: schon sehr lange nicht mehr</div>`
+          : `<div class="card-stat">🛒 Zuletzt im Shop: ${formatTimeAgo(lastMs)}</div>`;
+      })();
       info.innerHTML = `
         <div class="card-name">${egg.name}</div>
         ${rarityBadgeHTML(rarity)}
-        <div class="card-stat">🍀 ${formatNumber(egg.luckPercent)}% Glück</div>
+        ${eggLuckLine(egg)}
         <div class="card-stat">⏱ ${formatDuration(egg.hatchSeconds)}</div>
         ${lastLine}
       `;
@@ -1096,8 +1170,12 @@ function renderIndex() {
     if (discovered) {
       // Huge Pets (Seltenheit "exklusiv") kommen nie über die normale
       // Glücks-Leiter - die "1 in X"-Chance wäre hier irreführend, da sie
-      // stattdessen aus jedem Ei mit eigener Chance kommen können.
-      const chanceOrSourceLine = pet.rarity === "exklusiv"
+      // stattdessen aus jedem Ei mit eigener Chance kommen können. Die
+      // Stunden-Exklusiv-Pets (hourlyEggId) kommen dagegen NUR aus ihrem
+      // eigenen Ei, das nur 1x pro Stunde garantiert im Shop ist.
+      const chanceOrSourceLine = pet.hourlyEggId
+        ? `<div class="card-stat">🥚 Nur aus ${EGG_BY_ID[pet.hourlyEggId].name} möglich (1x pro Stunde im Shop)</div>`
+        : pet.rarity === "exklusiv"
         ? `<div class="card-stat">🥚 Aus jedem Ei möglich (sehr selten)</div>`
         : `<div class="card-stat">🍀 Chance: 1 in ${formatNumber(Math.round(pet.baseChanceCache))}</div>`;
       // Huge Pets haben kein festes Basis-Geld - sie verdienen einen

@@ -31,9 +31,11 @@ const RARITIES = [
   { id: "galactic",     name: "Galaktisch", color: "linear-gradient(135deg,#1565c0,#64b5f6,#1565c0)", petChance: 250000000000 },
   { id: "stellar",      name: "Stellar",    color: "linear-gradient(135deg,#2e7d32,#a5d6a7,#2e7d32)", petChance: 1000000000000 },
   { id: "nebula",       name: "Nebula",     color: "linear-gradient(135deg,#b71c1c,#ff8a80,#b71c1c)", petChance: 5000000000000 },
-  // Exklusiv: eigener Zweig für Huge Pets, nicht Teil der normalen
-  // Seltenheits-Leiter - man bekommt sie NUR über das Huge-Ei (siehe unten),
-  // nie über normales Glück bei anderen Eiern (siehe drawPetFromPool).
+  // Exklusiv: eigener Zweig, nicht Teil der normalen Seltenheits-Leiter
+  // (siehe drawPetFromPool) - umfasst zwei völlig verschiedene Gruppen:
+  // die klassischen Huge Pets (kein hourlyEggId-Feld: aus jedem Ei ziehbar,
+  // siehe rollHugePetOverride) und die Stunden-Exklusiv-Pets (hourlyEggId
+  // gesetzt: nur aus ihrem eigenen Stunden-Ei, siehe rollHourlyExclusivePet).
   { id: "exklusiv",     name: "Exklusiv",   color: "linear-gradient(90deg,#ff3b3b,#ff9f1c,#ffe135,#4ade80,#38bdf8,#a78bfa,#ff6ec7)", petChance: 1000000000000000 },
 ];
 const RARITY_INDEX = Object.fromEntries(RARITIES.map((r, i) => [r.id, i]));
@@ -196,7 +198,211 @@ const PETS = [
       description: "10% Chance, ein ausgebrütetes Ei zurückzubekommen (erneut ausbrüten, voller Timer)",
     },
   },
+  // ---- Stunden-Exklusiv-Pets (Seltenheit "exklusiv", aber NICHT anyEgg) ----
+  // Kommen nur aus ihrem jeweiligen Stunden-Ei (siehe hourlyEggId +
+  // rollHourlyExclusivePet unten), nie über normales Glück oder den
+  // generischen Huge-Jackpot (rollHugePetOverride filtert gezielt nach
+  // "rarity === exklusiv && !hourlyEggId"). Die 3 "normalen" Pets pro Ei
+  // geben trotzdem einen Prozentsatz vom besten Pet (wie Huge Pets), aber
+  // immer < 100% (80/90/95) - reine Sammel-Pets, nie stärker als dein Bestes.
+  // Die 2 Huge-Varianten pro Ei sind "schwach"/"stark" (120%/150%) mit
+  // DERSELBEN Fähigkeit, nur unterschiedlich schnell/stark (siehe Werte).
+  {
+    id: "ornatephoenix", name: "Verzierter Phönix", rarity: "exklusiv", hourlyEggId: "ornate",
+    baseWeightKg: 800, moneyPercentOfBest: 80,
+  },
+  {
+    id: "ornatetiger", name: "Verzierter Tiger", rarity: "exklusiv", hourlyEggId: "ornate",
+    baseWeightKg: 1000, moneyPercentOfBest: 90,
+  },
+  {
+    id: "ornatekoi", name: "Verzierter Koi", rarity: "exklusiv", hourlyEggId: "ornate",
+    baseWeightKg: 600, moneyPercentOfBest: 95,
+  },
+  {
+    id: "hugeornatephoenix", name: "Riesiger Verzierter Phönix", rarity: "exklusiv", hourlyEggId: "ornate", isHugeVariant: true,
+    baseWeightKg: 5000, moneyPercentOfBest: 120,
+    ability: {
+      type: "upgrade_origin_mutation", intervalSec: 3600, fromMutationId: null, toMutationId: "gold",
+      description: "Alle 3600s: vergoldet ein zufälliges anderes ausgerüstetes, noch unmutiertes Pet (Gold ×3)",
+    },
+  },
+  {
+    id: "hugeornatekoi", name: "Riesiger Verzierter Koi", rarity: "exklusiv", hourlyEggId: "ornate", isHugeVariant: true,
+    baseWeightKg: 5000, moneyPercentOfBest: 150,
+    ability: {
+      type: "upgrade_origin_mutation", intervalSec: 1800, fromMutationId: null, toMutationId: "gold",
+      description: "Alle 1800s: vergoldet ein zufälliges anderes ausgerüstetes, noch unmutiertes Pet (Gold ×3)",
+    },
+  },
+  {
+    id: "cardboardshark", name: "Pappkarton-Hai", rarity: "exklusiv", hourlyEggId: "cardboard",
+    baseWeightKg: 700, moneyPercentOfBest: 80,
+  },
+  {
+    id: "cardboardmascot", name: "Pappkarton-Maskottchen", rarity: "exklusiv", hourlyEggId: "cardboard",
+    baseWeightKg: 900, moneyPercentOfBest: 90,
+  },
+  {
+    id: "cardboardblobfish", name: "Pappkarton-Blobfisch", rarity: "exklusiv", hourlyEggId: "cardboard",
+    baseWeightKg: 500, moneyPercentOfBest: 95,
+  },
+  {
+    id: "hugecardboardshark", name: "Riesiger Pappkarton-Hai", rarity: "exklusiv", hourlyEggId: "cardboard", isHugeVariant: true,
+    baseWeightKg: 5000, moneyPercentOfBest: 120,
+    ability: {
+      type: "boost_shop_stock", stockMultiplier: 1.2,
+      description: "Solange ausgerüstet: 20% mehr Lager bei allen Eiern, die gerade im Shop sind",
+    },
+  },
+  {
+    id: "hugecardboardblobfish", name: "Riesiger Pappkarton-Blobfisch", rarity: "exklusiv", hourlyEggId: "cardboard", isHugeVariant: true,
+    baseWeightKg: 5000, moneyPercentOfBest: 150,
+    ability: {
+      type: "boost_shop_stock", stockMultiplier: 1.3,
+      description: "Solange ausgerüstet: 30% mehr Lager bei allen Eiern, die gerade im Shop sind",
+    },
+  },
+  {
+    id: "tokusatsusabertooth", name: "Tokusatsu-Säbelzahntiger", rarity: "exklusiv", hourlyEggId: "tokusatsu",
+    baseWeightKg: 900, moneyPercentOfBest: 80,
+  },
+  {
+    id: "tokusatsuladybug", name: "Tokusatsu-Marienkäfer", rarity: "exklusiv", hourlyEggId: "tokusatsu",
+    baseWeightKg: 500, moneyPercentOfBest: 90,
+  },
+  {
+    id: "tokusatsucrab", name: "Tokusatsu-Krabbe", rarity: "exklusiv", hourlyEggId: "tokusatsu",
+    baseWeightKg: 700, moneyPercentOfBest: 95,
+  },
+  {
+    id: "hugetokusatsusabertooth", name: "Riesiger Tokusatsu-Säbelzahntiger", rarity: "exklusiv", hourlyEggId: "tokusatsu", isHugeVariant: true,
+    baseWeightKg: 5000, moneyPercentOfBest: 120,
+    ability: {
+      type: "passive_income_multiplier", multiplier: 1.5,
+      description: "Solange ausgerüstet: dein gesamtes Geld/Sekunde ×1,5 (stackt mit anderen bis max. ×4)",
+    },
+  },
+  {
+    id: "hugetokusatsucrab", name: "Riesige Tokusatsu-Krabbe", rarity: "exklusiv", hourlyEggId: "tokusatsu", isHugeVariant: true,
+    baseWeightKg: 5000, moneyPercentOfBest: 150,
+    ability: {
+      type: "passive_income_multiplier", multiplier: 2,
+      description: "Solange ausgerüstet: dein gesamtes Geld/Sekunde ×2 (stackt mit anderen bis max. ×4)",
+    },
+  },
+  {
+    id: "holofoilaxolotl", name: "Holofolien-Axolotl", rarity: "exklusiv", hourlyEggId: "holofoil",
+    baseWeightKg: 400, moneyPercentOfBest: 80,
+  },
+  {
+    id: "holofoilhammerhead", name: "Holofolien-Hammerhai", rarity: "exklusiv", hourlyEggId: "holofoil",
+    baseWeightKg: 900, moneyPercentOfBest: 90,
+  },
+  {
+    id: "holofoiltiger", name: "Holofolien-Tiger", rarity: "exklusiv", hourlyEggId: "holofoil",
+    baseWeightKg: 1000, moneyPercentOfBest: 95,
+  },
+  {
+    id: "hugeholofoilaxolotl", name: "Riesiger Holofolien-Axolotl", rarity: "exklusiv", hourlyEggId: "holofoil", isHugeVariant: true,
+    baseWeightKg: 5000, moneyPercentOfBest: 120,
+    ability: {
+      type: "mutate_random_equipped", intervalSec: 1200, envMutationId: "holo",
+      description: "Alle 1200s: mutiert ein zufälliges anderes ausgerüstetes Pet mit Holo (×5)",
+    },
+  },
+  {
+    id: "hugeholofoiltiger", name: "Riesiger Holofolien-Tiger", rarity: "exklusiv", hourlyEggId: "holofoil", isHugeVariant: true,
+    baseWeightKg: 5000, moneyPercentOfBest: 150,
+    ability: {
+      type: "mutate_random_equipped", intervalSec: 600, envMutationId: "holo",
+      description: "Alle 600s: mutiert ein zufälliges anderes ausgerüstetes Pet mit Holo (×5)",
+    },
+  },
+  {
+    id: "superfluffypanda", name: "Superflauschiger Panda", rarity: "exklusiv", hourlyEggId: "superfluffy",
+    baseWeightKg: 1000, moneyPercentOfBest: 80,
+  },
+  {
+    id: "superfluffybunny", name: "Superflauschiger Hase", rarity: "exklusiv", hourlyEggId: "superfluffy",
+    baseWeightKg: 300, moneyPercentOfBest: 90,
+  },
+  {
+    id: "superfluffyunicorn", name: "Superflauschiges Einhorn", rarity: "exklusiv", hourlyEggId: "superfluffy",
+    baseWeightKg: 700, moneyPercentOfBest: 95,
+  },
+  {
+    id: "hugesuperfluffypanda", name: "Riesiger Superflauschiger Panda", rarity: "exklusiv", hourlyEggId: "superfluffy", isHugeVariant: true,
+    baseWeightKg: 5000, moneyPercentOfBest: 120,
+    ability: {
+      type: "hatch_speed_multiplier", multiplier: 3,
+      description: "Solange ausgerüstet: alle Eier brüten ×3 so schnell (auch offline)",
+    },
+  },
+  {
+    id: "hugesuperfluffyunicorn", name: "Riesiges Superflauschiges Einhorn", rarity: "exklusiv", hourlyEggId: "superfluffy", isHugeVariant: true,
+    baseWeightKg: 5000, moneyPercentOfBest: 150,
+    ability: {
+      type: "hatch_speed_multiplier", multiplier: 5,
+      description: "Solange ausgerüstet: alle Eier brüten ×5 so schnell (auch offline)",
+    },
+  },
+  {
+    id: "vaporcat", name: "Dampf-Katze", rarity: "exklusiv", hourlyEggId: "vapor",
+    baseWeightKg: 400, moneyPercentOfBest: 80,
+  },
+  {
+    id: "vaporfox", name: "Dampf-Fuchs", rarity: "exklusiv", hourlyEggId: "vapor",
+    baseWeightKg: 600, moneyPercentOfBest: 90,
+  },
+  {
+    id: "vaporwolf", name: "Dampf-Wolf", rarity: "exklusiv", hourlyEggId: "vapor",
+    baseWeightKg: 800, moneyPercentOfBest: 95,
+  },
+  {
+    id: "hugevaporcat", name: "Riesige Dampf-Katze", rarity: "exklusiv", hourlyEggId: "vapor", isHugeVariant: true,
+    baseWeightKg: 5000, moneyPercentOfBest: 120,
+    ability: {
+      type: "drain_random_hatching_ms", intervalSec: 300, reduceMs: 25 * 60 * 1000,
+      description: "Alle 300s: zieht einem zufälligen brütenden Ei 25min Restzeit ab (nur online)",
+    },
+  },
+  {
+    id: "hugevaporwolf", name: "Riesiger Dampf-Wolf", rarity: "exklusiv", hourlyEggId: "vapor", isHugeVariant: true,
+    baseWeightKg: 5000, moneyPercentOfBest: 150,
+    ability: {
+      type: "drain_random_hatching_ms", intervalSec: 300, reduceMs: 40 * 60 * 1000,
+      description: "Alle 300s: zieht einem zufälligen brütenden Ei 40min Restzeit ab (nur online)",
+    },
+  },
 ];
+
+// Für jedes Stunden-Ei die 5 zugehörigen Pet-ids in fester Reihenfolge
+// (3 normale + 2 Huge), zusammen mit ihrer Zieh-Gewichtung - dieselbe
+// Gewichtung für alle 6 Eier.
+const HOURLY_EGG_WEIGHTS = [40, 30, 20, 7.5, 2.5];
+const HOURLY_EGG_PETS = {
+  ornate: ["ornatephoenix", "ornatetiger", "ornatekoi", "hugeornatephoenix", "hugeornatekoi"],
+  cardboard: ["cardboardshark", "cardboardmascot", "cardboardblobfish", "hugecardboardshark", "hugecardboardblobfish"],
+  tokusatsu: ["tokusatsusabertooth", "tokusatsuladybug", "tokusatsucrab", "hugetokusatsusabertooth", "hugetokusatsucrab"],
+  holofoil: ["holofoilaxolotl", "holofoilhammerhead", "holofoiltiger", "hugeholofoilaxolotl", "hugeholofoiltiger"],
+  superfluffy: ["superfluffypanda", "superfluffybunny", "superfluffyunicorn", "hugesuperfluffypanda", "hugesuperfluffyunicorn"],
+  vapor: ["vaporcat", "vaporfox", "vaporwolf", "hugevaporcat", "hugevaporwolf"],
+};
+// Reihenfolge der 6 Eier für die Stunden-Rotation (siehe pickHourlyEggId in shop.js).
+const HOURLY_EGG_IDS = ["ornate", "cardboard", "tokusatsu", "holofoil", "superfluffy", "vapor"];
+
+function rollHourlyExclusivePet(eggId) {
+  const ids = HOURLY_EGG_PETS[eggId];
+  if (!ids) return null;
+  const total = HOURLY_EGG_WEIGHTS.reduce((a, b) => a + b, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < ids.length; i++) {
+    r -= HOURLY_EGG_WEIGHTS[i];
+    if (r <= 0) return PETS.find((p) => p.id === ids[i]);
+  }
+  return PETS.find((p) => p.id === ids[ids.length - 1]);
+}
 
 // ---- Eier -----------------------------------------------------------------
 // rarity: bestimmt Hauptfarbe/Rahmen des Eis (rein kosmetisch/Einordnung)
@@ -260,6 +466,37 @@ const EGGS = [
   // Neues bestes Ei, eine Stufe über dem bisherigen Regenbogen-Ei - nutzt die
   // "lunar"-Stufe, die schon von 3 Pets verwendet wird (siehe PETS oben).
   { id: "halospires",name: "Himmelstürme-Ei",rarity: "lunar",       luckPercent: 5000000000000, hatchSeconds: 432000, basePrice: 10000000000000000, appearChance: 0.0001, stock: [1, 1] },
+  // ---- Stunden-Exklusiv-Eier (Seltenheit "exklusiv") -----------------------
+  // Ganz anderer Mechanismus als alle Eier oben: appearChance bleibt hier
+  // absichtlich 0 (kommen NIE über die normale 5-Min-Rotation) - stattdessen
+  // ist zu jeder vollen Stunde GARANTIERT genau eins der 6 im Shop (siehe
+  // pickHourlyEggId in shop.js). Beim Ausbrüten kommt IMMER eins der 5
+  // pet-Exklusiv-Tiere dieses Eis (siehe hourlyExclusive-Flag + HOURLY_EGG_
+  // PETS/rollHourlyExclusivePet oben), nie die normale Glücks-Leiter.
+  {
+    id: "ornate", name: "Verziertes Ei", rarity: "exklusiv", hourlyExclusive: true,
+    luckPercent: 0, hatchSeconds: 14400, basePrice: 10000000000000, appearChance: 0, stock: [1, 1],
+  },
+  {
+    id: "cardboard", name: "Pappkarton-Ei", rarity: "exklusiv", hourlyExclusive: true,
+    luckPercent: 0, hatchSeconds: 14400, basePrice: 10000000000000, appearChance: 0, stock: [1, 1],
+  },
+  {
+    id: "tokusatsu", name: "Tokusatsu-Ei", rarity: "exklusiv", hourlyExclusive: true,
+    luckPercent: 0, hatchSeconds: 14400, basePrice: 10000000000000, appearChance: 0, stock: [1, 1],
+  },
+  {
+    id: "holofoil", name: "Holofolien-Ei", rarity: "exklusiv", hourlyExclusive: true,
+    luckPercent: 0, hatchSeconds: 14400, basePrice: 10000000000000, appearChance: 0, stock: [1, 1],
+  },
+  {
+    id: "superfluffy", name: "Superflauschiges Ei", rarity: "exklusiv", hourlyExclusive: true,
+    luckPercent: 0, hatchSeconds: 14400, basePrice: 10000000000000, appearChance: 0, stock: [1, 1],
+  },
+  {
+    id: "vapor", name: "Dampf-Ei", rarity: "exklusiv", hourlyExclusive: true,
+    luckPercent: 0, hatchSeconds: 14400, basePrice: 10000000000000, appearChance: 0, stock: [1, 1],
+  },
 ];
 // Kein eigenes Huge-Ei mehr - Huge Pets (Seltenheit "exklusiv") kommen
 // stattdessen aus JEDEM Ei, mit einer Chance, die sich am jeweiligen Ei
@@ -448,7 +685,9 @@ function rollHugePetOverride(luckPercent, eggRarity, eggId) {
     ? HUGE_CHANCE_OVERRIDE_BY_EGG_ID[eggId]
     : astralOrBetterChance(luckPercent, eggRarity) / HUGE_PET_RARITY_FACTOR;
   if (Math.random() >= chance) return null;
-  const hugePets = PETS.filter((p) => p.rarity === "exklusiv");
+  // hourlyEggId-Pets NIE hier reinmischen - die kommen ausschließlich über
+  // ihr eigenes Stunden-Ei (siehe rollHourlyExclusivePet).
+  const hugePets = PETS.filter((p) => p.rarity === "exklusiv" && !p.hourlyEggId);
   if (hugePets.length === 0) return null;
   return hugePets[Math.floor(Math.random() * hugePets.length)];
 }
@@ -567,6 +806,15 @@ const ENV_MUTATIONS = [
     moneyMultiplier: 7,
     disabled: true,
   },
+  {
+    id: "holo",
+    name: "Holo",
+    // Wie Lucky: kein passiver Roll, kommt ausschließlich über die Holofoil-
+    // Huge-Pets (Riesiger Holofolien-Axolotl/-Tiger).
+    chancePerSecond: 0,
+    moneyMultiplier: 5,
+    disabled: true,
+  },
   // Wetterbasierte Mutationen: kein passiver Sekunden-Roll (chancePerSecond
   // ungenutzt, disabled:true blockt den alten Passiv-Loop) - stattdessen ein
   // eigener Roll alle 15s über tickWeatherMutations (game.js), nur solange
@@ -604,6 +852,6 @@ export {
   RARITIES, RARITY_INDEX, PETS, EGGS, REBIRTHS, WEIGHT_ROLL_TABLE,
   MUTATIONS, MUTATION_BY_ID, ENV_MUTATIONS, ENV_MUTATION_BY_ID,
   rollWeightFactor, moneyMultiplierFromWeightRatio, hugeWeightMultiplier, drawPetFromPool, rollMutation,
-  rollHugePetOverride,
+  rollHugePetOverride, rollHourlyExclusivePet, HOURLY_EGG_IDS,
   formatNumber, formatDuration, getRarity,
 };

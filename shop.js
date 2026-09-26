@@ -6,10 +6,15 @@
 // dasselbe Ergebnis, solange ihre Uhren einigermaßen synchron sind – ganz
 // ohne Firestore-Abhängigkeit oder Race-Conditions am Rotationszeitpunkt.
 // Bereits getätigte Käufe werden weiterhin nur lokal je Spieler verfolgt.
-import { EGGS } from "./data.js";
+import { EGGS, HOURLY_EGG_IDS } from "./data.js";
 
 const SHOP_KEY = "tierspiel_shop_v1";
 const ROTATION_MS = 5 * 60 * 1000;
+// Zusätzlich zur normalen 5-Minuten-Rotation: zu jeder vollen Stunde ist
+// GARANTIERT eins der 6 "Exklusiv"-Eier im Shop (siehe HOURLY_EGG_IDS in
+// data.js) - welches, wird genau wie die normale Rotation deterministisch
+// aus dem Zeitfenster gewürfelt, also für alle Spieler gleich.
+const HOURLY_ROTATION_MS = 60 * 60 * 1000;
 
 // mulberry32: kleiner, schneller seedbarer PRNG (öffentliches Verfahren).
 function createSeededRandom(seed) {
@@ -27,17 +32,33 @@ function currentRotationIndex() {
   return Math.floor(Date.now() / ROTATION_MS);
 }
 
-function rollShopStockForRotation(rotationIndex) {
+function currentHourlyIndex() {
+  return Math.floor(Date.now() / HOURLY_ROTATION_MS);
+}
+
+// stockMultiplier: >1, wenn der Spieler ein Huge Pet mit "boost_shop_stock"-
+// Fähigkeit ausgerüstet hat (siehe getShopStockMultiplier in game.js) - wirkt
+// rein auf die Stückzahl, nie darauf, WELCHE Eier erscheinen (das bleibt für
+// alle Spieler identisch).
+function rollShopStockForRotation(rotationIndex, stockMultiplier = 1) {
   const rand = createSeededRandom(rotationIndex);
   const randInt = (min, max) => Math.floor(min + rand() * (max - min + 1));
 
   const stock = {};
   for (const egg of EGGS) {
-    stock[egg.id] = rand() <= egg.appearChance ? randInt(egg.stock[0], egg.stock[1]) : 0;
+    stock[egg.id] = rand() <= egg.appearChance ? Math.round(randInt(egg.stock[0], egg.stock[1]) * stockMultiplier) : 0;
   }
   // Sicherstellen, dass es nie komplett leer ist: Standard-Ei immer verfügbar
-  if (!stock.standard) stock.standard = randInt(EGGS[0].stock[0], EGGS[0].stock[1]);
+  if (!stock.standard) stock.standard = Math.round(randInt(EGGS[0].stock[0], EGGS[0].stock[1]) * stockMultiplier);
   return stock;
+}
+
+// Welches der 6 Stunden-Exklusiv-Eier gerade dran ist - deterministisch aus
+// dem Stunden-Zeitfenster gewürfelt (eigener Seed-Stream, unabhängig von der
+// normalen 5-Minuten-Rotation).
+function pickHourlyEggId(hourlyIndex) {
+  const rand = createSeededRandom(hourlyIndex);
+  return HOURLY_EGG_IDS[Math.floor(rand() * HOURLY_EGG_IDS.length)];
 }
 
 // ---- "Zuletzt im Shop erschienen" je Ei -----------------------------------
@@ -100,21 +121,44 @@ function writeShop(data) {
   return data;
 }
 
-function getOrRotateShop() {
+function getOrRotateShop(stockMultiplier = 1) {
   const rotationIndex = currentRotationIndex();
+  const hourlyIndex = currentHourlyIndex();
   const existing = readShop();
-  if (existing && existing.rotationIndex === rotationIndex) {
-    return existing; // gleiches Zeitfenster – lokal ggf. schon gekaufte Bestände behalten
+  const sameRotation = existing && existing.rotationIndex === rotationIndex;
+
+  // Gleiches 5-Min-Fenster: Bestand bleibt wie er ist (lokal ggf. schon
+  // gekaufte Mengen bleiben verringert). Neues Fenster: frisch auswürfeln.
+  const stock = sameRotation ? existing.stock : rollShopStockForRotation(rotationIndex, stockMultiplier);
+  const rolledStock = sameRotation ? existing.rolledStock : { ...stock };
+
+  // Stunden-Exklusiv-Ei: eigener Bestand, unabhängig von der 5-Min-Rotation.
+  // Läuft die Stunde noch, bleibt der ggf. schon angekaufte Rest-Bestand
+  // erhalten (auch über einen 5-Min-Reroll hinweg, der stock[...] oben sonst
+  // wieder auf 0 gesetzt hätte, da diese Eier appearChance:0 haben) - erst
+  // bei einer neuen Stunde wird neu gewürfelt und der Bestand aufgefüllt.
+  let hourlyEggId = existing?.hourlyEggId;
+  let hourlyRemaining = hourlyEggId !== undefined ? existing.stock[hourlyEggId] : undefined;
+  if (existing?.hourlyIndex !== hourlyIndex) {
+    hourlyEggId = pickHourlyEggId(hourlyIndex);
+    hourlyRemaining = Math.max(1, Math.round(1 * stockMultiplier));
   }
-  const stock = rollShopStockForRotation(rotationIndex);
+  if (hourlyEggId !== undefined) {
+    stock[hourlyEggId] = hourlyRemaining;
+    if (rolledStock[hourlyEggId] === undefined) rolledStock[hourlyEggId] = hourlyRemaining;
+  }
+
   return writeShop({
     stock,
     // Unveränderter Bestand zum Rotationsstart – damit ein leergekauftes Ei
     // im UI weiterhin (ausgegraut) als "war diese Rotation im Angebot"
     // erkennbar bleibt, auch nach einem Neuladen der Seite.
-    rolledStock: { ...stock },
+    rolledStock,
     rotatedAtMs: rotationIndex * ROTATION_MS,
     rotationIndex,
+    hourlyIndex,
+    hourlyEggId,
+    hourlyRotatedAtMs: hourlyIndex * HOURLY_ROTATION_MS,
   });
 }
 
@@ -133,4 +177,12 @@ function msUntilNextRotation(rotatedAtMs) {
   return Math.max(0, ROTATION_MS - elapsed);
 }
 
-export { getOrRotateShop, buyEgg, msUntilNextRotation, currentRotationIndex, ROTATION_MS, getLastAppearanceMs };
+function msUntilNextHourly(hourlyRotatedAtMs) {
+  const elapsed = Date.now() - hourlyRotatedAtMs;
+  return Math.max(0, HOURLY_ROTATION_MS - elapsed);
+}
+
+export {
+  getOrRotateShop, buyEgg, msUntilNextRotation, currentRotationIndex, ROTATION_MS, getLastAppearanceMs,
+  msUntilNextHourly, HOURLY_ROTATION_MS,
+};
