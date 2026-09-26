@@ -1,7 +1,7 @@
 import { EGGS, PETS, REBIRTHS, RARITY_INDEX, MUTATIONS, MUTATION_BY_ID, ENV_MUTATIONS, ENV_MUTATION_BY_ID, getRarity, formatNumber, formatDuration } from "./data.js";
 import {
   getOrRotateShop, buyEgg, msUntilNextRotation, currentRotationIndex, ROTATION_MS, getLastAppearanceMs,
-  msUntilNextHourly, forceHourlyEgg,
+  forceHourlyEgg,
 } from "./shop.js";
 import {
   EGG_BY_ID, PET_BY_ID, loadPlayer, savePlayer, resetPlayer, startHatching,
@@ -186,10 +186,11 @@ const GOLD_BAR_ICON_URL = "https://static.wikia.nocookie.net/pet-simulator/image
 
 // Stunden-Exklusiv-Eier (hourlyExclusive) nutzen luckPercent nicht (siehe
 // data.js) - eine "0% Glück"-Zeile wäre irreführend, stattdessen ein Hinweis
-// auf den eigentlichen Mechanismus (garantiert 1x pro Stunde im Shop).
+// auf den eigentlichen Mechanismus (nur 5 Min direkt nach jeder vollen
+// Stunde im Shop, siehe getOrRotateShop in shop.js).
 function eggLuckLine(egg) {
   return egg.hourlyExclusive
-    ? `<div class="card-stat">⏰ Garantiert 1x pro Stunde im Shop</div>`
+    ? `<div class="card-stat">⏰ Nur 5 Min direkt nach jeder vollen Stunde im Shop</div>`
     : `<div class="card-stat">🍀 ${formatNumber(egg.luckPercent)}% Glück</div>`;
 }
 
@@ -836,12 +837,6 @@ function updateShopRotationText() {
   }
   const remaining = msUntilNextRotation(shop.rotatedAtMs);
   $("#shop-rotation").textContent = `Nächste Rotation in ${formatDuration(remaining / 1000)}`;
-
-  if (shop.hourlyEggId && shop.hourlyRotatedAtMs !== undefined) {
-    const hourlyEgg = EGG_BY_ID[shop.hourlyEggId];
-    const hourlyRemaining = msUntilNextHourly(shop.hourlyRotatedAtMs);
-    $("#shop-hourly").textContent = `⏰ ${hourlyEgg.name} jetzt im Shop – nächstes Stunden-Ei in ${formatDuration(hourlyRemaining / 1000)}`;
-  }
 }
 
 function handleBuy(egg) {
@@ -1174,7 +1169,7 @@ function renderIndex() {
       // Stunden-Exklusiv-Pets (hourlyEggId) kommen dagegen NUR aus ihrem
       // eigenen Ei, das nur 1x pro Stunde garantiert im Shop ist.
       const chanceOrSourceLine = pet.hourlyEggId
-        ? `<div class="card-stat">🥚 Nur aus ${EGG_BY_ID[pet.hourlyEggId].name} möglich (1x pro Stunde im Shop)</div>`
+        ? `<div class="card-stat">🥚 Nur aus ${EGG_BY_ID[pet.hourlyEggId].name} möglich (5 Min nach jeder vollen Stunde)</div>`
         : pet.rarity === "exklusiv"
         ? `<div class="card-stat">🥚 Aus jedem Ei möglich (sehr selten)</div>`
         : `<div class="card-stat">🍀 Chance: 1 in ${formatNumber(Math.round(pet.baseChanceCache))}</div>`;

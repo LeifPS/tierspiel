@@ -10,11 +10,16 @@ import { EGGS, HOURLY_EGG_IDS } from "./data.js";
 
 const SHOP_KEY = "tierspiel_shop_v1";
 const ROTATION_MS = 5 * 60 * 1000;
-// Zusätzlich zur normalen 5-Minuten-Rotation: zu jeder vollen Stunde ist
-// GARANTIERT eins der 6 "Exklusiv"-Eier im Shop (siehe HOURLY_EGG_IDS in
-// data.js) - welches, wird genau wie die normale Rotation deterministisch
-// aus dem Zeitfenster gewürfelt, also für alle Spieler gleich.
+// Zusätzlich zur normalen 5-Minuten-Rotation: GENAU in der ersten Rotation
+// nach jeder vollen Stunde (also 5 Minuten lang, z.B. 14:00-14:05) ist eins
+// der 6 "Exklusiv"-Eier garantiert im Shop (siehe HOURLY_EGG_IDS in data.js) -
+// danach verschwindet es wieder komplett, bis zur nächsten vollen Stunde.
+// Welches, wird deterministisch aus der Stunde gewürfelt (für alle Spieler
+// gleich). Bewusst NICHT dauerhaft im gespeicherten Shop-Zustand sichtbar,
+// außerhalb dieser 5 Minuten soll niemand wissen können, welches Ei es war
+// oder als nächstes kommt.
 const HOURLY_ROTATION_MS = 60 * 60 * 1000;
+const ROTATIONS_PER_HOUR = HOURLY_ROTATION_MS / ROTATION_MS;
 
 // mulberry32: kleiner, schneller seedbarer PRNG (öffentliches Verfahren).
 function createSeededRandom(seed) {
@@ -30,10 +35,6 @@ function createSeededRandom(seed) {
 
 function currentRotationIndex() {
   return Math.floor(Date.now() / ROTATION_MS);
-}
-
-function currentHourlyIndex() {
-  return Math.floor(Date.now() / HOURLY_ROTATION_MS);
 }
 
 // stockMultiplier: >1, wenn der Spieler ein Huge Pet mit "boost_shop_stock"-
@@ -123,29 +124,22 @@ function writeShop(data) {
 
 function getOrRotateShop(stockMultiplier = 1) {
   const rotationIndex = currentRotationIndex();
-  const hourlyIndex = currentHourlyIndex();
   const existing = readShop();
-  const sameRotation = existing && existing.rotationIndex === rotationIndex;
-
-  // Gleiches 5-Min-Fenster: Bestand bleibt wie er ist (lokal ggf. schon
-  // gekaufte Mengen bleiben verringert). Neues Fenster: frisch auswürfeln.
-  const stock = sameRotation ? existing.stock : rollShopStockForRotation(rotationIndex, stockMultiplier);
-  const rolledStock = sameRotation ? existing.rolledStock : { ...stock };
-
-  // Stunden-Exklusiv-Ei: eigener Bestand, unabhängig von der 5-Min-Rotation.
-  // Läuft die Stunde noch, bleibt der ggf. schon angekaufte Rest-Bestand
-  // erhalten (auch über einen 5-Min-Reroll hinweg, der stock[...] oben sonst
-  // wieder auf 0 gesetzt hätte, da diese Eier appearChance:0 haben) - erst
-  // bei einer neuen Stunde wird neu gewürfelt und der Bestand aufgefüllt.
-  let hourlyEggId = existing?.hourlyEggId;
-  let hourlyRemaining = hourlyEggId !== undefined ? existing.stock[hourlyEggId] : undefined;
-  if (existing?.hourlyIndex !== hourlyIndex) {
-    hourlyEggId = pickHourlyEggId(hourlyIndex);
-    hourlyRemaining = Math.max(1, Math.round(1 * stockMultiplier));
+  if (existing && existing.rotationIndex === rotationIndex) {
+    return existing; // gleiches Zeitfenster – lokal ggf. schon gekaufte Bestände behalten
   }
-  if (hourlyEggId !== undefined) {
-    stock[hourlyEggId] = hourlyRemaining;
-    if (rolledStock[hourlyEggId] === undefined) rolledStock[hourlyEggId] = hourlyRemaining;
+  const stock = rollShopStockForRotation(rotationIndex, stockMultiplier);
+
+  // Nur in der ERSTEN Rotation nach einer vollen Stunde (rotationIndex durch
+  // ROTATIONS_PER_HOUR teilbar) ein Stunden-Exklusiv-Ei einblenden - läuft
+  // die aktuelle Rotation ab, verschwindet es einfach wieder (appearChance:0
+  // sorgt dafür, dass es bei der normalen Ziehung oben schon auf 0 stand).
+  // Absichtlich NICHT über die Rotation hinaus im Zustand gespeichert, damit
+  // außerhalb dieser 5 Minuten niemand sehen kann, welches es war/ist.
+  if (rotationIndex % ROTATIONS_PER_HOUR === 0) {
+    const hourlyIndex = rotationIndex / ROTATIONS_PER_HOUR;
+    const hourlyEggId = pickHourlyEggId(hourlyIndex);
+    stock[hourlyEggId] = Math.max(1, Math.round(1 * stockMultiplier));
   }
 
   return writeShop({
@@ -153,12 +147,9 @@ function getOrRotateShop(stockMultiplier = 1) {
     // Unveränderter Bestand zum Rotationsstart – damit ein leergekauftes Ei
     // im UI weiterhin (ausgegraut) als "war diese Rotation im Angebot"
     // erkennbar bleibt, auch nach einem Neuladen der Seite.
-    rolledStock,
+    rolledStock: { ...stock },
     rotatedAtMs: rotationIndex * ROTATION_MS,
     rotationIndex,
-    hourlyIndex,
-    hourlyEggId,
-    hourlyRotatedAtMs: hourlyIndex * HOURLY_ROTATION_MS,
   });
 }
 
@@ -174,15 +165,12 @@ function buyEgg(eggId) {
 
 // ---- Admin-/Testfunktion ---------------------------------------------------
 // Erzwingt sofort (unabhängig von der echten Uhrzeit) ein bestimmtes
-// Stunden-Exklusiv-Ei als aktuell garantiertes Angebot, mit frischem Bestand -
-// rein lokal (localStorage), betrifft also nie andere Spieler. Nur dafür da,
-// den echten Kauf-/Shop-Ablauf zu testen, ohne bis zur nächsten vollen
-// Stunde warten zu müssen.
+// Stunden-Exklusiv-Ei als aktuell im Angebot, mit frischem Bestand - rein
+// lokal (localStorage), betrifft also nie andere Spieler. Nur dafür da, den
+// echten Kauf-/Shop-Ablauf zu testen, ohne auf die volle Stunde warten zu
+// müssen. Gilt wie beim echten Mechanismus nur für die aktuelle Rotation.
 function forceHourlyEgg(eggId, stockMultiplier = 1) {
   const data = readShop() || getOrRotateShop();
-  data.hourlyEggId = eggId;
-  data.hourlyIndex = currentHourlyIndex();
-  data.hourlyRotatedAtMs = Date.now();
   data.stock[eggId] = Math.max(1, Math.round(1 * stockMultiplier));
   data.rolledStock[eggId] = data.stock[eggId];
   return writeShop(data);
@@ -193,12 +181,7 @@ function msUntilNextRotation(rotatedAtMs) {
   return Math.max(0, ROTATION_MS - elapsed);
 }
 
-function msUntilNextHourly(hourlyRotatedAtMs) {
-  const elapsed = Date.now() - hourlyRotatedAtMs;
-  return Math.max(0, HOURLY_ROTATION_MS - elapsed);
-}
-
 export {
   getOrRotateShop, buyEgg, msUntilNextRotation, currentRotationIndex, ROTATION_MS, getLastAppearanceMs,
-  msUntilNextHourly, HOURLY_ROTATION_MS, forceHourlyEgg,
+  forceHourlyEgg,
 };

@@ -469,10 +469,13 @@ const EGGS = [
   // ---- Stunden-Exklusiv-Eier (Seltenheit "exklusiv") -----------------------
   // Ganz anderer Mechanismus als alle Eier oben: appearChance bleibt hier
   // absichtlich 0 (kommen NIE über die normale 5-Min-Rotation) - stattdessen
-  // ist zu jeder vollen Stunde GARANTIERT genau eins der 6 im Shop (siehe
-  // pickHourlyEggId in shop.js). Beim Ausbrüten kommt IMMER eins der 5
-  // pet-Exklusiv-Tiere dieses Eis (siehe hourlyExclusive-Flag + HOURLY_EGG_
-  // PETS/rollHourlyExclusivePet oben), nie die normale Glücks-Leiter.
+  // ist NUR in der ersten 5-Min-Rotation direkt nach jeder vollen Stunde
+  // GARANTIERT genau eins der 6 im Shop, danach verschwindet es wieder
+  // komplett bis zur nächsten vollen Stunde (siehe getOrRotateShop in
+  // shop.js) - bewusst so kurz, damit außerhalb dieses Fensters niemand
+  // sehen kann, welches Ei es war/als nächstes kommt. Beim Ausbrüten kommt
+  // IMMER eins der 5 Exklusiv-Tiere dieses Eis (siehe hourlyExclusive-Flag +
+  // HOURLY_EGG_PETS/rollHourlyExclusivePet oben), nie die normale Glücks-Leiter.
   {
     id: "ornate", name: "Verziertes Ei", rarity: "exklusiv", hourlyExclusive: true,
     luckPercent: 0, hatchSeconds: 14400, basePrice: 10000000000000, appearChance: 0, stock: [1, 1],
