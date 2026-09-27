@@ -2,6 +2,11 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
+<!-- Canopy (canopybase.pages.dev): Spielstand mit der Canopy ID abgleichen, wenn das Spiel im Canopy-Player läuft.
+     Direkt auf dieser Seite: nur ein kleiner Knopf "In Canopy ID übertragen". Muss vor den Spiel-Skripten stehen. -->
+<script src="https://canopybase.pages.dev/sdk/canopy-sdk.js"></script>
+<script src="https://canopybase.pages.dev/sdk/canopy-bridge.js"></script>
+<script>CanopyBridge.init({ game: 'tierspiel', prefixes: ['tierspiel_'], exclude: ['tierspiel_active_trade'], volatile: { tierspiel_save_v1: ['lastActiveMs'] } });</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Tierspiel</title>
 <meta name="theme-color" content="#171226">
