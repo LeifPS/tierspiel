@@ -3,6 +3,7 @@
 <head>
 <script src="lgh-vorlade.js"></script><!--lgh-->
 
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Tierspiel</title>
@@ -189,6 +190,10 @@
       <label for="settings-max-reveal">Max. Eier pro Auto-Öffnen-Durchgang</label>
       <input id="settings-max-reveal" type="number" min="1" max="48" value="12">
     </div>
+    <div class="settings-row">
+      <label>Spielstand-Code (Fortschritt übertragen)</label>
+      <button type="button" class="action-btn" onclick="window.LGH&&LGH.oeffnen()">Öffnen</button>
+    </div>
   </div>
 </div>
 
@@ -237,6 +242,6 @@
 </svg>
 
 <script type="module" src="main.js"></script>
-<!--lgh-start--><script>window.LGH_SPIEL='tierspiel';window.LGH_POS='bc';window.LGH_OHNE_MENUE=true;</script><script src="lgh-modul.js"></script><!--lgh-ende-->
+<!--lgh-start--><script>window.LGH_SPIEL='tierspiel';window.LGH_POS='bc';window.LGH_EIGENER_KNOPF=true;</script><script src="lgh-modul.js"></script><!--lgh-ende-->
 </body>
 </html>
