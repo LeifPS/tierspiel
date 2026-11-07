@@ -1,4 +1,5 @@
 import { EGGS, PETS, REBIRTHS, RARITY_INDEX, MUTATIONS, MUTATION_BY_ID, ENV_MUTATIONS, ENV_MUTATION_BY_ID, getRarity, formatNumber, formatDuration } from "./data.js";
+import "./kompakt.js";
 import {
   getOrRotateShop, buyEgg, msUntilNextRotation, currentRotationIndex, ROTATION_MS, getLastAppearanceMs,
   forceHourlyEgg,
