@@ -40,6 +40,20 @@
     });
     return;
   }
+  /* Große Stände (über die Adresse nicht zuverlässig): Der Hub gibt sie dem Rahmen als window.name mit ('lgh:' + JSON-Text {t, d}).
+     Das ist beim Start sofort da, das Spiel braucht keine Änderung. Hier wird der Stand in den Speicher geschrieben, window.name sofort geleert
+     (damit er beim Neuladen nicht noch einmal und nie an fremde Seiten geht) und dem Hub {lgh:'fertig'} gemeldet. */
+  try {
+    if (typeof window.name === 'string' && window.name.indexOf('lgh:') === 0) {
+      var nj = window.name.slice(4);
+      window.name = '';
+      var no = JSON.parse(nj);
+      if (no && no.d && typeof no.d === 'object') {
+        for (var nk in no.d) if (Object.prototype.hasOwnProperty.call(no.d, nk)) localStorage.setItem(nk, String(no.d[nk]));
+        if (window.parent !== window) { try { window.parent.postMessage({ lgh: 'fertig' }, '*'); } catch (e2) { } }
+      }
+    }
+  } catch (e) { }
   try {
     var h = location.hash;
     if (h.indexOf('#lgh=') !== 0) return;
